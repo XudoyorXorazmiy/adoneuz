@@ -36,7 +36,7 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
 
 1. **Project** `adone` yaratish.
 2. **Postgres** resursi: image `pgvector/pgvector:pg18`, db/user `adone`, kuchli parol. Faqat ichki tarmoq. Tungi zaxira yoqiladi (UTC 23:00, 14 nusxa).
-3. **Ilova** (Application → GitHub App `xudoyor-coolify` → repo `adoneuz`, branch `main`): build pack **Dockerfile** (`/Dockerfile`, 0-bosqichda repoga qo'shiladi), port **3000**, health check `/api/health` (`health_check_host=127.0.0.1`), domains: `https://adone.uz,https://www.adone.uz,https://app.adone.uz,https://admin.adone.uz`.
+3. **Ilova** (Application → GitHub App `xudoyor-coolify` → repo `adoneuz`, branch `main`): build pack **Dockerfile** (`/Dockerfile`), port **3000**, health check `/api/health` (`health_check_host=127.0.0.1`), domains: `https://adone.uz,https://www.adone.uz,https://app.adone.uz,https://admin.adone.uz`. `ROOT_DOMAIN` va `PUBLIC_URL` ni «Build Variable» ham qiling (proxy build paytida oladi).
 4. Persistent storage: `/data/adone/media` → `/app/media-data`.
 5. Environment Variables (qiymatlar faqat Coolify'da, chatga chiqarilmaydi):
    - `DATABASE_URL=postgres://adone_app:…@<db-host>:5432/adone?sslmode=disable` (**`sslmode=disable` shart**)
@@ -50,7 +50,7 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
 
 ## 4. Telegram bot
 
-@BotFather → `/newbot` → `adone` / `adoneuz_bot` → token Coolify env'ga. Keyin `/setdomain` (Mini App uchun `app.adone.uz`), `/setmenubutton` → Web App `https://app.adone.uz/tg`. Webhook deploy'dan keyin: `POST https://app.adone.uz/api/cron/setup-bot` (Bearer `CRON_SECRET`) — 0-bosqichda yoziladi.
+@BotFather → `/newbot` → `adone` / `adoneuz_bot` → token Coolify env'ga. Keyin `/setdomain` (Mini App uchun `app.adone.uz`), `/setmenubutton` → Web App `https://app.adone.uz/tg`. Webhook o'rnatish route'i (`/api/cron/setup-bot`) 1-bosqichda yoziladi.
 
 ## 5. Migratsiya (prod)
 
@@ -59,8 +59,9 @@ Baza tashqaridan ko'rinmaydi — ilova konteyneri ichidan (openstore usuli):
 ```bash
 ssh -i ~/.ssh/mvps_main root@109.199.121.164
 C=$(docker ps --format '{{.Names}}' | grep ^<app-uuid> | head -1)
-docker exec $C sh -c 'cd /app && pnpm db:migrate && pnpm db:check'
-docker exec $C sh -c 'cd /app && pnpm --filter @adone/db bootstrap'   # tariflar + super admin (bir marta)
+docker exec $C sh -c 'cd /app && pnpm db:migrate && pnpm --filter @adone/db set-app-password && pnpm db:check'
+# bir marta: tariflar + super admin (parolni chatga yozmang)
+docker exec -e BOOTSTRAP_ADMIN_PHONE=998XXXXXXXXX -e BOOTSTRAP_ADMIN_PASSWORD='…' $C sh -c 'cd /app && pnpm --filter @adone/db bootstrap'
 ```
 
-Tartib: avval push, deploy tugagach migrate. Prod bazada seed ISHLATILMAYDI.
+Tartib: avval push, deploy tugagach migrate. **Birinchi deploy'da** `adone_app` roli hali yo'q — ilova bazaga ulana olmaydi (health check o'tadi, sahifalar 500), migrate + `set-app-password` dan keyin ishlaydi. `set-app-password` `DATABASE_URL` dagi parolni `adone_app` ga qo'yadi (Postgres'da qo'lda rol yaratish shart emas). Prod bazada seed ISHLATILMAYDI.

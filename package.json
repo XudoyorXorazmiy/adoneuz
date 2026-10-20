@@ -1,0 +1,19 @@
+{
+  "name": "adone",
+  "private": true,
+  "version": "0.1.0",
+  "engines": { "node": ">=22" },
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "pnpm --filter @adone/web dev",
+    "build": "pnpm --filter @adone/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @adone/core test",
+    "db:generate": "pnpm --filter @adone/db generate",
+    "db:migrate": "pnpm --filter @adone/db migrate",
+    "db:seed": "pnpm --filter @adone/db seed",
+    "db:check": "pnpm --filter @adone/db check",
+    "db:test-rls": "pnpm --filter @adone/db test-rls",
+    "check": "pnpm typecheck && pnpm test && pnpm db:check && pnpm db:test-rls && pnpm build"
+  }
+}

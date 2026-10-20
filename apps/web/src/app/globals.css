@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/* Dizayn tokenlari (docs/DIZAYN-PROMPT.md «Brand»). Claude Design eksporti kelgach qiymatlar 1:1 almashtiriladi.
+   Neytrallar: matn #0F172A, ikkinchi #64748B, chegara #E2E8F0, sahifa #F8FAFC, kartochka #FFFFFF. */
+@theme {
+  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+
+  --color-primary: #0F766E;
+  --color-primary-hover: #0B5F58;
+  --color-primary-tint: #E6F4F2;
+  --color-ink: #0F172A;
+  --color-ink-2: #334155;
+  --color-muted: #64748B;
+  --color-placeholder: #94A3B8;
+  --color-line: #E2E8F0;
+  --color-line-strong: #CBD5E1;
+  --color-subtle: #F1F5F9;
+  --color-page: #F8FAFC;
+  --color-card: #FFFFFF;
+
+  --color-success: #16A34A;
+  --color-success-tint: #DCFCE7;
+  --color-success-text: #15803D;
+  --color-warning: #D97706;
+  --color-warning-tint: #FEF3C7;
+  --color-warning-text: #B45309;
+  --color-danger: #DC2626;
+  --color-danger-tint: #FEE2E2;
+  --color-danger-text: #B91C1C;
+  --color-info: #2563EB;
+  --color-info-tint: #DBEAFE;
+  --color-info-text: #1D4ED8;
+}
+
+html { color: var(--color-ink); background: var(--color-page); }
+body { font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer h-10 whitespace-nowrap; }
+@utility btn-primary { @apply btn border border-primary bg-primary text-white hover:bg-primary-hover hover:border-primary-hover; }
+@utility btn-secondary { @apply btn border border-line-strong bg-card text-ink hover:bg-subtle; }
+@utility btn-ghost { @apply btn border-0 bg-transparent text-ink-2 font-medium hover:bg-subtle; }
+@utility btn-danger { @apply btn border border-danger bg-danger text-white hover:bg-danger-text hover:border-danger-text; }
+@utility btn-sm { @apply h-8 px-3 text-[13px]; }
+@utility btn-lg { @apply h-11 text-[15px]; }
+
+@utility card { @apply rounded-[10px] border border-line bg-card; }
+@utility card-pad { @apply card p-5; }
+@utility input { @apply h-10 w-full rounded-lg border border-line-strong bg-card px-3 text-sm text-ink outline-none placeholder:text-placeholder focus:border-primary focus:ring-[3px] focus:ring-primary-tint; }
+@utility label { @apply mb-1.5 block text-[13px] font-medium text-ink-2; }
+@utility tnum { font-variant-numeric: tabular-nums; }
+@utility kpi-value { @apply text-[28px] leading-9 font-semibold tracking-[-0.01em]; }
+@utility page-title { @apply m-0 text-xl leading-7 font-semibold; }
+
+@utility badge { @apply inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-md px-2 text-xs font-medium; }
+@utility badge-dot { @apply size-1.5 rounded-full bg-current; }

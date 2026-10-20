@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+media-data
+.git
+.env*
+!.env.example
+design
+docs
+media-data

@@ -1,0 +1,36 @@
+{
+  "name": "@adone/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./password": "./src/password.ts",
+    "./load-env": "./src/load-env.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "check": "tsx src/db-check.ts",
+    "test-rls": "tsx src/test-rls.ts",
+    "bootstrap": "tsx src/bootstrap.ts",
+    "set-app-password": "tsx src/set-app-password.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@adone/core": "workspace:*",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}

@@ -6,7 +6,8 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 
 **Bu fayl — loyihaning haqiqat manbai. Har sessiya boshida o'qi.** Dizayn: `docs/DIZAYN-PROMPT.md`. Deploy: `docs/DEPLOY.md`.
 
-> **Holat (2026-10-20):** loyiha boshlandi — hujjatlar yozildi, kod hali yo'q (0-bosqich navbatda).
+> **Holat (2026-10-20):** 0-bosqich kodi tayyor (lokal tekshirilgan): monorepo, platforma sxemasi + RLS rollari, kirish,
+> ishxona paneli qobig'i, super admin (ishxona yaratish/bloklash, navbat), jobs runner, Dockerfile. Domen va Coolify hali ulanmagan.
 > Pilot: **Mudom bozor** (Hazorasp, kiyim do'koni; boshqaruv-tizim va chaat'da ham mijoz).
 
 ## 1. Asosiy qoidalar — buni buzma
@@ -24,7 +25,7 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 
 ## 2. Texnologiya (chaat / openstore bilan bir xil)
 
-- Node 24 (`.nvmrc`), pnpm 10 monorepo: `apps/web` (Next.js 16, App Router, `src/proxy.ts`, TypeScript, Tailwind v4, lucide-react), `packages/core` (sof domen: davomat hisobi, geofence, smena, vazifa oqimi, ish haqi, money + testlar), `packages/db` (Drizzle + pg, migratsiyalar, RLS, seed, bootstrap), `packages/shared` (enum, ruxsatlar, i18n, format, zod).
+- Node 24 (`.nvmrc`), pnpm 10 monorepo: `apps/web` (Next.js 16, App Router, `src/proxy.ts`, TypeScript, Tailwind v4, lucide-react), `packages/core` (sof domen: enum, ruxsatlar, telefon, format, geofence; keyin davomat hisobi, smena, vazifa oqimi, ish haqi + testlar), `packages/db` (Drizzle + pg, migratsiyalar, RLS, seed, bootstrap). Alohida `packages/shared` yo'q — chaat kabi `core` ichida.
 - Kod yozishdan oldin `node_modules/next/dist/docs/` ni o'qi (Next 16 o'zgarishlari).
 - PostgreSQL 18 (+ `pgvector` — yuz embedding'lari uchun, image `pgvector/pgvector:pg18`), Drizzle `casing: 'snake_case'`.
 - Sessiya: jose HS256 cookie (host-only), parol scrypt, 5 xato → 15 daqiqa qulf (boshqaruv-tizim qoidalari).
@@ -46,6 +47,25 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 
 Tenant hostdan emas, sessiyadan (bir foydalanuvchi bir nechta ishxonada bo'lishi mumkin — tanlagich). Wildcard SSL yo'q — yangi subdomen Coolify domains'ga qo'shilib qayta deploy.
 Dev: `ROOT_DOMAIN=localhost:3140` → `app.localhost:3140`, `admin.localhost:3140`.
+
+## 3a. Buyruqlar va lokal ishga tushirish
+
+```
+cp .env.example .env            # lokal Postgres: adone (ega, superuser) va adone_dev bazasi
+pnpm install
+pnpm db:migrate                 # ega rol bilan; 0001 adone_app/adone_platform/adone_auth rollarini yaratadi
+pnpm --filter @adone/db set-app-password   # adone_app paroli = DATABASE_URL dagi parol
+pnpm db:seed                    # HAMMASINI o'chirib demo yozadi (faqat lokal)
+pnpm dev                        # http://localhost:3140 · app.localhost:3140 · admin.localhost:3140
+pnpm test && pnpm db:check && pnpm db:test-rls && pnpm typecheck && pnpm build
+```
+
+Demo kirishlar (seed): super admin `admin.localhost:3140` — 998900000000 / admin123 · Mudom bozor egasi 998901112233, admin 998901112244, menejer 998901112255 — hammasi `demo123` · izolyatsiya uchun «Test do'kon» 998905556677 / demo123.
+
+**Yangi tenant jadvali qoidasi:** `tenant_id uuid not null` + `(tenant_id, …)` indeks + migratsiyada `ENABLE ROW LEVEL SECURITY` va
+`CREATE POLICY <t>_app ON <t> TO adone_app USING (tenant_id = app_tenant_id()) WITH CHECK (tenant_id = app_tenant_id())` — OR yo'q.
+Append-only jadval (attendance_events, task_events) — `REVOKE UPDATE, DELETE … FROM adone_app`. `pnpm db:test-rls` OR'li siyosatni ham ushlaydi.
+Platforma (`adone_platform`) ishxona ichki jadvallariga huquq olmaydi — kerak bo'lsa aniq GRANT + siyosat bilan.
 
 ## 4. Rollar (`packages/shared/permissions.ts`)
 
@@ -103,7 +123,7 @@ har qanday ochiq → cancelled (izoh majburiy) · muddat o'tsa → overdue belgi
 
 | # | Nima | Natija |
 |---|---|---|
-| 0 | Monorepo, Postgres + RLS rollari, kirish, tenant/a'zolik, jobs runner, sirlar, host yuzalari, super admin: ishxona yaratish, Dockerfile + Coolify deploy | `admin.adone.uz`da ishxona ochiladi |
+| 0 ✅ | Monorepo, Postgres + RLS rollari, kirish, tenant/a'zolik, jobs runner, sirlar, host yuzalari, super admin: ishxona yaratish, Dockerfile (Coolify deploy — domen ulangach) | `admin.adone.uz`da ishxona ochiladi |
 | 1 | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** |
 | 2 | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, muddat so'rovi, takrorlanuvchi, eslatmalar) | |
 | 3 | Yuz servisi (InsightFace) + liveness, shubhali navbat, Mini App (GPS, kamera, qurilma bog'lash), ruxsat so'rovlari | to'liq anti-fraud |
@@ -114,6 +134,13 @@ har qanday ochiq → cancelled (izoh majburiy) · muddat o'tsa → overdue belgi
 
 - Repo `github.com/XudoyorXorazmiy/adoneuz`, **`main`ga push = Coolify avtomatik deploy** (sozlangandan keyin). `vercel deploy` QILINMAYDI.
 - Server: Contabo VPS 109.199.121.164 + Coolify (chaat, openstore bilan bir server). DNS: Cloudflare (registrar ahost).
+
+## 9a. Kod xaritasi
+
+- `packages/core/src` — enums (rollar, holatlar, o'zbekcha yorliqlar), permissions (`can`, `canUsePanel`), phone, slug, format (tz bilan), geo (`checkGeofence`). Testlar `tests/core.test.ts`.
+- `packages/db/src` — schema/platform.ts, client (adone_app pool), scoped (`withTenant` / `withPlatform` / `withAuth` — `SET LOCAL ROLE`), migrate, seed, bootstrap, set-app-password, db-check, test-rls. Migratsiyalar `migrations/` (0000 — drizzle, 0001_rls — qo'lda, `drizzle-kit generate --custom`).
+- `apps/web/src` — `proxy.ts` (host → yuza), `lib/host.ts`, `lib/auth/*` (jose cookie `adone_session`, login, guard), `lib/actions/*` (auth, platform), `server/jobs/*` (enqueue + `dedupeKey`, runner, handlers), `server/platform.ts`.
+- Sahifalar: `app/(panel)/*` (ishxona paneli, menyu `layout.tsx` NAV — `ready: false` bo'limlar «tez orada»), `app/platforma/(admin)/*` (super admin: Ishxonalar, Navbat), `app/kirish`, `app/sayt` (vaqtinchalik landing), `app/api/{health,cron/jobs}`.
 
 ## 10. Qarorlar va ochiq savollar
 
