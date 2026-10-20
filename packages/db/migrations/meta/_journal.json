@@ -15,6 +15,20 @@
       "when": 1792488575599,
       "tag": "0001_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792492043966,
+      "tag": "0002_davomat",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792492044837,
+      "tag": "0003_rls_davomat",
+      "breakpoints": true
     }
   ]
 }

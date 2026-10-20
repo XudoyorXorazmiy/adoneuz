@@ -27,3 +27,18 @@ export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
   manager: "Bo'lim boshlig'i",
   employee: 'Xodim',
 };
+
+export const EMPLOYEE_STATUSES = ['invited', 'pending', 'active', 'disabled'] as const;
+export type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number];
+export const EMPLOYEE_STATUS_LABELS: Record<EmployeeStatus, string> = {
+  invited: 'Taklif yuborildi',
+  pending: 'Tasdiq kutmoqda',
+  active: 'Faol',
+  disabled: "O'chirilgan",
+};
+
+export const PAY_TYPES = ['monthly', 'hourly', 'daily'] as const;
+export type PayType = (typeof PAY_TYPES)[number];
+
+export const MEDIA_KINDS = ['checkin_video', 'checkin_photo', 'face_sample', 'task_report', 'attachment'] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];

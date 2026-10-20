@@ -1,0 +1,175 @@
+import { sql } from 'drizzle-orm';
+import { bigint, boolean, date, doublePrecision, index, integer, jsonb, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { createdAt, id, updatedAt } from './columns';
+import { attendanceEventKindEnum, attendanceSourceEnum, checkStatusEnum, dayStatusEnum, employeeStatusEnum, mediaKindEnum, payTypeEnum, scheduleKindEnum } from './enums';
+import { tenants, users } from './platform';
+
+/** Ishxona ichki jadvallari: har birida tenant_id + RLS (migrations/0003_rls_tenant.sql). */
+const tenantId = () => uuid().notNull().references(() => tenants.id, { onDelete: 'cascade' });
+
+export const branches = pgTable(
+  'branches',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    name: text().notNull(),
+    address: text(),
+    lat: doublePrecision().notNull(),
+    lng: doublePrecision().notNull(),
+    radiusM: integer().notNull().default(100),
+    isActive: boolean().notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index('branches_tenant_idx').on(t.tenantId)],
+);
+
+export const departments = pgTable(
+  'departments',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    name: text().notNull(),
+    /** Bo'lim boshlig'i (panel foydalanuvchisi). */
+    managerUserId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    isActive: boolean().notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index('departments_tenant_idx').on(t.tenantId)],
+);
+
+export const schedules = pgTable(
+  'schedules',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    name: text().notNull(),
+    kind: scheduleKindEnum().notNull().default('weekly'),
+    weekdays: smallint().array().notNull().default(sql`'{1,2,3,4,5}'::smallint[]`),
+    cycleOn: smallint().notNull().default(0),
+    cycleOff: smallint().notNull().default(0),
+    cycleStart: date({ mode: 'string' }),
+    startTime: text().notNull().default('09:00'),
+    endTime: text().notNull().default('18:00'),
+    breakMinutes: smallint().notNull().default(60),
+    graceMinutes: smallint().notNull().default(10),
+    isActive: boolean().notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index('schedules_tenant_idx').on(t.tenantId)],
+);
+
+export const employees = pgTable(
+  'employees',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    fullName: text().notNull(),
+    phone: text(), // 998XXXXXXXXX; botda kontakt orqali tasdiqlanadi
+    position: text(),
+    departmentId: uuid().references(() => departments.id, { onDelete: 'set null' }),
+    branchId: uuid().references(() => branches.id, { onDelete: 'set null' }),
+    scheduleId: uuid().references(() => schedules.id, { onDelete: 'set null' }),
+    /** Panel foydalanuvchisi ham bo'lsa (menejer o'zi ham keldi/ketdi qiladi). */
+    userId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    telegramUserId: bigint({ mode: 'number' }),
+    telegramUsername: text(),
+    status: employeeStatusEnum().notNull().default('invited'),
+    payType: payTypeEnum().notNull().default('monthly'),
+    payRate: bigint({ mode: 'number' }).notNull().default(0), // so'm
+    joinedAt: timestamp({ withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('employees_tenant_idx').on(t.tenantId, t.status),
+    uniqueIndex('employees_tg_uq').on(t.tenantId, t.telegramUserId).where(sql`telegram_user_id is not null`),
+  ],
+);
+
+/** Biometrika roziligi (CLAUDE.md §1.4). Matn versiyasi bilan, append-only. */
+export const consents = pgTable(
+  'consents',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    employeeId: uuid().notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    kind: text().notNull(), // 'biometric'
+    version: text().notNull(),
+    acceptedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('consents_employee_idx').on(t.tenantId, t.employeeId)],
+);
+
+export const media = pgTable(
+  'media',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    employeeId: uuid().references(() => employees.id, { onDelete: 'cascade' }),
+    kind: mediaKindEnum().notNull(),
+    path: text().notNull(), // MEDIA_DIR ga nisbatan
+    mime: text().notNull(),
+    sizeBytes: integer().notNull(),
+    sha256: text().notNull(),
+    durationSec: smallint(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('media_tenant_idx').on(t.tenantId, t.employeeId)],
+);
+
+/** Davomat jurnali — APPEND-ONLY (UPDATE/DELETE ilova rolidan olib tashlangan). Vaqt — server vaqti. */
+export const attendanceEvents = pgTable(
+  'attendance_events',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    employeeId: uuid().notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    workDate: date({ mode: 'string' }).notNull(),
+    kind: attendanceEventKindEnum().notNull(),
+    serverAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    branchId: uuid().references(() => branches.id, { onDelete: 'set null' }),
+    lat: doublePrecision(),
+    lng: doublePrecision(),
+    accuracyM: integer(),
+    distanceM: integer(),
+    isLiveLocation: boolean(),
+    mediaId: uuid().references(() => media.id, { onDelete: 'set null' }),
+    faceScore: doublePrecision(),
+    livenessScore: doublePrecision(),
+    checkStatus: checkStatusEnum().notNull().default('ok'),
+    /** Rad/shubha sabablari: ['outside', 'no_live_location', 'face_pending', …] */
+    reasons: text().array().notNull().default(sql`'{}'::text[]`),
+    source: attendanceSourceEnum().notNull(),
+    /** correction: { action, at | target, reason } (core CorrectionMeta) */
+    meta: jsonb().$type<Record<string, unknown>>(),
+    createdByUserId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('att_events_day_idx').on(t.tenantId, t.employeeId, t.workDate), index('att_events_date_idx').on(t.tenantId, t.workDate)],
+);
+
+/** Kunlik yig'ma — faqat core computeDay() natijasi (server/attendance.ts rebuildDay). */
+export const attendanceDays = pgTable(
+  'attendance_days',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    employeeId: uuid().notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    workDate: date({ mode: 'string' }).notNull(),
+    shiftStart: timestamp({ withTimezone: true }),
+    shiftEnd: timestamp({ withTimezone: true }),
+    firstIn: timestamp({ withTimezone: true }),
+    lastOut: timestamp({ withTimezone: true }),
+    workedMinutes: integer().notNull().default(0),
+    lateMinutes: integer().notNull().default(0),
+    earlyLeaveMinutes: integer().notNull().default(0),
+    overtimeMinutes: integer().notNull().default(0),
+    status: dayStatusEnum().notNull(),
+    isOpen: boolean().notNull().default(false),
+    suspicious: boolean().notNull().default(false),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex('att_days_uq').on(t.tenantId, t.employeeId, t.workDate), index('att_days_date_idx').on(t.tenantId, t.workDate)],
+);

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { db, pool } from './client';
 import { withAuth, withPlatform, withTenant } from './scoped';
-import { auditLog, jobs, memberships, plans, tenants, users } from './schema/index';
+import { attendanceEvents, auditLog, botSessions, employees, jobs, memberships, plans, tenants, users } from './schema/index';
 
 async function main() {
   // Kontekstsiz — hech narsa ko'rinmaydi
@@ -51,6 +51,22 @@ async function main() {
   await withAuth(async (tx) => {
     assert.ok((await tx.select().from(users)).length > 0);
     await assert.rejects(tx.transaction((sp) => sp.select().from(jobs)), 'auth roli jobs o‘qimaydi');
+  });
+
+  // Har jadvalda RLS yoqilgan (drizzle jurnali — boshqa sxemada)
+  const noRls = await pool.query<{ t: string }>(`select relname as t from pg_class where relnamespace = 'public'::regnamespace and relkind = 'r' and not relrowsecurity`);
+  assert.deepEqual(noRls.rows, [], `RLS'siz jadval: ${noRls.rows.map((r) => r.t).join(', ')}`);
+
+  // 1-bosqich jadvallari: boshqa ishxona xodimlari/davomati ko'rinmaydi, jurnal o'zgarmaydi
+  await withTenant(other.id, async (tx) => {
+    assert.equal((await tx.select().from(employees)).length, 0, 'Test do‘konda Mudom xodimlari ko‘rinmaydi');
+    assert.equal((await tx.select().from(attendanceEvents)).length, 0);
+  });
+  await withTenant(mudom.id, async (tx) => {
+    assert.ok((await tx.select().from(employees)).length > 0);
+    await assert.rejects(tx.transaction((sp) => sp.update(attendanceEvents).set({ checkStatus: 'ok' })), 'attendance_events o‘zgarmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.delete(attendanceEvents)), 'attendance_events o‘chmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.select().from(botSessions)), 'bot_sessions tenant uchun yopiq');
   });
 
   // Siyosatlarda OR yo'q (indekslar ishlashi uchun)
