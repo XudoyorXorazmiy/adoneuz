@@ -86,4 +86,7 @@ test('shubhali belgisi', () => {
   const d = '2026-10-20';
   const r = computeDay({ events: [ev('check_in', at(d, '09:00'), { checkStatus: 'suspicious' })], shift: shiftFor(base, d, TZ), now: at(d, '10:00') });
   assert.equal(r.suspicious, true);
+  const sus = ev('check_in', at(d, '09:00'), { checkStatus: 'suspicious' });
+  const ok = computeDay({ events: [sus, ev('correction', at(d, '10:00'), { meta: { action: 'approve', target: sus.id } })], shift: shiftFor(base, d, TZ), now: at(d, '10:00') });
+  assert.equal(ok.suspicious, false, 'tasdiqlangach shubha yo‘q');
 });

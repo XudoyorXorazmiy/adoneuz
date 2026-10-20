@@ -50,3 +50,13 @@ test('geofence', () => {
   assert.equal(checkGeofence({ branch, point: edge, accuracyM: 30 }).status, 'ok');
   assert.equal(checkGeofence({ branch, point: edge, accuracyM: 0 }).status, 'outside');
 });
+
+test('koordinata va xarita havolasi', async () => {
+  const { parseCoordinates } = await import('../src/index');
+  assert.deepEqual(parseCoordinates('41.3194, 61.0742'), { lat: 41.3194, lng: 61.0742 });
+  assert.deepEqual(parseCoordinates('https://www.google.com/maps/place/X/@41.3194,61.0742,17z/data=!3d41.3195!4d61.0743'), { lat: 41.3195, lng: 61.0743 });
+  assert.deepEqual(parseCoordinates('https://maps.google.com/?q=41.3194,61.0742'), { lat: 41.3194, lng: 61.0742 });
+  assert.deepEqual(parseCoordinates('https://yandex.uz/maps/?ll=61.0742%2C41.3194&z=17'), { lat: 41.3194, lng: 61.0742 });
+  assert.equal(parseCoordinates('Hazorasp'), null);
+  assert.equal(parseCoordinates('0, 0'), null);
+});

@@ -27,8 +27,15 @@ export const DAY_STATUS_LABELS: Record<DayStatus, string> = {
 
 export const CHECK_STATUS_LABELS: Record<CheckStatus, string> = { ok: 'Tasdiqlandi', suspicious: 'Shubhali', rejected: 'Rad etildi' };
 
-/** Tuzatish (admin): yangi kirish/chiqish qo'shadi yoki mavjud hodisani bekor qiladi. Eski yozuv o'chmaydi. */
-export type CorrectionMeta = { action: 'add_in' | 'add_out'; at: string } | { action: 'void'; target: string };
+/**
+ * Tuzatish (admin): yangi kirish/chiqish qo'shadi, mavjud hodisani bekor qiladi yoki shubhali hodisani tasdiqlaydi.
+ * Eski yozuv o'chmaydi — jurnal append-only. `reason` majburiy (panel).
+ */
+export type CorrectionMeta =
+  | { action: 'add_in'; at: string; reason?: string }
+  | { action: 'add_out'; at: string; reason?: string }
+  | { action: 'void'; target: string; reason?: string }
+  | { action: 'approve'; target: string; reason?: string };
 
 export interface DayEvent {
   id: string;
@@ -56,15 +63,22 @@ const mins = (ms: number) => Math.max(0, Math.round(ms / 60_000));
 /** Tuzatishlarni qo'llab, haqiqiy kirish/chiqish/tanaffus hodisalari (vaqt bo'yicha). Rad etilganlar hisobga olinmaydi. */
 export function effectiveEvents(events: DayEvent[]): DayEvent[] {
   const voided = new Set<string>();
+  const approved = new Set<string>();
   const added: DayEvent[] = [];
   for (const e of events) {
     if (e.kind !== 'correction') continue;
     const m = e.meta as CorrectionMeta | undefined;
     if (!m) continue;
     if (m.action === 'void') voided.add(m.target);
+    else if (m.action === 'approve') approved.add(m.target);
     else added.push({ id: `${e.id}:${m.action}`, kind: m.action === 'add_in' ? 'check_in' : 'check_out', at: new Date(m.at), checkStatus: 'ok' });
   }
-  return [...events.filter((e) => e.kind !== 'correction' && e.checkStatus !== 'rejected' && !voided.has(e.id)), ...added].sort((a, b) => a.at.getTime() - b.at.getTime());
+  return [
+    ...events
+      .filter((e) => e.kind !== 'correction' && e.checkStatus !== 'rejected' && !voided.has(e.id))
+      .map((e) => (approved.has(e.id) ? { ...e, checkStatus: 'ok' as const } : e)),
+    ...added,
+  ].sort((a, b) => a.at.getTime() - b.at.getTime());
 }
 
 export function computeDay(input: { events: DayEvent[]; shift: Shift | null; now: Date; onLeave?: boolean; holiday?: boolean }): DayResult {

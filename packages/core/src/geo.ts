@@ -43,3 +43,28 @@ export function checkGeofence({ branch, point, accuracyM }: GeofenceInput): Geof
 export function isValidLatLng(p: Partial<LatLng>): p is LatLng {
   return typeof p.lat === 'number' && typeof p.lng === 'number' && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180 && !(p.lat === 0 && p.lng === 0);
 }
+
+/**
+ * Filial koordinatasi: «41.3194, 61.0742», Google/Yandex xarita havolasi (…/@41.31,61.07,17z, ?q=41.31,61.07,
+ * !3d41.31!4d61.07, ?ll=61.07,41.31 — Yandex'da avval uzunlik). Topilmasa null.
+ */
+export function parseCoordinates(input: string): LatLng | null {
+  const s = decodeURIComponent(input.trim());
+  const num = '(-?\\d{1,3}(?:\\.\\d+)?)';
+  const tries: Array<[RegExp, boolean]> = [
+    [new RegExp(`!3d${num}!4d${num}`), false],
+    [new RegExp(`@${num},${num}`), false],
+    [new RegExp(`[?&](?:q|query|destination)=${num},\\s*${num}`), false],
+    [new RegExp(`[?&](?:ll|pt)=${num},${num}`), true],
+    [new RegExp(`^${num}\\s*[,; ]\\s*${num}$`), false],
+  ];
+  for (const [re, swapped] of tries) {
+    const m = re.exec(s);
+    if (!m) continue;
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    const p = swapped ? { lat: b, lng: a } : { lat: a, lng: b };
+    if (isValidLatLng(p)) return p;
+  }
+  return null;
+}

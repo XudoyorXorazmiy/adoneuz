@@ -7,12 +7,12 @@ import { UserBox } from '@/components/shell/user-box';
 /** Menyu tartibi dizayn bo'yicha (docs/DIZAYN-PROMPT.md «Layout»). `ready: false` — keyingi bosqich. */
 const NAV: Array<{ href: string; label: string; area: Area; icon: React.ReactNode; ready: boolean }> = [
   { href: '/', label: 'Bosh sahifa', area: 'dashboard', icon: <Home size={18} />, ready: true },
-  { href: '/davomat', label: 'Davomat', area: 'attendance', icon: <UserCheck size={18} />, ready: false },
+  { href: '/davomat', label: 'Davomat', area: 'attendance', icon: <UserCheck size={18} />, ready: true },
   { href: '/vazifalar', label: 'Vazifalar', area: 'tasks', icon: <ClipboardCheck size={18} />, ready: false },
   { href: '/sorovlar', label: "So'rovlar", area: 'requests', icon: <Inbox size={18} />, ready: false },
-  { href: '/xodimlar', label: 'Xodimlar', area: 'employees', icon: <Users size={18} />, ready: false },
-  { href: '/jadvallar', label: 'Jadvallar', area: 'schedules', icon: <CalendarClock size={18} />, ready: false },
-  { href: '/filiallar', label: 'Filiallar', area: 'branches', icon: <MapPin size={18} />, ready: false },
+  { href: '/xodimlar', label: 'Xodimlar', area: 'employees', icon: <Users size={18} />, ready: true },
+  { href: '/jadvallar', label: 'Jadvallar', area: 'schedules', icon: <CalendarClock size={18} />, ready: true },
+  { href: '/filiallar', label: 'Filiallar', area: 'branches', icon: <MapPin size={18} />, ready: true },
   { href: '/hisobotlar', label: 'Hisobotlar', area: 'reports', icon: <BarChart3 size={18} />, ready: false },
   { href: '/ish-haqi', label: 'Ish haqi', area: 'payroll', icon: <Wallet size={18} />, ready: false },
   { href: '/sozlamalar', label: 'Sozlamalar', area: 'settings', icon: <Settings size={18} />, ready: false },
