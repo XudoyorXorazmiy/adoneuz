@@ -124,13 +124,30 @@ har qanday ochiq → cancelled (izoh majburiy) · muddat o'tsa → overdue belgi
 - Eslatmalar (jobs): 30 daqiqada qabul qilinmasa, muddatga 1 soat qolganda, muddat o'tganda, hisobot 24 soat tekshirilmasa. Tungi vaqtda (22:00–08:00) yuborilmaydi, ertalabga suriladi.
 - Vazifa natijasi `pay_rules` bo'yicha ish haqiga (tasdiqlanganda hisoblanadi, `submitted` da emas).
 
+### 7a. O'zi qo'shgan ishlar (task management, egasi talabi 2026-10-24)
+
+Xodim ham, rahbar (owner/admin/manager) ham **o'zi qilgan yoki rejalashtirgan ishni** tizimga kiritadi — vazifa faqat yuqoridan
+berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida tizim emas):
+
+| `source` | Kim yaratadi | Oqim |
+|---|---|---|
+| `assigned` | rahbar → xodim | yuqoridagi to'liq oqim (§7) |
+| `self_plan` | xodim/rahbar o'ziga | reja: `accepted → in_progress → submitted → approved`; «Bugun nima qilaman» ro'yxati |
+| `self_done` | xodim/rahbar | **bajarilgan ish hisoboti**: darhol `submitted` (isbot + izoh + sarflangan vaqt) → rahbar tasdiqlaydi |
+
+- Kiritish: botda `➕ Ish qo'shish` (sarlavha → «Bajardim / Rejalashtiraman» → izoh, rasm, vaqt), Mini App va panelda «+ Ish qo'shish».
+- `tasks.created_by_employee_id` / `created_by_user_id`, `spent_minutes` (ixtiyoriy), `category_id` (ishxona ish turlari — `task_categories`, tenant ma'lumoti).
+- Tasdiqlovchi: xodimning bo'lim boshlig'i, bo'lmasa admin/egasi. Rahbarning o'z ishi — egasi/admin ko'radi (egasining ishi tasdiqsiz `approved`).
+- Tenant sozlamasi: o'zi qo'shgan ish tasdiq talab qiladimi (`selfTasksNeedApproval`, standart — ha) va ish haqiga ta'sir qiladimi (`pay_rules`, standart — yo'q).
+- Panel: «Vazifalar» da tablar `Berilgan · O'zi qo'shgan · Mening ishlarim`; xodim kartasida **ish jurnali** (kun bo'yicha nima qildi, qancha vaqt); hisobot — xodim/bo'lim bo'yicha bajarilgan ishlar soni va vaqti, Excel.
+
 ## 8. Bosqichlar
 
 | # | Nima | Natija |
 |---|---|---|
 | 0 ✅ | Monorepo, Postgres + RLS rollari, kirish, tenant/a'zolik, jobs runner, sirlar, host yuzalari, super admin: ishxona yaratish, Dockerfile (Coolify deploy — domen ulangach) | `admin.adone.uz`da ishxona ochiladi |
 | 1 ✅ | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** (deploy'dan keyin) |
-| 2 | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, muddat so'rovi, takrorlanuvchi, eslatmalar) | |
+| 2 | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, muddat so'rovi, takrorlanuvchi, eslatmalar) + **o'zi qo'shgan ishlar va ish jurnali** (§7a) | |
 | 3 | Yuz servisi (InsightFace) + liveness, shubhali navbat, Mini App (GPS, kamera, qurilma bog'lash), ruxsat so'rovlari | to'liq anti-fraud |
 | 4 | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, KPI va reyting, Excel/PDF | |
 | 5 | Landing, o'zi ro'yxatdan o'tish, tariflar (xodim soniga qarab), sinov 14 kun, Click/Payme, kirill/rus, QR rejim | sotuvga chiqish |
