@@ -18,9 +18,14 @@ export async function POST(req: Request) {
       { command: 'keldim', description: 'Ishga keldim' },
       { command: 'ketdim', description: 'Ishdan ketyapman' },
       { command: 'bugun', description: 'Bugungi holat' },
+      { command: 'vazifalar', description: 'Vazifalarim' },
+      { command: 'ish', description: "Ish qo'shish" },
       { command: 'yordam', description: 'Yordam' },
     ],
   });
+  // Mini App: chat menyusidagi «Ochish» tugmasi (faqat https — Telegram boshqasini qabul qilmaydi)
+  const miniApp = `${publicApiOrigin()}/tg`;
+  if (miniApp.startsWith('https://')) await tg('setChatMenuButton', { menu_button: { type: 'web_app', text: 'Ochish', web_app: { url: miniApp } } });
   const me = await tg<{ username: string }>('getMe', {});
-  return Response.json({ ok: true, webhook: url, bot: me.username });
+  return Response.json({ ok: true, webhook: url, miniApp, bot: me.username });
 }

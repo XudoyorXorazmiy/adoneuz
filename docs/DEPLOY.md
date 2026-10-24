@@ -56,7 +56,7 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
 curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://app.adone.uz/api/cron/setup-bot
 ```
 
-Mini App (3-bosqich): `/setdomain` → `app.adone.uz`, `/setmenubutton` → Web App `https://app.adone.uz/tg`.
+Mini App: `setup-bot` chat menyusiga «Ochish» → `https://app.adone.uz/tg` ni o'zi qo'yadi (alohida `/setmenubutton` shart emas). Ixtiyoriy: @BotFather → `/newapp` (to'g'ridan-to'g'ri havola `t.me/adoneuz_bot/app` uchun) → URL `https://app.adone.uz/tg`.
 
 ## 5. Migratsiya (prod)
 

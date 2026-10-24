@@ -25,7 +25,7 @@ export function EvidenceCard(p: {
       <div className="flex gap-3">
         <div className="relative size-16 shrink-0 overflow-hidden rounded-[14px] bg-gradient-to-br from-[#DCE1EA] to-[#C5CCD8]">
           {p.mediaId ? (
-            <video src={`/api/media/${p.mediaId}`} muted playsInline preload="metadata" className="size-full object-cover" />
+            p.source === 'miniapp' ? <img src={`/api/media/${p.mediaId}`} alt="Selfi" className="size-full object-cover" /> : <video src={`/api/media/${p.mediaId}`} muted playsInline preload="metadata" className="size-full object-cover" />
           ) : (
             <Icon name="person" fill size={52} className="absolute bottom-[-6px] left-1.5 text-[#A9B2C2]" />
           )}

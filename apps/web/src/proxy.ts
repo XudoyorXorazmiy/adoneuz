@@ -27,10 +27,10 @@ export default async function proxy(req: NextRequest) {
 
   switch (surface.kind) {
     case 'marketing':
-      if (under(pathname, PLATFORM)) return notFound(req);
+      if (under(pathname, PLATFORM) || under(pathname, '/tg')) return notFound(req);
       return rewriteTo(req, prefixed(pathname, MARKETING), forward);
     case 'platform': {
-      if (under(pathname, MARKETING)) return notFound(req);
+      if (under(pathname, MARKETING) || under(pathname, '/tg')) return notFound(req);
       if (pathname === '/chiqish') return NextResponse.next(forward); // umumiy chiqish route'i (app/chiqish)
       const target = prefixed(pathname, PLATFORM);
       if (target === `${PLATFORM}/kirish`) return rewriteTo(req, target, forward);
@@ -41,6 +41,8 @@ export default async function proxy(req: NextRequest) {
     case 'app': {
       if (INTERNAL.some((p) => under(pathname, p))) return notFound(req);
       if (pathname === '/kirish') return NextResponse.next(forward);
+      // Mini App: o'z sessiyasi (initData → adone_tg cookie), panel sessiyasi talab qilinmaydi
+      if (under(pathname, '/tg')) return NextResponse.next(forward);
       const claims = await claimsFrom(req);
       if (claims?.tenantId && !claims.platform) return NextResponse.next(forward);
       const res = redirectTo(req, '/kirish');

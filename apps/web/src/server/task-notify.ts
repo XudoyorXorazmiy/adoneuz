@@ -9,7 +9,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import { employees, media, taskBatches, taskEvents, taskReports, tasks, tenants, users, withTenant } from '@adone/db';
 import { formatTime, isOverdue, localDate, TASK_STATUS_LABELS, type TaskPriority, type TaskProof } from '@adone/core';
 import { dueLabel, escHtml as esc, taskCardText } from '@/lib/task-text';
-import { appOrigin, ROOT_DOMAIN } from '@/lib/host';
+import { appOrigin, publicApiOrigin, ROOT_DOMAIN } from '@/lib/host';
 import { sendFile, send, type Keyboard } from '@/server/telegram/api';
 import { memberChats, notifyEmployee } from '@/server/notify';
 import { mediaRoot } from '@/server/media';
@@ -19,7 +19,13 @@ export type TaskNotifyKind = 'assigned' | 'submitted' | 'approved' | 'revision' 
 
 /** Inline tugmalar (callback_data ≤ 64 bayt: «tk:<amal>:<uuid>»). */
 export const taskButtons = {
-  assigned: (id: string): Keyboard => ({ inline_keyboard: [[{ text: '✅ Qabul qildim', callback_data: `tk:acc:${id}` }, { text: '❓ Savol', callback_data: `tk:ask:${id}` }]] }),
+  assigned: (id: string): Keyboard => {
+    const rows: Array<Array<{ text: string; callback_data?: string; web_app?: { url: string } }>> = [[{ text: '✅ Qabul qildim', callback_data: `tk:acc:${id}` }, { text: '❓ Savol', callback_data: `tk:ask:${id}` }]];
+    // Mini App faqat https manzilda ochiladi (prod)
+    const mini = `${publicApiOrigin()}/tg/vazifa/${id}`;
+    if (mini.startsWith('https://')) rows.push([{ text: 'Mini App’da ochish ↗', web_app: { url: mini } }]);
+    return { inline_keyboard: rows };
+  },
   work: (id: string, started: boolean): Keyboard => ({
     inline_keyboard: [[started ? { text: '✅ Bajardim', callback_data: `tk:done:${id}` } : { text: '▶️ Boshladim', callback_data: `tk:go:${id}` }, { text: '❓ Savol', callback_data: `tk:ask:${id}` }]],
   }),
