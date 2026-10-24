@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeDay, describeSchedule, isWorkday, localDate, monthDays, nextAction, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
+import { computeDay, retimePlan, describeSchedule, isWorkday, localDate, monthDays, nextAction, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
 
 const TZ = 'Asia/Tashkent';
 const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', breakMinutes: 60, graceMinutes: 10 };
@@ -89,4 +89,29 @@ test('shubhali belgisi', () => {
   const sus = ev('check_in', at(d, '09:00'), { checkStatus: 'suspicious' });
   const ok = computeDay({ events: [sus, ev('correction', at(d, '10:00'), { meta: { action: 'approve', target: sus.id } })], shift: shiftFor(base, d, TZ), now: at(d, '10:00') });
   assert.equal(ok.suspicious, false, 'tasdiqlangach shubha yo‘q');
+});
+
+test('vaqtni qayta belgilash (retimePlan) va tuzatishni bekor qilish', () => {
+  const d = '2026-10-20';
+  const shift = shiftFor(base, d, TZ)!;
+  const inn = ev('check_in', at(d, '09:30'));
+  const auto = ev('auto_close', at(d, '23:59'));
+  let events: DayEvent[] = [inn, auto];
+  const plan = retimePlan(events, { in: at(d, '09:00'), out: at(d, '18:00') });
+  assert.deepEqual(plan.map((p) => p.action), ['void', 'add_in', 'void', 'add_out']);
+  let k = 0;
+  const apply = (list: typeof plan) => list.map((m) => ev('correction', at(d, '22:00'), { id: `c${++k}`, meta: m }));
+  events = [...events, ...apply(plan)];
+  let r = computeDay({ events, shift, now: at(d, '23:00') });
+  assert.equal(r.firstIn?.toISOString(), at(d, '09:00').toISOString());
+  assert.equal(r.lastOut?.toISOString(), at(d, '18:00').toISOString());
+  assert.equal(r.lateMinutes, 0);
+  // Yana o'zgartirish: endi bekor qilinadigani — avvalgi tuzatish (add_out)
+  const again = retimePlan(events, { out: at(d, '19:00') });
+  assert.equal(again[0]?.action, 'void');
+  assert.equal((again[0] as { target?: string }).target, 'c4');
+  events = [...events, ...apply(again)];
+  r = computeDay({ events, shift, now: at(d, '23:00') });
+  assert.equal(r.lastOut?.toISOString(), at(d, '19:00').toISOString());
+  assert.deepEqual(retimePlan(events, { in: at(d, '09:00') }), [], "o'zgarmasa — bo'sh");
 });

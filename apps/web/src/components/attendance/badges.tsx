@@ -1,29 +1,36 @@
 import { CHECK_STATUS_LABELS, DAY_STATUS_LABELS, type CheckStatus, type DayStatus } from '@adone/core';
+import { Icon } from '@/components/ui/icon';
 
 const DAY_TONE: Record<DayStatus, string> = {
-  present: 'bg-success-tint text-success-text',
-  late: 'bg-warning-tint text-warning-text',
-  absent: 'bg-danger-tint text-danger-text',
-  leave: 'bg-info-tint text-info-text',
+  present: 'bg-success-tint text-success',
+  late: 'bg-warning-tint text-warning',
+  absent: 'bg-danger-tint text-danger',
+  leave: 'bg-primary-tint text-primary',
   holiday: 'bg-subtle text-muted',
   off: 'bg-subtle text-muted',
 };
 export const DAY_DOT: Record<DayStatus, string> = {
-  present: 'bg-success', late: 'bg-warning', absent: 'bg-danger', leave: 'bg-info', holiday: 'bg-line-strong', off: 'bg-line',
+  present: 'bg-success', late: 'bg-warning', absent: 'bg-danger', leave: 'bg-primary', holiday: 'bg-placeholder', off: 'bg-placeholder',
 };
 
-export function DayStatusBadge({ status, open }: { status: DayStatus; open?: boolean }) {
-  if (open && status !== 'late') return <span className="badge bg-success-tint text-success-text"><span className="badge-dot" />Ishda</span>;
-  return <span className={`badge ${DAY_TONE[status]}`}><span className="badge-dot" />{DAY_STATUS_LABELS[status]}{open && status === 'late' ? ' · ishda' : ''}</span>;
+/** Kun holati (dizayn: nuqtali pill). `open` — hozir ishda; `early` — erta ketdi. */
+export function DayStatusBadge({ status, open, early, waiting }: { status: DayStatus; open?: boolean; early?: boolean; waiting?: boolean }) {
+  if (waiting && status === 'off') return <span className="badge bg-subtle text-muted"><span className="badge-dot" />Kutilmoqda</span>;
+  if (early && status === 'present' && !open) return <span className="badge bg-warning-tint text-warning"><span className="badge-dot" />Erta ketdi</span>;
+  if (open && status !== 'late') return <span className="badge bg-success-tint text-success"><span className="badge-dot" />Ishda</span>;
+  return <span className={`badge ${DAY_TONE[status]}`}><span className="badge-dot" />{DAY_STATUS_LABELS[status]}</span>;
 }
 
-const CHECK_TONE: Record<CheckStatus, string> = {
-  ok: 'bg-success-tint text-success-text',
-  suspicious: 'bg-warning-tint text-warning-text ring-1 ring-warning/40',
-  rejected: 'bg-danger-tint text-danger-text',
+const CHECK: Record<CheckStatus, [string, string]> = {
+  ok: ['verified', 'border-transparent bg-success-tint text-success'],
+  suspicious: ['warning', 'border-warning bg-card text-warning'],
+  rejected: ['block', 'border-transparent bg-danger-tint text-danger'],
 };
-export function CheckBadge({ status }: { status: CheckStatus }) {
-  return <span className={`badge ${CHECK_TONE[status]}`}>{CHECK_STATUS_LABELS[status]}</span>;
+/** Tekshiruv natijasi (dizayn: ikonkali pill; shubhali — to'q sariq chegarali). `null` — hodisa yo'q. */
+export function CheckBadge({ status }: { status: CheckStatus | null }) {
+  if (!status) return <span className="badge bg-subtle pl-1.5 text-muted"><Icon name="remove" size={15} />—</span>;
+  const [icon, tone] = CHECK[status];
+  return <span className={`badge gap-1 border-[1.5px] pl-1.5 ${tone}`}><Icon name={icon} size={15} fill={status === 'ok'} />{CHECK_STATUS_LABELS[status]}</span>;
 }
 
 /** Rad/shubha sabablari — o'zbekcha. */

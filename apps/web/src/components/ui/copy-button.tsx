@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 
 export function CopyButton({ text, label = 'Nusxa', className = 'btn-secondary btn-sm' }: { text: string; label?: string; className?: string }) {
   const [done, setDone] = useState(false);
@@ -14,7 +14,7 @@ export function CopyButton({ text, label = 'Nusxa', className = 'btn-secondary b
         setTimeout(() => setDone(false), 1500);
       }}
     >
-      {done ? <Check size={14} /> : <Copy size={14} />} {done ? 'Nusxalandi' : label}
+      {done ? <Icon name="check" size={14}/> : <Icon name="content_copy" size={14}/>} {done ? 'Nusxalandi' : label}
     </button>
   );
 }

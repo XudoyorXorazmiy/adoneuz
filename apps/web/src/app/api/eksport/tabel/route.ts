@@ -17,7 +17,11 @@ export async function GET(req: Request) {
   const oy = url.searchParams.get('oy') ?? cur;
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(oy) ? oy : cur;
   const bolim = url.searchParams.get('bolim');
-  const { emps, cells } = await monthGrid(u, month, bolim && /^[0-9a-f-]{36}$/.test(bolim) ? bolim : undefined);
+  const xodim = url.searchParams.get('xodim');
+  const grid = await monthGrid(u, month, bolim && /^[0-9a-f-]{36}$/.test(bolim) ? bolim : undefined);
+  // Bitta xodim (profil sahifasidan) — ro'yxat baribir bo'lim cheklovi bilan olingan, shu ichidan
+  const emps = xodim ? grid.emps.filter((e) => e.id === xodim) : grid.emps;
+  const { cells } = grid;
   const dates = monthDays(month);
   const [y, m] = month.split('-').map(Number) as [number, number];
 

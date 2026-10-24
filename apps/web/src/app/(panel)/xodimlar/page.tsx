@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Pencil, Plus, RefreshCw, Send, UserCheck } from 'lucide-react';
-import { EMPLOYEE_STATUSES, formatPhone, initials, type EmployeeStatus } from '@adone/core';
+import { EMPLOYEE_STATUSES, formatPhone, type EmployeeStatus } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { employeeOptions, inviteLink, listEmployees } from '@/server/employees';
 import { listDepartments, listPanelMembers } from '@/server/structure';
@@ -12,6 +11,8 @@ import { Field, FormDrawer } from '@/components/ui/form-drawer';
 import { CopyButton } from '@/components/ui/copy-button';
 import { EmployeeFields } from '@/components/employees/employee-fields';
 import { EmployeeStatusBadge } from '@/components/employees/status-badge';
+import { Icon } from '@/components/ui/icon';
+import { Avatar } from '@/components/ui/avatar';
 
 export const metadata: Metadata = { title: 'Xodimlar' };
 
@@ -40,7 +41,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
     return s ? `/xodimlar?${s}` : '/xodimlar';
   };
   const add = (
-    <FormDrawer trigger={<><Plus size={16} /> Xodim qo&apos;shish</>} title="Yangi xodim" action={saveEmployeeAction} submitLabel="Qo'shish">
+    <FormDrawer trigger={<><Icon name="add" size={16}/> Xodim qo&apos;shish</>} title="Yangi xodim" action={saveEmployeeAction} submitLabel="Qo'shish">
       <EmployeeFields options={formOptions} />
       <p className="m-0 rounded-lg bg-primary-tint px-3 py-2 text-[13px] text-primary">Saqlangach taklif havolasi chiqadi — uni xodimga Telegram&apos;da yuboring. Xodim botda raqamini ulashadi, rozilik beradi va dumaloq video yuboradi.</p>
     </FormDrawer>
@@ -87,13 +88,13 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
                     {rows.map((e) => (
                       <tr key={e.id} className="border-t border-line align-middle">
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-tint text-xs font-semibold text-primary">{initials(e.fullName)}</span>
+                          <Link href={`/xodimlar/${e.id}`} className="group flex items-center gap-3">
+                            <Avatar name={e.fullName} size={34} />
                             <div className="min-w-0">
-                              <div className="font-medium">{e.fullName}</div>
+                              <div className="font-bold group-hover:text-primary">{e.fullName}</div>
                               <div className="tnum text-xs text-muted">{e.position ?? '—'}{e.phone ? ` · ${formatPhone(e.phone)}` : ''}</div>
                             </div>
-                          </div>
+                          </Link>
                         </td>
                         <td className="px-4 py-3"><div>{e.departmentName ?? '—'}</div><div className="text-xs text-muted">{e.branchName ?? '—'}</div></td>
                         <td className="px-4 py-3">{e.scheduleName ?? <span className="text-muted">jadvalsiz</span>}</td>
@@ -104,18 +105,18 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
                             {e.status === 'invited' && (e.invite ? (
                               <>
                                 <CopyButton text={inviteLink(e.invite)} label="Havola" />
-                                <a href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink(e.invite))}&text=${encodeURIComponent(`${user.tenantName}: davomat botiga ulaning`)}`} target="_blank" rel="noreferrer" className="btn-ghost btn-sm" title="Telegram orqali yuborish"><Send size={14} /></a>
+                                <a href={`https://t.me/share/url?url=${encodeURIComponent(inviteLink(e.invite))}&text=${encodeURIComponent(`${user.tenantName}: davomat botiga ulaning`)}`} target="_blank" rel="noreferrer" className="btn-ghost btn-sm" title="Telegram orqali yuborish"><Icon name="send" size={14}/></a>
                               </>
                             ) : (
-                              <form action={regenerateInviteAction}><input type="hidden" name="id" value={e.id} /><button className="btn-secondary btn-sm"><RefreshCw size={14} /> Yangi havola</button></form>
+                              <form action={regenerateInviteAction}><input type="hidden" name="id" value={e.id} /><button className="btn-secondary btn-sm"><Icon name="refresh" size={14}/> Yangi havola</button></form>
                             ))}
                             {e.status === 'pending' && (
-                              <form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="active" /><button className="btn-primary btn-sm"><UserCheck size={14} /> Tasdiqlash</button></form>
+                              <form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="active" /><button className="btn-primary btn-sm"><Icon name="how_to_reg" size={14}/> Tasdiqlash</button></form>
                             )}
                             {e.status === 'disabled' ? (
                               e.telegramUserId && <form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="active" /><button className="btn-ghost btn-sm">Qayta yoqish</button></form>
                             ) : (
-                              <FormDrawer trigger={<Pencil size={14} />} triggerClass="btn-ghost btn-sm" title="Xodimni tahrirlash" action={saveEmployeeAction}
+                              <FormDrawer trigger={<Icon name="edit" size={14}/>} triggerClass="btn-ghost btn-sm" title="Xodimni tahrirlash" action={saveEmployeeAction}
                                 danger={<form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="disabled" /><button className="btn-ghost text-danger-text">Ishdan bo&apos;shatish</button></form>}>
                                 <EmployeeFields e={e} options={formOptions} />
                               </FormDrawer>
@@ -135,7 +136,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
           <div className="flex items-center justify-between">
             <h2 className="m-0 text-sm font-semibold">Bo&apos;limlar</h2>
             {user.role !== 'manager' && (
-              <FormDrawer trigger={<><Plus size={14} /> Qo&apos;shish</>} triggerClass="btn-ghost btn-sm" title="Yangi bo'lim" action={saveDepartmentAction}>
+              <FormDrawer trigger={<><Icon name="add" size={14}/> Qo&apos;shish</>} triggerClass="btn-ghost btn-sm" title="Yangi bo'lim" action={saveDepartmentAction}>
                 <Field label="Nomi"><input name="name" placeholder="Sotuv zali" className="input" required /></Field>
                 <Field label="Bo'lim boshlig'i" hint="Shu bo'lim xodimlarini ko'radi, vazifa beradi, so'rovlarni hal qiladi.">
                   <select name="managerUserId" className="input"><option value="">— yo&apos;q —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
@@ -150,7 +151,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
                 <div className="text-xs text-muted">{d.managerName ?? 'boshliqsiz'} · {d.employees} xodim</div>
               </Link>
               {user.role !== 'manager' && (
-                <FormDrawer trigger={<Pencil size={13} />} triggerClass="btn-ghost btn-sm px-2" title="Bo'limni tahrirlash" action={saveDepartmentAction}
+                <FormDrawer trigger={<Icon name="edit" size={13}/>} triggerClass="btn-ghost btn-sm px-2" title="Bo'limni tahrirlash" action={saveDepartmentAction}
                   danger={d.employees === 0 ? <form action={archiveDepartmentAction}><input type="hidden" name="id" value={d.id} /><button className="btn-ghost text-danger-text">O&apos;chirish</button></form> : undefined}>
                   <input type="hidden" name="id" value={d.id} />
                   <Field label="Nomi"><input name="name" defaultValue={d.name} className="input" required /></Field>

@@ -66,12 +66,16 @@ export function effectiveEvents(events: DayEvent[]): DayEvent[] {
   const approved = new Set<string>();
   const added: DayEvent[] = [];
   for (const e of events) {
-    if (e.kind !== 'correction') continue;
-    const m = e.meta as CorrectionMeta | undefined;
-    if (!m) continue;
-    if (m.action === 'void') voided.add(m.target);
-    else if (m.action === 'approve') approved.add(m.target);
-    else added.push({ id: `${e.id}:${m.action}`, kind: m.action === 'add_in' ? 'check_in' : 'check_out', at: new Date(m.at), checkStatus: 'ok' });
+    const m = e.kind === 'correction' ? (e.meta as CorrectionMeta | undefined) : undefined;
+    if (m?.action === 'void') voided.add(m.target);
+    else if (m?.action === 'approve') approved.add(m.target);
+  }
+  // Qo'shilgan vaqt (add_in/add_out) ham keyinroq bekor qilinishi mumkin — target = tuzatish hodisasining id'si
+  for (const e of events) {
+    const m = e.kind === 'correction' ? (e.meta as CorrectionMeta | undefined) : undefined;
+    if ((m?.action === 'add_in' || m?.action === 'add_out') && !voided.has(e.id)) {
+      added.push({ id: e.id, kind: m.action === 'add_in' ? 'check_in' : 'check_out', at: new Date(m.at), checkStatus: 'ok' });
+    }
   }
   return [
     ...events
@@ -147,4 +151,29 @@ export function nextAction(events: DayEvent[]): 'check_in' | 'check_out' {
     else if (e.kind === 'check_out' || e.kind === 'auto_close') inside = false;
   }
   return inside ? 'check_out' : 'check_in';
+}
+
+/**
+ * «Keldi / Ketdi vaqtini belgilash» (panel): birinchi kirish va oxirgi chiqishni yangi vaqtga almashtirish uchun
+ * kerakli tuzatishlar — eski hodisa bekor qilinadi (void), yangisi qo'shiladi (add_in/add_out). Vaqt o'zgarmasa — hech narsa.
+ */
+export function retimePlan(events: DayEvent[], want: { in?: Date; out?: Date }): CorrectionMeta[] {
+  const evs = effectiveEvents(events);
+  const out: CorrectionMeta[] = [];
+  const same = (a: Date, b: Date) => Math.abs(a.getTime() - b.getTime()) < 60_000;
+  if (want.in) {
+    const first = evs.find((e) => e.kind === 'check_in');
+    if (!first || !same(first.at, want.in)) {
+      if (first) out.push({ action: 'void', target: first.id });
+      out.push({ action: 'add_in', at: want.in.toISOString() });
+    }
+  }
+  if (want.out) {
+    const last = [...evs].reverse().find((e) => e.kind === 'check_out' || e.kind === 'auto_close');
+    if (!last || !same(last.at, want.out)) {
+      if (last) out.push({ action: 'void', target: last.id });
+      out.push({ action: 'add_out', at: want.out.toISOString() });
+    }
+  }
+  return out;
 }

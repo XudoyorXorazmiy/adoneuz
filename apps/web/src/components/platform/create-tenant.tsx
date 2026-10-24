@@ -1,7 +1,7 @@
 'use client';
 import { useActionState, useEffect, useRef, useState } from 'react';
-import { Plus, X } from 'lucide-react';
 import { createTenantAction, type CreateTenantState } from '@/lib/actions/platform';
+import { Icon } from '@/components/ui/icon';
 
 export function CreateTenant({ plans }: { plans: Array<{ code: string; name: string; maxEmployees: number }> }) {
   const [open, setOpen] = useState(false);
@@ -13,13 +13,13 @@ export function CreateTenant({ plans }: { plans: Array<{ code: string; name: str
   const v = state?.values ?? {};
   return (
     <>
-      <button onClick={() => setOpen(true)} className="btn-primary"><Plus size={16} /> Ishxona qo&apos;shish</button>
+      <button onClick={() => setOpen(true)} className="btn-primary"><Icon name="add" size={16}/> Ishxona qo&apos;shish</button>
       {open && (
         <div className="fixed inset-0 z-40 flex justify-end bg-black/30" onClick={() => setOpen(false)}>
           <form ref={form} action={action} onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-[520px] flex-col bg-card">
             <div className="flex items-center justify-between border-b border-line px-6 py-4">
               <h2 className="m-0 text-lg font-semibold">Yangi ishxona</h2>
-              <button type="button" onClick={() => setOpen(false)} className="btn-ghost size-9 px-0"><X size={18} /></button>
+              <button type="button" onClick={() => setOpen(false)} className="btn-ghost size-9 px-0"><Icon name="close" size={18}/></button>
             </div>
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
               <label><span className="label">Ishxona nomi</span><input name="name" defaultValue={v.name} placeholder="Mudom bozor" className="input" required /></label>

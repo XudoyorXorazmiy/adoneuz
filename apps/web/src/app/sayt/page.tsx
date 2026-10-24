@@ -1,15 +1,15 @@
 import Link from 'next/link';
-import { Camera, ClipboardCheck, MapPin, Send } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 import { appOrigin } from '@/lib/host';
+import { Icon } from '@/components/ui/icon';
 
 /** Vaqtinchalik landing (5-bosqichda dizayn bilan almashtiriladi). */
 export default function LandingPage() {
   const features = [
-    { icon: <MapPin size={20} />, title: 'Lokatsiya', text: "Xodim faqat filial zonasida «Keldim» qila oladi — uydan belgilab bo'lmaydi." },
-    { icon: <Camera size={20} />, title: 'Jonli selfi va yuz', text: 'Kamera orqali jonli rasm va yuz tekshiruvi — boshqa odam o‘rniga kelolmaydi.' },
-    { icon: <ClipboardCheck size={20} />, title: 'Vazifalar', text: 'Rahbar vazifa beradi, xodim rasm bilan hisobot topshiradi, rahbar tasdiqlaydi.' },
-    { icon: <Send size={20} />, title: 'Telegram orqali', text: "Ilova o'rnatish shart emas — hammasi Telegram bot va Mini App'da." },
+    { icon: <Icon name="location_on" size={20}/>, title: 'Lokatsiya', text: "Xodim faqat filial zonasida «Keldim» qila oladi — uydan belgilab bo'lmaydi." },
+    { icon: <Icon name="photo_camera" size={20}/>, title: 'Jonli selfi va yuz', text: 'Kamera orqali jonli rasm va yuz tekshiruvi — boshqa odam o‘rniga kelolmaydi.' },
+    { icon: <Icon name="task_alt" size={20}/>, title: 'Vazifalar', text: 'Rahbar vazifa beradi, xodim rasm bilan hisobot topshiradi, rahbar tasdiqlaydi.' },
+    { icon: <Icon name="send" size={20}/>, title: 'Telegram orqali', text: "Ilova o'rnatish shart emas — hammasi Telegram bot va Mini App'da." },
   ];
   return (
     <main className="min-h-screen bg-card">

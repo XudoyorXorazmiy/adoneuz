@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { DAY_STATUS_LABELS, isoWeekday, monthDays, MONTHS, WEEKDAY_SHORT, type DayStatus } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { monthGrid, monthTotals, today } from '@/server/attendance';
 import { employeeOptions } from '@/server/employees';
 import { EmptyState, PageHeader } from '@/components/ui/page-header';
+import { Icon } from '@/components/ui/icon';
 
 export const metadata: Metadata = { title: 'Oylik tabel' };
 
@@ -40,15 +40,15 @@ export default async function TimesheetPage({ searchParams }: PageProps<'/davoma
     <>
       <PageHeader title="Oylik tabel" subtitle={`${MONTHS[m - 1]} ${y}`}>
         <div className="flex items-center gap-1">
-          <Link href={q(shiftMonth(month, -1))} className="btn-secondary btn-sm px-2"><ChevronLeft size={16} /></Link>
-          {month < cur && <Link href={q(shiftMonth(month, 1))} className="btn-secondary btn-sm px-2"><ChevronRight size={16} /></Link>}
+          <Link href={q(shiftMonth(month, -1))} className="btn-secondary btn-sm px-2"><Icon name="chevron_left" size={16}/></Link>
+          {month < cur && <Link href={q(shiftMonth(month, 1))} className="btn-secondary btn-sm px-2"><Icon name="chevron_right" size={16}/></Link>}
         </div>
         <form action="/davomat/tabel" className="flex gap-1">
           <input type="hidden" name="oy" value={month} />
           <select name="bolim" defaultValue={departmentId ?? ''} className="input h-8 w-[170px] text-[13px]"><option value="">Barcha bo&apos;limlar</option>{options.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
           <button className="btn-secondary btn-sm">Filtr</button>
         </form>
-        <a href={`/api/eksport/tabel?oy=${month}${departmentId ? `&bolim=${departmentId}` : ''}`} className="btn-primary btn-sm"><Download size={15} /> Excel</a>
+        <a href={`/api/eksport/tabel?oy=${month}${departmentId ? `&bolim=${departmentId}` : ''}`} className="btn-primary btn-sm"><Icon name="download" size={15}/> Excel</a>
       </PageHeader>
 
       <div className="flex flex-wrap gap-3 text-xs text-muted">
@@ -80,7 +80,7 @@ export default async function TimesheetPage({ searchParams }: PageProps<'/davoma
                   const tot = monthTotals(e.id, dates, cells);
                   return (
                     <tr key={e.id} className="border-t border-line">
-                      <td className="sticky left-0 z-10 bg-card px-3 py-1.5"><div className="truncate font-medium">{e.fullName}</div><div className="truncate text-[11px] text-muted">{e.position ?? e.departmentName ?? ''}</div></td>
+                      <td className="sticky left-0 z-10 bg-card px-3 py-1.5"><Link href={`/xodimlar/${e.id}?oy=${month}`} className="block truncate font-bold hover:text-primary">{e.fullName}</Link><div className="truncate text-[11px] text-muted">{e.position ?? e.departmentName ?? ''}</div></td>
                       {dates.map((d) => {
                         const c = cells.get(`${e.id}:${d}`);
                         if (!c || d > t) return <td key={d} className="p-0.5"><div className="h-9" /></td>;

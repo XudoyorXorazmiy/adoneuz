@@ -9,6 +9,8 @@ import { departmentScope, inScope } from './scope';
 export interface DayRow {
   id: string;
   fullName: string;
+  phone: string | null;
+  telegramUsername: string | null;
   position: string | null;
   departmentName: string | null;
   branchName: string | null;
@@ -56,7 +58,7 @@ export async function listDay(user: TenantUser, f: DayFilter): Promise<DayRow[]>
       const shift = s ? shiftFor(toRule(s), f.date, tz) : null;
       const result = computeDay({ events: list.map((x) => ({ id: x.id, kind: x.kind, at: x.serverAt, checkStatus: x.checkStatus, meta: x.meta })), shift, now });
       return {
-        id: e.id, fullName: e.fullName, position: e.position, departmentName, branchName, branchRadiusM, scheduleName: s?.name ?? null, shift, result,
+        id: e.id, fullName: e.fullName, phone: e.phone, telegramUsername: e.telegramUsername, position: e.position, departmentName, branchName, branchRadiusM, scheduleName: s?.name ?? null, shift, result,
         events: list.map((x) => ({
           id: x.id, kind: x.kind, at: x.serverAt, checkStatus: x.checkStatus, distanceM: x.distanceM, accuracyM: x.accuracyM, lat: x.lat, lng: x.lng,
           isLive: x.isLiveLocation, mediaId: x.mediaId, reasons: x.reasons, source: x.source, meta: x.meta ?? null,

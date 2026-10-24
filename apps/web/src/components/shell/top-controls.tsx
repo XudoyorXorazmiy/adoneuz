@@ -5,7 +5,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 
 /** Sarlavhaning o'ng tomoni (dizayn): qo'ng'iroq, qidiruv, filial, foydalanuvchi chipi. */
-export async function TopControls({ alert }: { alert?: boolean }) {
+/** `compact` — sahifa o'z tugmalarini qo'yganda (dizayn: Davomat): faqat qo'ng'iroq va qidiruv. */
+export async function TopControls({ alert, compact }: { alert?: boolean; compact?: boolean }) {
   const user = await requireUser();
   return (
     <div className="flex items-center gap-2.5">
@@ -17,6 +18,7 @@ export async function TopControls({ alert }: { alert?: boolean }) {
         <Icon name="search" className="text-ink" />
         <span className="rounded-md bg-subtle px-1.5 py-0.5 text-[11px] font-semibold">⌘K</span>
       </Link>
+      {!compact && <>
       <Link href="/filiallar" className="flex h-10 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 text-[13px] font-semibold max-lg:hidden">
         <Icon name="location_on" size={18} className="text-primary" />
         Barcha filiallar
@@ -29,6 +31,7 @@ export async function TopControls({ alert }: { alert?: boolean }) {
           <div className="tnum text-xs text-muted">{formatPhone(user.phone)}</div>
         </div>
       </div>
+      </>}
     </div>
   );
 }

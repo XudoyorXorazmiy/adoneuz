@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { ExternalLink, MapPin, Pencil, Plus } from 'lucide-react';
 import { formatDistance } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { listBranches } from '@/server/structure';
@@ -8,6 +7,7 @@ import { EmptyState, PageHeader } from '@/components/ui/page-header';
 import { FormDrawer } from '@/components/ui/form-drawer';
 import { BranchFields } from '@/components/structure/branch-fields';
 import { BranchMap, mapsLink } from '@/components/structure/branch-map';
+import { Icon } from '@/components/ui/icon';
 
 export const metadata: Metadata = { title: 'Filiallar' };
 
@@ -17,7 +17,7 @@ export default async function BranchesPage() {
   const active = rows.filter((b) => b.isActive);
   const archived = rows.filter((b) => !b.isActive);
   const add = (
-    <FormDrawer trigger={<><Plus size={16} /> Filial qo&apos;shish</>} title="Yangi filial" action={saveBranchAction}>
+    <FormDrawer trigger={<><Icon name="add" size={16}/> Filial qo&apos;shish</>} title="Yangi filial" action={saveBranchAction}>
       <BranchFields />
     </FormDrawer>
   );
@@ -32,12 +32,12 @@ export default async function BranchesPage() {
             <div key={b.id} className="card flex flex-col gap-3 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 flex-col">
-                  <span className="flex items-center gap-2 font-semibold"><MapPin size={16} className="text-primary" /> {b.name}</span>
+                  <span className="flex items-center gap-2 font-semibold"><Icon name="location_on" size={16} className="text-primary"/> {b.name}</span>
                   <span className="text-[13px] text-muted">{b.address ?? '—'} · radius {formatDistance(b.radiusM)} · {b.employees} xodim</span>
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <a href={mapsLink(b.lat, b.lng)} target="_blank" rel="noreferrer" className="btn-ghost btn-sm" title="Google xaritada"><ExternalLink size={15} /></a>
-                  <FormDrawer trigger={<Pencil size={15} />} triggerClass="btn-ghost btn-sm" title="Filialni tahrirlash" action={saveBranchAction}
+                  <a href={mapsLink(b.lat, b.lng)} target="_blank" rel="noreferrer" className="btn-ghost btn-sm" title="Google xaritada"><Icon name="open_in_new" size={15}/></a>
+                  <FormDrawer trigger={<Icon name="edit" size={15}/>} triggerClass="btn-ghost btn-sm" title="Filialni tahrirlash" action={saveBranchAction}
                     danger={<form action={toggleBranchAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="active" value="0" /><button className="btn-ghost text-danger-text">Arxivlash</button></form>}>
                     <BranchFields b={b} />
                   </FormDrawer>
