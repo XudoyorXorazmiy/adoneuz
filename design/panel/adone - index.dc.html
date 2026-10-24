@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#EEF0F4;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#2443F5;text-decoration:none}a:hover{color:#1A34D6}</style>
+</helmet>
+<div style="max-width:960px;margin:0 auto;padding:48px 24px;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:11px;background:#2443F5;color:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' 1">where_to_vote</span></div><span style="font-size:28px;font-weight:800;letter-spacing:-0.04em">adone</span><span style="font-size:15px;color:#6B7280;margin-left:8px">Artboardlar · 1-avlod</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
+    <sc-for list="{{ pages }}" as="p" hint-placeholder-count="9">
+      <a href="{{ p.href }}" style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;align-items:center;gap:14px;color:#111827" style-hover="box-shadow:0 2px 6px rgba(16,24,40,.06),0 12px 30px rgba(16,24,40,.1)">
+        <span style="width:40px;height:40px;border-radius:12px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ p.i }}</span></span>
+        <div style="flex:1"><div style="font-size:15px;font-weight:700">{{ p.n }}</div><div style="font-size:12px;color:#6B7280">{{ p.s }}</div></div>
+        <span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">arrow_outward</span>
+      </a>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const pages = [
+      ['Dizayn tizimi','palette','Tokenlar, komponentlar, badge'],['Kirish','login','Desktop'],['Bosh sahifa','grid_view','Desktop 1440'],
+      ['Davomat','how_to_reg','Desktop + Tuzatish drawer'],['Xodim profili — tabel','calendar_month','Desktop'],['Vazifalar','view_kanban','Kanban'],
+      ['Vazifa berish','assignment_add','Drawer 520px'],['Mini App — Bosh','smartphone','390×844 · 2 holat'],['Mini App — Keldim','where_to_vote','3 qadam + variantlar'],
+      ['Mini App — Vazifa hisoboti','task_alt',"3 ekran"]
+    ].map(([n,i,s]) => ({ n, i, s, href: n + '.dc.html' }));
+    return { pages };
+  }
+}
+</script>
+</body>
+</html>

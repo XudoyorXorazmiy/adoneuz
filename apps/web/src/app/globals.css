@@ -1,55 +1,82 @@
 @import "tailwindcss";
 
-/* Dizayn tokenlari (docs/DIZAYN-PROMPT.md «Brand»). Claude Design eksporti kelgach qiymatlar 1:1 almashtiriladi.
-   Neytrallar: matn #0F172A, ikkinchi #64748B, chegara #E2E8F0, sahifa #F8FAFC, kartochka #FFFFFF. */
+/* Dizayn tokenlari — design/panel/Dizayn tizimi.dc.html (Claude Design, 2026-10-24) bilan 1:1.
+   Uslub: yumshoq, yumaloq, kulrang kanvas ustida oq ramka va kartochkalar (egasi tanlagan «Relink» namunasi). */
+@theme inline {
+  --font-sans: var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
+}
 @theme {
-  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+  --color-primary: #2443F5;
+  --color-primary-hover: #1A34D6;
+  --color-primary-tint: #EEF1FF;
+  --color-primary-soft: #F5F7FF;
+  --color-primary-line: #DDE3FF;
+  --color-navy: #0B1B4F;
 
-  --color-primary: #0F766E;
-  --color-primary-hover: #0B5F58;
-  --color-primary-tint: #E6F4F2;
-  --color-ink: #0F172A;
-  --color-ink-2: #334155;
-  --color-muted: #64748B;
-  --color-placeholder: #94A3B8;
-  --color-line: #E2E8F0;
-  --color-line-strong: #CBD5E1;
-  --color-subtle: #F1F5F9;
-  --color-page: #F8FAFC;
+  --color-ink: #111827;
+  --color-ink-2: #4B5563;
+  --color-muted: #6B7280;
+  --color-placeholder: #9CA3AF;
+  --color-line: #ECEEF2;
+  --color-line-soft: #F1F2F5;
+  --color-line-strong: #E2E5EA;
+  --color-subtle: #F2F4F7;
+  --color-page: #F7F8FA;
+  --color-canvas: #EEF0F4;
   --color-card: #FFFFFF;
+  --color-bar: #E9EBF0;
 
   --color-success: #16A34A;
-  --color-success-tint: #DCFCE7;
+  --color-success-tint: #E8F7EE;
   --color-success-text: #15803D;
-  --color-warning: #D97706;
-  --color-warning-tint: #FEF3C7;
-  --color-warning-text: #B45309;
-  --color-danger: #DC2626;
-  --color-danger-tint: #FEE2E2;
-  --color-danger-text: #B91C1C;
-  --color-info: #2563EB;
-  --color-info-tint: #DBEAFE;
-  --color-info-text: #1D4ED8;
+  --color-warning: #F07A1A;
+  --color-warning-tint: #FFF1E6;
+  --color-warning-text: #C25A0A;
+  --color-warning-line: #F9D7BC;
+  --color-warning-soft: #FFFBF7;
+  --color-danger: #E5484D;
+  --color-danger-tint: #FDECEC;
+  --color-danger-text: #C8343A;
+  --color-info: #2443F5;
+  --color-info-tint: #EEF1FF;
+  --color-info-text: #2443F5;
+
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.04);
+  --shadow-frame: 0 1px 3px rgba(16, 24, 40, 0.04), 0 12px 40px rgba(16, 24, 40, 0.06);
+  --shadow-primary: 0 6px 16px rgba(36, 67, 245, 0.25);
 }
 
-html { color: var(--color-ink); background: var(--color-page); }
-body { font-size: 14px; -webkit-font-smoothing: antialiased; }
+/* Asos — @layer base ichida, aks holda qatlamsiz qoida Tailwind utilitalarini (text-*, bg-*) bosib ketadi */
+@layer base {
+  html { color: var(--color-ink); background: var(--color-canvas); }
+  body { font-size: 14px; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+  a { color: inherit; text-decoration: none; }
+}
 
-@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer h-10 whitespace-nowrap; }
-@utility btn-primary { @apply btn border border-primary bg-primary text-white hover:bg-primary-hover hover:border-primary-hover; }
-@utility btn-secondary { @apply btn border border-line-strong bg-card text-ink hover:bg-subtle; }
-@utility btn-ghost { @apply btn border-0 bg-transparent text-ink-2 font-medium hover:bg-subtle; }
-@utility btn-danger { @apply btn border border-danger bg-danger text-white hover:bg-danger-text hover:border-danger-text; }
-@utility btn-sm { @apply h-8 px-3 text-[13px]; }
-@utility btn-lg { @apply h-11 text-[15px]; }
+/* Material Symbols Rounded (dizayndagi ikonkalar) — layout.tsx da <link> bilan yuklanadi */
+.icon { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; font-feature-settings: 'liga'; user-select: none; }
+.icon-fill { font-variation-settings: 'FILL' 1; }
 
-@utility card { @apply rounded-[10px] border border-line bg-card; }
+@utility btn { @apply inline-flex items-center justify-center gap-1.5 rounded-full px-[18px] text-[13px] font-bold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer h-10 whitespace-nowrap; }
+@utility btn-primary { @apply btn bg-primary text-white hover:bg-primary-hover shadow-[var(--shadow-primary)]; }
+@utility btn-secondary { @apply btn border border-line bg-card text-ink hover:bg-page; }
+@utility btn-ghost { @apply btn bg-transparent text-ink-2 font-semibold hover:bg-subtle; }
+@utility btn-danger { @apply btn border border-line bg-card text-danger hover:bg-danger-tint; }
+@utility btn-sm { @apply h-9 px-4; }
+@utility btn-lg { @apply h-12 text-[15px] px-6; }
+@utility btn-icon { @apply inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-card text-ink transition hover:bg-page; }
+
+@utility card { @apply rounded-[20px] bg-card shadow-[var(--shadow-card)]; }
 @utility card-pad { @apply card p-5; }
-@utility input { @apply h-10 w-full rounded-lg border border-line-strong bg-card px-3 text-sm text-ink outline-none placeholder:text-placeholder focus:border-primary focus:ring-[3px] focus:ring-primary-tint; }
-@utility label { @apply mb-1.5 block text-[13px] font-medium text-ink-2; }
+@utility input { @apply h-11 w-full rounded-xl border border-line bg-card px-3.5 text-sm text-ink outline-none placeholder:text-placeholder focus:border-primary focus:ring-[3px] focus:ring-primary-tint; }
+@utility label { @apply mb-1.5 block text-[13px] font-semibold text-ink; }
 @utility tnum { font-variant-numeric: tabular-nums; }
-@utility kpi-value { @apply text-[28px] leading-9 font-semibold tracking-[-0.01em]; }
-@utility page-title { @apply m-0 text-xl leading-7 font-semibold; }
+@utility kpi-value { @apply text-[30px] leading-9 font-extrabold tracking-[-0.03em]; }
+@utility page-title { @apply m-0 text-[28px] leading-9 font-bold tracking-[-0.02em]; }
 
-@utility badge { @apply inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-md px-2 text-xs font-medium; }
+@utility badge { @apply inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-xs font-bold; }
 @utility badge-dot { @apply size-1.5 rounded-full bg-current; }
+/* Kichik o'zgarish belgisi: ↗ 2.4% */
+@utility delta { @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-bold whitespace-nowrap; }
+/* Kartochka sarlavhasidagi rangli kvadrat ikonka */
+@utility card-icon { @apply flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-primary-tint text-primary; }

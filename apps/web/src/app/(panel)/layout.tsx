@@ -1,54 +1,68 @@
-import { BarChart3, Building, CalendarClock, ClipboardCheck, Home, Inbox, MapPin, Settings, UserCheck, Users, Wallet } from 'lucide-react';
-import { can, MEMBER_ROLE_LABELS, type Area } from '@adone/core';
+import { can, type Area } from '@adone/core';
 import { requireUser } from '@/lib/auth/session';
 import { NavLink } from '@/components/shell/nav-link';
 import { UserBox } from '@/components/shell/user-box';
+import { Logo } from '@/components/ui/logo';
+import { Icon } from '@/components/ui/icon';
+import { shellInfo } from '@/server/shell';
 
-/** Menyu tartibi dizayn bo'yicha (docs/DIZAYN-PROMPT.md «Layout»). `ready: false` — keyingi bosqich. */
-const NAV: Array<{ href: string; label: string; area: Area; icon: React.ReactNode; ready: boolean }> = [
-  { href: '/', label: 'Bosh sahifa', area: 'dashboard', icon: <Home size={18} />, ready: true },
-  { href: '/davomat', label: 'Davomat', area: 'attendance', icon: <UserCheck size={18} />, ready: true },
-  { href: '/vazifalar', label: 'Vazifalar', area: 'tasks', icon: <ClipboardCheck size={18} />, ready: false },
-  { href: '/sorovlar', label: "So'rovlar", area: 'requests', icon: <Inbox size={18} />, ready: false },
-  { href: '/xodimlar', label: 'Xodimlar', area: 'employees', icon: <Users size={18} />, ready: true },
-  { href: '/jadvallar', label: 'Jadvallar', area: 'schedules', icon: <CalendarClock size={18} />, ready: true },
-  { href: '/filiallar', label: 'Filiallar', area: 'branches', icon: <MapPin size={18} />, ready: true },
-  { href: '/hisobotlar', label: 'Hisobotlar', area: 'reports', icon: <BarChart3 size={18} />, ready: false },
-  { href: '/ish-haqi', label: 'Ish haqi', area: 'payroll', icon: <Wallet size={18} />, ready: false },
-  { href: '/sozlamalar', label: 'Sozlamalar', area: 'settings', icon: <Settings size={18} />, ready: false },
+/** Menyu tartibi dizayn bo'yicha (design/panel/Sidebar.dc.html). `ready: false` — keyingi bosqich. */
+const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready: boolean; count?: 'pending' }> = [
+  { href: '/', label: 'Bosh sahifa', area: 'dashboard', icon: 'dashboard', ready: true },
+  { href: '/davomat', label: 'Davomat', area: 'attendance', icon: 'how_to_reg', ready: true },
+  { href: '/vazifalar', label: 'Vazifalar', area: 'tasks', icon: 'task_alt', ready: false },
+  { href: '/sorovlar', label: "So'rovlar", area: 'requests', icon: 'inbox', ready: false },
+  { href: '/xodimlar', label: 'Xodimlar', area: 'employees', icon: 'group', ready: true, count: 'pending' },
+  { href: '/jadvallar', label: 'Jadvallar', area: 'schedules', icon: 'calendar_month', ready: true },
+  { href: '/filiallar', label: 'Filiallar', area: 'branches', icon: 'location_on', ready: true },
+  { href: '/hisobotlar', label: 'Hisobotlar', area: 'reports', icon: 'bar_chart', ready: false },
+  { href: '/ish-haqi', label: 'Ish haqi', area: 'payroll', icon: 'payments', ready: false },
+  { href: '/sozlamalar', label: 'Sozlamalar', area: 'settings', icon: 'settings', ready: false },
 ];
 
 export default async function PanelLayout({ children }: LayoutProps<'/'>) {
   const user = await requireUser();
+  const info = await shellInfo(user.tenantId);
+  const pct = info.maxEmployees ? Math.min(100, Math.round((info.active / info.maxEmployees) * 100)) : 0;
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 flex h-screen w-[240px] shrink-0 flex-col gap-5 bg-[#0B2E2B] px-3 py-5 max-md:hidden">
-        <div className="flex items-center gap-2 px-2">
-          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden>
-            <rect width="32" height="32" rx="9" fill="#14B8A6" />
-            <path d="M16 6.5c-4.4 0-8 3.4-8 7.7 0 5.6 8 11.3 8 11.3s8-5.7 8-11.3c0-4.3-3.6-7.7-8-7.7Z" fill="#fff" />
-            <path d="m12.6 14.2 2.4 2.4 4.4-4.6" fill="none" stroke="#0F766E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="text-[17px] font-bold text-white">adone</span>
-        </div>
-        <div className="flex items-center gap-2 rounded-lg bg-white/8 px-3 py-2 text-[13px] text-white">
-          <Building size={16} className="text-white/60" />
-          <span className="truncate">{user.tenantName}</span>
-        </div>
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
-          {NAV.filter((n) => can(user.role, n.area)).map((n) => (
-            <NavLink key={n.href} href={n.href} icon={n.icon} disabled={!n.ready}>{n.label}</NavLink>
-          ))}
-        </nav>
-        <UserBox name={user.name} subtitle={MEMBER_ROLE_LABELS[user.role]} />
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b border-line bg-card px-4 md:hidden">
-          <span className="font-bold">adone</span>
-          <span className="truncate text-[13px] text-muted">{user.tenantName}</span>
-        </header>
-        <main className="min-w-0 flex-1 p-4 md:p-6">
-          <div className="mx-auto flex max-w-[1280px] flex-col gap-6">{children}</div>
+    <div className="min-h-screen bg-canvas p-0 lg:p-4">
+      <div className="flex min-h-[calc(100vh-2rem)] overflow-hidden bg-card lg:rounded-3xl lg:shadow-[var(--shadow-frame)]">
+        <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-5 bg-card px-4 pt-6 pb-4 max-lg:hidden lg:h-[calc(100vh-2rem)]">
+          <div className="flex items-center justify-between px-1.5">
+            <Logo />
+            <span className="flex size-8 items-center justify-center rounded-full text-muted"><Icon name="left_panel_close" /></span>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-[14px] bg-[#F5F6F8] px-3 py-2.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-navy text-[15px] font-extrabold text-white">{user.tenantName.slice(0, 1).toUpperCase()}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[11px] font-medium text-placeholder">Ishxona</span>
+              <span className="block truncate text-sm font-bold">{user.tenantName}</span>
+            </span>
+            <Icon name="unfold_more" size={18} className="text-muted" />
+          </div>
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
+            <div className="px-3 pb-1.5 text-[11px] font-bold tracking-[0.08em] text-placeholder">MENYU</div>
+            {NAV.filter((n) => can(user.role, n.area)).map((n) => (
+              <NavLink key={n.href} href={n.href} icon={n.icon} disabled={!n.ready} count={n.count === 'pending' ? info.pending : undefined}>{n.label}</NavLink>
+            ))}
+          </nav>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 rounded-2xl bg-primary-soft p-3.5">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-medium text-muted">Tarif · {info.planName}</span>
+                <span className="tnum text-[13px] font-bold">{info.active} / {info.maxEmployees} xodim</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-primary-line"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
+            </div>
+            <UserBox name={user.name} phone={user.phone} />
+          </div>
+        </aside>
+        <main className="m-0 flex min-w-0 flex-1 flex-col bg-page lg:my-2 lg:mr-2 lg:rounded-[20px]">
+          <div className="flex h-14 items-center justify-between border-b border-line bg-card px-4 lg:hidden">
+            <Logo size={24} text={18} />
+            <span className="truncate text-[13px] font-semibold text-muted">{user.tenantName}</span>
+          </div>
+          <div className="flex flex-col gap-5 px-4 pt-5 pb-7 md:px-7">{children}</div>
         </main>
       </div>
     </div>

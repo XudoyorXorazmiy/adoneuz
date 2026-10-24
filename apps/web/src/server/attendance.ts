@@ -12,12 +12,14 @@ export interface DayRow {
   position: string | null;
   departmentName: string | null;
   branchName: string | null;
+  branchRadiusM: number | null;
   scheduleName: string | null;
   shift: Shift | null;
   result: DayResult;
   events: Array<{
     id: string; kind: string; at: Date; checkStatus: 'ok' | 'suspicious' | 'rejected'; distanceM: number | null; accuracyM: number | null;
     lat: number | null; lng: number | null; isLive: boolean | null; mediaId: string | null; reasons: string[]; source: string; meta: Record<string, unknown> | null;
+    faceScore: number | null;
   }>;
 }
 
@@ -33,7 +35,7 @@ export async function listDay(user: TenantUser, f: DayFilter): Promise<DayRow[]>
   return withTenant(user.tenantId, async (tx) => {
     const scope = await departmentScope(tx, user);
     const emps = await tx
-      .select({ e: employees, s: schedules, departmentName: departments.name, branchName: branches.name })
+      .select({ e: employees, s: schedules, departmentName: departments.name, branchName: branches.name, branchRadiusM: branches.radiusM })
       .from(employees)
       .leftJoin(schedules, eq(schedules.id, employees.scheduleId))
       .leftJoin(departments, eq(departments.id, employees.departmentId))
@@ -49,15 +51,16 @@ export async function listDay(user: TenantUser, f: DayFilter): Promise<DayRow[]>
     const byEmp = new Map<string, typeof evs>();
     for (const e of evs) byEmp.set(e.employeeId, [...(byEmp.get(e.employeeId) ?? []), e]);
     const now = new Date();
-    return emps.map(({ e, s, departmentName, branchName }) => {
+    return emps.map(({ e, s, departmentName, branchName, branchRadiusM }) => {
       const list = byEmp.get(e.id) ?? [];
       const shift = s ? shiftFor(toRule(s), f.date, tz) : null;
       const result = computeDay({ events: list.map((x) => ({ id: x.id, kind: x.kind, at: x.serverAt, checkStatus: x.checkStatus, meta: x.meta })), shift, now });
       return {
-        id: e.id, fullName: e.fullName, position: e.position, departmentName, branchName, scheduleName: s?.name ?? null, shift, result,
+        id: e.id, fullName: e.fullName, position: e.position, departmentName, branchName, branchRadiusM, scheduleName: s?.name ?? null, shift, result,
         events: list.map((x) => ({
           id: x.id, kind: x.kind, at: x.serverAt, checkStatus: x.checkStatus, distanceM: x.distanceM, accuracyM: x.accuracyM, lat: x.lat, lng: x.lng,
           isLive: x.isLiveLocation, mediaId: x.mediaId, reasons: x.reasons, source: x.source, meta: x.meta ?? null,
+          faceScore: x.faceScore,
         })),
       };
     });

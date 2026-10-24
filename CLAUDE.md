@@ -176,5 +176,7 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 ## 10. Qarorlar va ochiq savollar
 
 - 2026-10-20: texnologiya chaat/openstore bilan bir xil (egasi tasdiqladi); kodni to'liq Claude yozadi, dizayn Claude Design orqali (`docs/DIZAYN-PROMPT.md` → `design/panel/*.dc.html` → 1:1).
+- 2026-10-24: dizayn keldi (`design/panel/`, 12 fayl; uslub — egasi tanlagan «Relink» namunasi `design/ref/`). Shrift **Plus Jakarta Sans** (next/font), ikonkalar **Material Symbols Rounded** (`components/ui/icon.tsx`, `<link>` layout'da), tokenlar `globals.css` `@theme` da 1:1 (primary `#2443F5`, navy `#0B1B4F`, kanvas `#EEF0F4`, kartochka radius 20, pill tugmalar). Asos uslublari `@layer base` ichida bo'lishi SHART (qatlamsiz `a{color}` utilitalarni bosib ketadi).
+  Ko'chirish qismlari: **1 ✅** tokenlar, qobiq (Sidebar, sarlavha `PageHeader` + `TopControls`), Kirish, Bosh sahifa (bento, jonli ma'lumot) · 2 — Davomat, Xodim profili/tabel · 3 — Vazifalar, Vazifa berish (2-bosqich kodi bilan) · 4 — Mini App ekranlari (3-bosqich). Dizaynni ko'rish: `.dc.html` lar React 18 UMD'ni unpkg'dan oladi.
 - Server Contabo'da (Germaniya). Biometrik ma'lumotni O'zbekistonda saqlash talabi — keng sotuvdan oldin qayta ko'riladi (egasi xabardor).
 - Vazifalar: bot va panelda; takrorlanuvchi — ixtiyoriy sozlama; ish haqiga ta'siri — admin tahrirlaydigan qoidalar; ko'p ijrochi — har biri alohida hisobot.

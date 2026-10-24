@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#EEF0F4;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}a{color:#2443F5;text-decoration:none}a:hover{color:#1A34D6}</style>
+</helmet>
+<div data-screen-label="Dizayn tizimi" style="width:1440px;box-sizing:border-box;padding:48px;background:#EEF0F4;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:11px;background:#2443F5;color:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' 1">where_to_vote</span></div><span style="font-size:28px;font-weight:800;letter-spacing:-0.04em">adone</span></div>
+      <div style="font-size:40px;font-weight:700;letter-spacing:-0.03em;margin-top:16px">Dizayn tizimi</div>
+      <div style="font-size:15px;color:#6B7280;margin-top:4px">v1 · yorug' mavzu · Plus Jakarta Sans · Material Symbols Rounded</div>
+    </div>
+    <div style="display:flex;gap:8px"><sc-for list="{{ toc }}" as="t" hint-placeholder-count="6"><a href="#{{ t.id }}" style="height:36px;padding:0 14px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:13px;font-weight:600;color:#111827">{{ t.l }}</a></sc-for></div>
+  </div>
+
+  <section id="tokens" style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:28px;display:flex;flex-direction:column;gap:24px">
+    <div style="font-size:20px;font-weight:700">Ranglar</div>
+    <sc-for list="{{ palettes }}" as="p" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">{{ p.t }}</div>
+        <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px">
+          <sc-for list="{{ p.c }}" as="c" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="height:72px;border-radius:16px;background:{{ c.v }};border:1px solid rgba(16,24,40,.06)"></div>
+              <div><div style="font-size:13px;font-weight:700">{{ c.n }}</div><div style="font-size:12px;color:#6B7280;font-family:ui-monospace,monospace">{{ c.v }}</div><div style="font-size:11px;color:#9CA3AF;font-family:ui-monospace,monospace">{{ c.tok }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="font-size:13px;color:#6B7280;padding:12px 14px;border-radius:12px;background:#F7F8FA">Barcha ranglar semantik tokenlar orqali (<span style="font-family:ui-monospace,monospace">--bg-canvas, --bg-card, --text, --accent …</span>) — qorong'i mavzu va Telegram themeParams faqat token qiymatlarini almashtiradi.</div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:24px">
+    <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:28px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:20px;font-weight:700">Tipografiya</div>
+      <sc-for list="{{ type }}" as="t" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:150px 1fr;align-items:baseline;gap:16px;padding:8px 0;border-bottom:1px solid #F4F5F7">
+          <span style="font-size:12px;color:#9CA3AF;font-family:ui-monospace,monospace">{{ t.spec }}</span>
+          <span style="font-size:{{ t.s }};font-weight:{{ t.w }};letter-spacing:{{ t.ls }};color:{{ t.c }}">{{ t.ex }}</span>
+        </div>
+      </sc-for>
+    </section>
+    <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:28px;display:flex;flex-direction:column;gap:18px">
+      <div style="font-size:20px;font-weight:700">Radius · soya · oraliq</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <sc-for list="{{ radii }}" as="r" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:72px;height:72px;background:#EEF1FF;border:1.5px solid #2443F5;border-radius:{{ r.v }}"></div><span style="font-size:12px;font-weight:600">{{ r.n }}</span><span style="font-size:11px;color:#9CA3AF">{{ r.v }}</span></div></sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:16px;border-radius:16px;background:#F7F8FA">
+        <div style="height:72px;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">Karta</div>
+        <div style="height:72px;border-radius:16px;background:#fff;box-shadow:0 2px 6px rgba(16,24,40,.06),0 16px 40px rgba(16,24,40,.14);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">Popover</div>
+        <div style="height:72px;border-radius:16px;background:#fff;box-shadow:0 24px 80px rgba(11,27,79,.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">Drawer</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:10px">
+        <sc-for list="{{ space }}" as="s" hint-placeholder-count="7"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:{{ s }}px;height:{{ s }}px;background:#2443F5;border-radius:4px;opacity:.85"></div><span style="font-size:11px;color:#6B7280">{{ s }}</span></div></sc-for>
+      </div>
+    </section>
+  </div>
+
+  <section id="komponentlar" style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:28px;display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:20px;font-weight:700">Tugmalar</div>
+    <div style="display:grid;grid-template-columns:120px repeat(3,auto) 1fr;gap:16px 24px;align-items:center">
+      <span></span><span style="font-size:12px;color:#9CA3AF">lg · 52</span><span style="font-size:12px;color:#9CA3AF">md · 44</span><span style="font-size:12px;color:#9CA3AF">sm · 36</span><span></span>
+      <sc-for list="{{ buttons }}" as="b" hint-placeholder-count="4">
+        <span style="font-size:13px;font-weight:600;color:#4B5563">{{ b.n }}</span>
+        <div style="height:52px;padding:0 26px 0 22px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;font-size:16px;font-weight:700;background:{{ b.bg }};color:{{ b.c }};border:1px solid {{ b.bd }};justify-self:start"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ b.i }}</span>{{ b.l }}</div>
+        <div style="height:44px;padding:0 22px 0 18px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;background:{{ b.bg }};color:{{ b.c }};border:1px solid {{ b.bd }};justify-self:start"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">{{ b.i }}</span>{{ b.l }}</div>
+        <div style="height:36px;padding:0 16px 0 12px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;background:{{ b.bg }};color:{{ b.c }};border:1px solid {{ b.bd }};justify-self:start"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">{{ b.i }}</span>{{ b.l }}</div>
+        <span></span>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:#4B5563;width:120px">Ikonka tugma</span>
+      <sc-for list="{{ iconBtns }}" as="i" hint-placeholder-count="5"><span style="width:40px;height:40px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center;background:#fff"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">{{ i }}</span></span></sc-for>
+      <span style="width:40px;height:40px;border-radius:999px;background:#2443F5;color:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">add</span></span>
+      <span style="height:44px;padding:0 20px;border-radius:999px;white-space:nowrap;background:#ECEEF2;color:#9CA3AF;display:flex;align-items:center;font-size:14px;font-weight:700;margin-left:16px">O'chirilgan</span>
+      <span style="height:44px;padding:0 20px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;opacity:.8"><span style="width:16px;height:16px;border-radius:999px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;box-sizing:border-box"></span>Yuklanmoqda</span>
+    </div>
+  </section>
+
+  <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:28px;display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:20px;font-weight:700">Forma elementlari</div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+      <label style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Input</span><div style="height:44px;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;padding:0 12px;font-size:14px">Gulnora Saidova</div><span style="font-size:12px;color:#6B7280">Yordamchi matn</span></label>
+      <label style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Input · fokus</span><div style="height:44px;border-radius:12px;border:1.5px solid #2443F5;box-shadow:0 0 0 4px #EEF1FF;display:flex;align-items:center;padding:0 12px;font-size:14px">Sotuv zali</div><span style="font-size:12px;color:#6B7280">&nbsp;</span></label>
+      <label style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Input · xato</span><div style="height:44px;border-radius:12px;border:1.5px solid #E5484D;box-shadow:0 0 0 4px #FDECEC;display:flex;align-items:center;padding:0 12px;font-size:14px">+998 90 12</div><span style="font-size:12px;color:#E5484D;font-weight:600">Telefon raqam to'liq emas</span></label>
+      <label style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Telefon</span><div style="height:44px;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;overflow:hidden"><span style="height:100%;padding:0 12px;display:flex;align-items:center;border-right:1px solid #ECEEF2;font-size:14px;font-weight:600;background:#F7F8FA">+998</span><span style="padding:0 12px;font-size:14px">90 123 45 67</span></div></label>
+      <label style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Select</span><div style="height:44px;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;padding:0 12px;font-size:14px;justify-content:space-between">Mudom — Markaz<span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:#6B7280">expand_more</span></div></label>
+      <label style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Vaqt</span><div style="height:44px;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">schedule</span>09:00<span style="color:#9CA3AF">—</span>21:00</div></label>
+      <label style="display:flex;flex-direction:column;gap:8px;grid-column:span 1"><span style="font-size:13px;font-weight:600">Textarea</span><div style="height:92px;border-radius:12px;border:1px solid #ECEEF2;padding:10px 12px;font-size:14px;line-height:1.5;box-sizing:border-box">Rasm aniq emas, qayta yuboring</div><span style="font-size:12px;color:#9CA3AF;align-self:flex-end">30 / 300</span></label>
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Sana oralig'i</span>
+        <div style="height:44px;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">date_range</span>13.10.2026 — 19.10.2026</div>
+        <div style="display:flex;gap:6px"><sc-for list="{{ presets }}" as="p" hint-placeholder-count="4"><span style="height:30px;padding:0 12px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;font-size:12px;font-weight:600;background:{{ p.bg }};color:{{ p.c }}">{{ p.l }}</span></sc-for></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Qidiruv</span><div style="height:44px;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:14px;color:#9CA3AF"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">search</span>Xodimni qidirish…<span style="flex:1"></span><span style="font-size:11px;font-weight:600;padding:3px 6px;border-radius:6px;background:#F2F4F7;color:#6B7280">⌘K</span></div></div>
+    </div>
+    <div style="display:flex;gap:40px;align-items:center;flex-wrap:wrap;padding-top:8px;border-top:1px solid #F4F5F7">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:24px;border-radius:999px;background:#2443F5;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:999px;background:#fff"></span></span><span style="font-size:14px;font-weight:500">Yoqilgan</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:24px;border-radius:999px;background:#E5E7EB;position:relative"><span style="position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.2)"></span></span><span style="font-size:14px;font-weight:500">O'chirilgan</span></div>
+      <div style="display:flex;gap:4px;padding:4px;border-radius:999px;white-space:nowrap;background:#F2F4F7;font-size:13px;font-weight:600"><span style="padding:7px 16px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08)">Kun</span><span style="padding:7px 16px;color:#6B7280">Hafta</span><span style="padding:7px 16px;color:#6B7280">Oy</span></div>
+      <div style="display:flex;gap:8px"><span style="height:34px;padding:0 14px 0 10px;border-radius:999px;white-space:nowrap;border:1.5px solid #2443F5;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">check</span>Rasm</span><span style="height:34px;padding:0 14px;border-radius:999px;white-space:nowrap;border:1.5px solid #ECEEF2;display:flex;align-items:center;font-size:13px;font-weight:600;box-sizing:border-box">Video</span><span style="height:34px;padding:0 14px;border-radius:999px;white-space:nowrap;border:1.5px solid #ECEEF2;display:flex;align-items:center;font-size:13px;font-weight:600;box-sizing:border-box">Lokatsiya</span></div>
+      <div style="display:flex;gap:4px;border-bottom:1px solid #F1F2F5"><span style="padding:8px 12px 10px;font-size:13px;font-weight:700;border-bottom:2px solid #2443F5;display:flex;gap:6px;align-items:center">Barchasi<span style="font-size:11px;padding:1px 7px;border-radius:999px;background:#2443F5;color:#fff">48</span></span><span style="padding:8px 12px 10px;font-size:13px;color:#6B7280;display:flex;gap:6px;align-items:center">Ishda<span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:#F2F4F7">39</span></span><span style="padding:8px 12px 10px;font-size:13px;color:#6B7280;display:flex;gap:6px;align-items:center">Kechikdi<span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:#F2F4F7">5</span></span></div>
+    </div>
+  </section>
+
+  <section id="badges" style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:28px;display:flex;flex-direction:column;gap:16px">
+    <div style="font-size:20px;font-weight:700">Badge to'plamlari</div>
+    <sc-for list="{{ badgeSets }}" as="s" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:160px 1fr;align-items:center;gap:16px;padding:6px 0;border-bottom:1px solid #F4F5F7">
+        <span style="font-size:13px;font-weight:600;color:#4B5563">{{ s.t }}</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <sc-for list="{{ s.b }}" as="b" hint-placeholder-count="5">
+            <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;background:{{ b.bg }};color:{{ b.c }};border:1.5px solid {{ b.bd }}"><span style="width:6px;height:6px;border-radius:999px;background:{{ b.dot }}"></span>{{ b.l }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="display:flex;gap:28px;align-items:center;padding-top:6px">
+      <span style="font-size:13px;font-weight:600;color:#4B5563;width:144px">Delta chip</span>
+      <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;background:#E8F7EE;color:#16A34A">↗ 2.46%</span>
+      <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;background:#FFF1E6;color:#F07A1A">↘ 1.78%</span>
+      <span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;background:#FDECEC;color:#E5484D">↘ 4.1%</span>
+      <span style="font-size:13px;font-weight:600;color:#4B5563;margin-left:24px">Avatar</span>
+      <sc-for list="{{ avatars }}" as="a" hint-placeholder-count="4"><span style="position:relative;width:{{ a.s }};height:{{ a.s }};border-radius:999px;background:{{ a.bg }};color:{{ a.c }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{{ a.i }}<span style="position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:999px;background:{{ a.dot }};border:2px solid #fff"></span></span></sc-for>
+    </div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+    <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:16px;font-weight:700">KPI karta · Progress · Reyting</div>
+      <div style="border-radius:16px;border:1px solid #ECEEF2;padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:#6B7280">Bugun ishda</span><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:32px;font-weight:800;letter-spacing:-0.03em">39</span><span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;background:#E8F7EE;color:#16A34A">↗ 4.2%</span></div><span style="font-size:12px;color:#9CA3AF">48 xodimdan</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#6B7280">Tarif</span><b style="font-weight:700">48 / 50 xodim</b></div><div style="height:6px;border-radius:999px;background:#EEF1FF"><div style="width:96%;height:100%;border-radius:999px;background:#2443F5"></div></div></div>
+      <div style="display:flex;gap:4px;color:#F5B300"><sc-for list="{{ stars }}" as="s" hint-placeholder-count="5"><span style="font-family:'Material Symbols Rounded';font-size:26px;line-height:1;font-variation-settings:'FILL' 1;color:{{ s.c }}">star</span></sc-for><span style="font-size:13px;color:#6B7280;margin-left:6px;align-self:center">4 / 5</span></div>
+    </section>
+    <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:16px;font-weight:700">Holatlar</div>
+      <div style="border-radius:16px;border:1px solid #ECEEF2;padding:22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center"><span style="font-size:14px;color:#4B5563">Bugun hali hech kim kelmadi.</span><span style="height:36px;padding:0 16px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:700">Xodimlarga eslatish</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+        <sc-for list="{{ skel }}" as="k" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:999px;background:#EEF0F3"></span><span style="height:10px;border-radius:999px;background:#EEF0F3;width:{{ k }}"></span><span style="flex:1"></span><span style="width:56px;height:20px;border-radius:999px;background:#F2F4F7"></span></div></sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:#FDECEC;color:#B42318;font-size:13px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">error</span><span style="flex:1">Ma'lumot yuklanmadi.</span><span style="text-decoration:underline">Qayta urinish</span></div>
+    </section>
+    <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:16px;font-weight:700">Fayl / rasm · Toast</div>
+      <div style="border-radius:16px;border:1.5px dashed #C4CBD6;background:#FAFBFC;padding:24px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span style="width:44px;height:44px;border-radius:999px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">upload</span></span><span style="font-size:14px;font-weight:600">Faylni shu yerga tashlang</span><span style="font-size:12px;color:#9CA3AF">JPG, PNG, PDF · 10 MB gacha</span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#0B1B4F;color:#fff;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(11,27,79,.25)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:#4ADE80;font-variation-settings:'FILL' 1">check_circle</span><span style="flex:1">Vazifa 3 xodimga yuborildi</span><span style="color:#A5B4FC">Bekor qilish</span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid #ECEEF2;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(16,24,40,.08)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:#E5484D;font-variation-settings:'FILL' 1">error</span><span style="flex:1">Sabab kiritilishi shart</span></div>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px">
+    <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:24px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:16px;font-weight:700">Jadval</div>
+      <div style="display:grid;grid-template-columns:28px minmax(0,1.6fr) 1fr 1fr 1fr 32px;gap:12px;align-items:center;padding:10px 8px;font-size:12px;color:#9CA3AF;font-weight:500;background:#FAFBFC;border-radius:10px"><span style="width:18px;height:18px;border-radius:6px;border:1.5px solid #C4C9D2;box-sizing:border-box"></span><span>Xodim · sticky sarlavha</span><span>Keldi</span><span>Ishladi</span><span>Holat</span><span></span></div>
+      <sc-for list="{{ tbl }}" as="r" hint-placeholder-count="3">
+        <div style="display:grid;grid-template-columns:28px minmax(0,1.6fr) 1fr 1fr 1fr 32px;gap:12px;align-items:center;padding:10px 8px;font-size:13px;border-bottom:1px solid #F4F5F7;background:{{ r.bgRow }};border-radius:10px">
+          <span style="width:18px;height:18px;border-radius:6px;border:1.5px solid {{ r.cbd }};background:{{ r.cb }};box-sizing:border-box;color:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:14px;line-height:1">check</span></span>
+          <b style="font-weight:700">{{ r.n }}</b><span style="font-weight:600;color:{{ r.ic }}">{{ r.in }}</span><span>{{ r.w }}</span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;white-space:nowrap;background:{{ r.sb }};color:{{ r.sc }};font-size:12px;font-weight:700"><span style="width:6px;height:6px;border-radius:999px;background:{{ r.sc }}"></span>{{ r.st }}</span></span>
+          <span style="width:30px;height:30px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">more_horiz</span></span>
+        </div>
+      </sc-for>
+    </section>
+    <section style="background:#F7F8FA;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden">
+      <div style="font-size:16px;font-weight:700">Dialog (o'chirish)</div>
+      <div style="background:#fff;border-radius:24px;box-shadow:0 2px 6px rgba(16,24,40,.06),0 24px 60px rgba(16,24,40,.14);padding:24px;display:flex;flex-direction:column;gap:14px">
+        <span style="width:44px;height:44px;border-radius:999px;background:#FDECEC;color:#E5484D;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">delete</span></span>
+        <div><div style="font-size:18px;font-weight:700">Xodimni o'chirasizmi?</div><div style="font-size:14px;color:#6B7280;margin-top:4px;line-height:1.5">Otabek Jumaniyozov tizimga kira olmaydi. Tabel va hisobotlar saqlanib qoladi.</div></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end"><span style="height:44px;padding:0 20px;border-radius:999px;white-space:nowrap;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:14px;font-weight:700">Bekor qilish</span><span style="height:44px;padding:0 20px;border-radius:999px;white-space:nowrap;background:#E5484D;color:#fff;display:flex;align-items:center;font-size:14px;font-weight:700">O'chirish</span></div>
+      </div>
+      <div style="font-size:12px;color:#6B7280">Drawer: o'ngdan, 520px, chap burchaklari 24px — <a href="Vazifa berish.dc.html">Vazifa berish</a> va <a href="Davomat.dc.html">Tuzatish</a> ga qarang.</div>
+    </section>
+  </div>
+
+  <section id="domen" style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:28px;display:flex;flex-direction:column;gap:22px">
+    <div style="font-size:20px;font-weight:700">Domen komponentlari</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <sc-for list="{{ evid }}" as="e" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">{{ e.cap }}</span>
+          <div style="border-radius:16px;border:1px solid {{ e.bd }};background:{{ e.bg }};padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:14px">
+              <div style="width:64px;height:64px;border-radius:14px;background:linear-gradient(160deg,#DCE1EA,#C5CCD8);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;flex-shrink:0"><span style="font-family:'Material Symbols Rounded';font-size:52px;line-height:1;color:#A9B2C2;font-variation-settings:'FILL' 1;margin-bottom:-6px">person</span></div>
+              <div style="width:120px;height:64px;border-radius:14px;background:#EAEFF3;position:relative;overflow:hidden;flex-shrink:0">
+                <div style="position:absolute;left:-10px;right:-10px;top:38px;height:5px;background:#fff;transform:rotate(-8deg)"></div>
+                <div style="position:absolute;left:{{ e.cx }};top:6px;width:52px;height:52px;border-radius:999px;border:1.5px solid #2443F5;background:rgba(36,67,245,.10);box-sizing:border-box"></div>
+                <div style="position:absolute;left:{{ e.px }};top:{{ e.py }};width:10px;height:10px;border-radius:999px;background:{{ e.pc }};border:2px solid #fff"></div>
+              </div>
+              <div style="flex:1;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12px;align-content:center">
+                <span style="color:#6B7280">Vaqt</span><b style="font-weight:700">{{ e.t }}</b>
+                <span style="color:#6B7280">Masofa</span><b style="font-weight:700;color:{{ e.dc }}">{{ e.d }}</b>
+                <span style="color:#6B7280">Yuz mos</span><b style="font-weight:700;color:{{ e.fc }}">{{ e.f }}</b>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;background:{{ e.sb }};color:{{ e.sc }};border:1.5px solid {{ e.sbd }}">{{ e.st }}</span><span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:#EEF1FF;color:#2443F5">{{ e.src }}</span></div>
+            </div>
+            <sc-if value="{{ e.reason }}"><div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:#FFF1E6;color:#B4540C;font-size:13px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">warning</span>{{ e.reason }}</div></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">TABEL KATAKCHASI</span>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="6">
+            <div style="height:84px;border-radius:14px;background:{{ c.bg }};border:1px solid {{ c.bd }};padding:9px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+              <span style="font-size:13px;font-weight:700;color:{{ c.nc }}">{{ c.d }}</span>
+              <div><span style="display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#4B5563"><span style="width:6px;height:6px;border-radius:999px;background:{{ c.dot }}"></span>{{ c.l }}</span><span style="font-size:13px;font-weight:700">{{ c.h }}</span></div>
+              <sc-if value="{{ c.late }}"><div style="position:absolute;top:0;right:0;width:30px;height:30px;background:linear-gradient(225deg,#F07A1A 50%,transparent 50%)"></div><span style="position:absolute;top:2px;right:4px;font-size:10px;font-weight:800;color:#fff">{{ c.late }}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">JONLI ISHTIROK QATORI</span>
+        <sc-for list="{{ presence }}" as="p" hint-placeholder-count="2">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;border:1px solid #ECEEF2">
+            <span style="position:relative;width:38px;height:38px;border-radius:999px;background:{{ p.ab }};color:{{ p.af }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{{ p.i }}<span style="position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:999px;background:#16A34A;border:2px solid #fff"></span></span>
+            <div style="flex:1"><div style="font-size:14px;font-weight:700">{{ p.n }}</div><div style="font-size:12px;color:#6B7280">{{ p.pos }}</div></div>
+            <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:#16A34A">{{ p.since }}</div><div style="font-size:12px;color:#6B7280">{{ p.br }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">VAZIFA KARTASI</span>
+        <div style="border-radius:16px;border:1px solid #F8C9CB;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:6px"><span style="height:22px;padding:0 8px;box-sizing:border-box;border-radius:999px;font-size:11px;font-weight:700;border:1.5px solid #2443F5;color:#2443F5;display:flex;align-items:center">Jarayonda</span><span style="height:22px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:700;background:#FDECEC;color:#E5484D;display:flex;align-items:center">Muddati o'tdi</span></div>
+          <div style="font-size:14px;font-weight:700">Yetkazib berish — Pitnak filialiga</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#4B5563"><span style="width:24px;height:24px;border-radius:999px;background:#EDE9FE;color:#6D28D9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">US</span>Ulug'bek Sobirov</div>
+          <div style="display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid #F4F5F7;font-size:12px"><span style="display:flex;align-items:center;gap:4px;font-weight:600;color:#E5484D;white-space:nowrap"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">schedule</span>Bugun 15:00</span><span style="display:flex;align-items:center;gap:4px;color:#6B7280"><span style="width:7px;height:7px;border-radius:999px;background:#F07A1A"></span>O'rta</span><span style="flex:1"></span><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1;color:#6B7280">location_on</span></div>
+          <div style="font-size:12px;font-weight:700;color:#E5484D">2 soat kechikdi</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">HISOBOT KARTASI</span>
+        <div style="border-radius:16px;border:1px solid #ECEEF2;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:999px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">GS</span><div style="flex:1"><div style="font-size:13px;font-weight:700">Gulnora Saidova</div><div style="font-size:11px;color:#6B7280">Yangi kolleksiyani vitrinaga terish · 16:12</div></div><span style="height:22px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:700;background:#FFF1E6;color:#F07A1A;display:flex;align-items:center">Tekshiruvda</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"><sc-for list="{{ three }}" as="x" hint-placeholder-count="3"><div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(150deg,#E3E7EE,#CDD3DD);display:flex;align-items:center;justify-content:center;color:#A9B2C2"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">image</span></div></sc-for></div>
+          <div style="font-size:13px;color:#374151">«Hammasi joyida, 6 ta maneken kiyintirildi.»</div>
+          <div style="display:flex;gap:12px;font-size:12px;color:#6B7280"><span style="display:flex;align-items:center;gap:4px"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1;color:#16A34A">location_on</span>Mudom — Markaz · 18 m</span><span style="display:flex;align-items:center;gap:4px"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1;color:#16A34A">checklist</span>3 / 3</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid #F4F5F7">
+            <span style="display:flex;gap:2px"><sc-for list="{{ stars }}" as="s" hint-placeholder-count="5"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:{{ s.c }};font-variation-settings:'FILL' 1">star</span></sc-for></span>
+            <span style="flex:1"></span>
+            <span style="height:36px;padding:0 14px;border-radius:999px;white-space:nowrap;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:13px;font-weight:700">Qaytarish</span>
+            <span style="height:36px;padding:0 14px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:700">Qabul qilish</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">TELEGRAM XABAR KO'RINISHI</span>
+        <div style="border-radius:16px;background:#D9E4EC;padding:14px;display:flex;flex-direction:column;gap:5px">
+          <div style="background:#fff;border-radius:14px 14px 14px 4px;padding:9px 11px 6px;font-size:13px;line-height:1.45">
+            <div style="font-size:12px;font-weight:700;color:#229ED9">adone</div>
+            <div style="font-weight:700">↩️ Vazifa qaytarildi</div>
+            <div>Yangi kolleksiyani vitrinaga terish</div>
+            <div>💬 «Rasm aniq emas, qayta yuboring»</div>
+            <div style="font-size:10px;color:#9CA3AF;text-align:right">14:40</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:4px"><span style="height:34px;border-radius:10px;background:rgba(80,110,135,.32);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">Qayta topshirish</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const sw = (n, v, tok) => ({ n, v, tok });
+    const palettes = [
+      { t:'BREND', c:[sw('Primary','#2443F5','--accent'),sw('Hover','#1A34D6','--accent-hover'),sw('Tint','#EEF1FF','--accent-tint'),sw('Soft','#F5F7FF','--accent-soft'),sw('Navy','#0B1B4F','--navy')] },
+      { t:'SEMANTIK', c:[sw('Success','#16A34A','--success'),sw('Success tint','#E8F7EE','--success-tint'),sw('Warning','#F07A1A','--warning'),sw('Warning tint','#FFF1E6','--warning-tint'),sw('Danger','#E5484D','--danger'),sw('Danger tint','#FDECEC','--danger-tint')] },
+      { t:'NEYTRAL', c:[sw('Text','#111827','--text'),sw('Muted','#6B7280','--text-muted'),sw('Faint','#9CA3AF','--text-faint'),sw('Border','#ECEEF2','--border'),sw('Canvas','#EEF0F4','--bg-canvas'),sw('Content','#F7F8FA','--bg-content'),sw('Card','#FFFFFF','--bg-card'),sw('Bar track','#E9EBF0','--chart-track')] }
+    ];
+    const type = [
+      ['Display 40 / 700','40px',700,'-0.03em','Dizayn tizimi'],
+      ['Sarlavha 28 / 700','28px',700,'-0.02em','Xayrli tong!'],
+      ['KPI 32 / 800','32px',800,'-0.03em','8 soat 12 daq'],
+      ['Karta 16 / 700','16px',700,'0','Davomat tahlili'],
+      ['Asosiy 14 / 500','14px',500,'0',"4 ta qaror kutmoqda — ko'rish"],
+      ['Jadval 13 / 400','13px',400,'0','Gulnora Saidova · 09:02 · 3:18'],
+      ['Yorliq 12 / 500','12px',500,'0','Kechikish chegarasi 10 daqiqa'],
+      ['Chip 11 / 700','11px',700,'0','↗ 2.46%'],
+      ['Mini App 24 / 700','24px',700,'-0.02em','Assalomu alaykum, Gulnora']
+    ].map(([spec,s,w,ls,ex]) => ({ spec, s, w, ls, ex, c:'#111827' }));
+    const radii = [['App ramka','24px'],['Karta','20px'],['Input','12px'],['Pill','999px']].map(([n,v]) => ({ n, v }));
+    const buttons = [
+      { n:'Primary', l:'Vazifa berish', i:'add', bg:'#2443F5', c:'#fff', bd:'#2443F5' },
+      { n:'Secondary', l:'Excel', i:'download', bg:'#fff', c:'#111827', bd:'#ECEEF2' },
+      { n:'Ghost', l:'Batafsil', i:'arrow_outward', bg:'transparent', c:'#2443F5', bd:'transparent' },
+      { n:'Danger', l:'Rad etish', i:'close', bg:'#E5484D', c:'#fff', bd:'#E5484D' }
+    ];
+    const presets = ['Bugun','Kecha','Bu hafta','Bu oy'].map((l,i) => ({ l, bg: i === 2 ? '#0B1B4F' : '#F2F4F7', c: i === 2 ? '#fff' : '#4B5563' }));
+    const G = ['#E8F7EE','#16A34A'], A = ['#FFF1E6','#F07A1A'], R = ['#FDECEC','#E5484D'], B = ['#EEF1FF','#2443F5'], N = ['#F2F4F7','#6B7280'], NV = ['#0B1B4F','#fff'];
+    const b = (l, [bg, c], o = {}) => ({ l, bg, c, bd: bg, dot: c, ...o });
+    const out = (l, c) => ({ l, bg:'#fff', c, bd:c, dot:c });
+    const badgeSets = [
+      { t:'Davomat kuni', b:[b('Ishda',G),b('Kechikdi',A),b('Kelmadi',R),b('Ruxsatda',B),b('Dam olish',N),b('Erta ketdi',A),out('Shubhali','#F07A1A')] },
+      { t:'Check-in tekshiruvi', b:[b('Tasdiqlandi',G),out('Shubhali','#F07A1A'),b('Rad etildi',R)] },
+      { t:'Vazifa', b:[b('Yangi',B),b('Qabul qilindi',NV,{ dot:'#fff' }),out('Jarayonda','#2443F5'),b('Tekshiruvda',A),b('Tasdiqlandi',G),b('Qaytarildi',R),b('Bekor qilindi',N),b("Muddati o'tdi",R)] },
+      { t:'Muhimlik', b:[{ l:'Shoshilinch', bg:'#fff', c:'#111827', bd:'#ECEEF2', dot:'#E5484D' },{ l:"O'rta", bg:'#fff', c:'#111827', bd:'#ECEEF2', dot:'#F07A1A' },{ l:'Oddiy', bg:'#fff', c:'#111827', bd:'#ECEEF2', dot:'#9CA3AF' }] },
+      { t:"So'rov", b:[b('Kutilmoqda',A),b('Tasdiqlandi',G),b('Rad etildi',R)] },
+      { t:'Xodim', b:[b('Taklif yuborildi',N),b('Tasdiq kutmoqda',A),b('Faol',G),b("O'chirilgan",N,{ c:'#9CA3AF', dot:'#C4C9D2' })] }
+    ];
+    const avatars = [['GS','#EEF1FF','#2443F5','#16A34A','40px'],['DR','#E8F7EE','#15803D','#F07A1A','40px'],['ME','#FCE7F3','#9D174D','#E5484D','32px'],['JK','#E0F2FE','#0369A1','#9CA3AF','32px']].map(([i,bg,c,dot,s]) => ({ i, bg, c, dot, s }));
+    const stars = [1,1,1,1,0].map(f => ({ c: f ? '#F5B300' : '#E5E7EB' }));
+    const tbl = [
+      { n:'Gulnora Saidova', in:'09:02', ic:'#111827', w:'3:18', st:'Ishda', sb:G[0], sc:G[1], cb:'#2443F5', cbd:'#2443F5', bgRow:'#F5F7FF' },
+      { n:'Madina Ergasheva', in:'09:07', ic:'#F07A1A', w:'3:13', st:'Kechikdi', sb:A[0], sc:A[1], cb:'#fff', cbd:'#C4C9D2', bgRow:'transparent' },
+      { n:'Otabek Jumaniyozov', in:'—', ic:'#9CA3AF', w:'0:00', st:'Kelmadi', sb:R[0], sc:R[1], cb:'#fff', cbd:'#C4C9D2', bgRow:'transparent' }
+    ];
+    const evid = [
+      { cap:'CHECK-IN DALILI · TASDIQLANDI', bd:'#ECEEF2', bg:'#fff', t:'09:02', d:'35 m', dc:'#16A34A', f:'94%', fc:'#16A34A', st:'Tasdiqlandi', sb:G[0], sc:G[1], sbd:G[0], src:'Mini App', cx:'34px', px:'58px', py:'30px', pc:'#2443F5', reason:'' },
+      { cap:'CHECK-IN DALILI · SHUBHALI', bd:'#F9D7BC', bg:'#FFFBF7', t:'08:58', d:'420 m', dc:'#F07A1A', f:'92%', fc:'#16A34A', st:'Shubhali', sb:'#fff', sc:'#C25A0A', sbd:'#F07A1A', src:'Bot', cx:'8px', px:'96px', py:'14px', pc:'#F07A1A', reason:'Zonadan tashqarida: 420 m' }
+    ];
+    const cells = [
+      { d:12, l:'Ishda', h:'10:58', dot:'#16A34A', bg:'#fff', bd:'#ECEEF2', nc:'#111827' },
+      { d:13, l:'Kechikdi', h:'10:41', dot:'#F07A1A', bg:'#fff', bd:'#ECEEF2', nc:'#111827', late:'7' },
+      { d:8, l:'Kelmadi', h:'0:00', dot:'#E5484D', bg:'#fff', bd:'#ECEEF2', nc:'#111827' },
+      { d:14, l:'Ruxsatda', h:'—', dot:'#2443F5', bg:'#fff', bd:'#ECEEF2', nc:'#111827' },
+      { d:18, l:'Dam olish', h:'', dot:'#9CA3AF', bg:'#F7F8FA', bd:'#F7F8FA', nc:'#9CA3AF' },
+      { d:19, l:'Hozir', h:'3:18', dot:'#16A34A', bg:'#fff', bd:'#2443F5', nc:'#2443F5' }
+    ];
+    const presence = [
+      { i:'GS', ab:'#EEF1FF', af:'#2443F5', n:'Gulnora Saidova', pos:'Sotuvchi · Sotuv zali', since:'09:02 dan beri', br:'Mudom — Markaz' },
+      { i:'JK', ab:'#E0F2FE', af:'#0369A1', n:'Jasur Karimov', pos:'Omborchi · Ombor', since:'08:55 dan beri', br:'Mudom — Ombor' }
+    ];
+    const toc = [['tokens','Tokenlar'],['komponentlar','Komponentlar'],['badges','Badge'],['domen','Domen']].map(([id,l]) => ({ id, l }));
+    return { palettes, type, radii, buttons, presets, badgeSets, avatars, stars, tbl, evid, cells, presence, toc,
+      space:[4,8,12,16,20,24,28], iconBtns:['notifications','search','more_horiz','download','tune'], skel:['40%','55%','32%'], three:[1,2,3] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#EEF0F4;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}a{color:#2443F5;text-decoration:none}a:hover{color:#1A34D6}</style>
+</helmet>
+<div data-screen-label="Mini App — Keldim" style="box-sizing:border-box;padding:40px;background:#EEF0F4;display:flex;gap:40px;align-items:flex-start;width:max-content">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="5">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#4B5563"><span style="width:24px;height:24px;border-radius:999px;background:#0B1B4F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">{{ f.n }}</span>{{ f.label }}</div>
+      <div style="padding:10px;border-radius:56px;background:#14161C;box-shadow:0 30px 60px rgba(16,24,40,.18)">
+        <div style="width:390px;height:844px;border-radius:46px;overflow:hidden;background:{{ f.bg }};display:flex;flex-direction:column;position:relative">
+          <div style="height:47px;padding:0 30px 0 34px;display:flex;align-items:center;justify-content:space-between;background:{{ f.barBg }};color:{{ f.barFg }};font-size:15px;font-weight:700">
+            <span>09:07</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">signal_cellular_alt</span><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">wifi</span><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">battery_full</span></span>
+          </div>
+          <div style="height:52px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;background:{{ f.barBg }};color:{{ f.barFg }}">
+            <span style="display:flex;align-items:center;gap:4px;height:32px;padding:0 12px 0 8px;border-radius:999px;white-space:nowrap;background:{{ f.pill }};font-size:14px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">arrow_back</span>Orqaga</span>
+            <div style="text-align:center"><div style="font-size:16px;font-weight:700">Keldim</div><div style="font-size:11px;opacity:.6">{{ f.step }}</div></div>
+            <span style="width:32px;height:32px;border-radius:999px;background:{{ f.pill }};display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">more_horiz</span></span>
+          </div>
+          <div style="display:flex;gap:6px;padding:10px 16px 0">
+            <sc-for list="{{ f.bars }}" as="b" hint-placeholder-count="3"><span style="flex:1;height:4px;border-radius:999px;background:{{ b }}"></span></sc-for>
+          </div>
+
+          <sc-if value="{{ f.isLoc }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;padding:18px 16px;display:flex;flex-direction:column;gap:16px">
+              <div><div style="font-size:24px;font-weight:700;letter-spacing:-0.02em">{{ f.title }}</div><div style="font-size:15px;color:#6B7280;margin-top:4px">Mudom — Markaz · radius 100 m</div></div>
+              <div style="height:330px;border-radius:24px;background:#E7EDF1;position:relative;overflow:hidden">
+                <div style="position:absolute;left:-20px;right:-20px;top:190px;height:14px;background:#fff;transform:rotate(-10deg)"></div>
+                <div style="position:absolute;left:220px;top:-20px;bottom:-20px;width:12px;background:#fff;transform:rotate(16deg)"></div>
+                <div style="position:absolute;left:-20px;right:-20px;top:70px;height:8px;background:#fff;transform:rotate(4deg)"></div>
+                <div style="position:absolute;left:30px;top:96px;width:70px;height:60px;border-radius:8px;background:#DAE2E8"></div>
+                <div style="position:absolute;left:250px;top:230px;width:80px;height:56px;border-radius:8px;background:#DAE2E8"></div>
+                <div style="position:absolute;left:60px;top:230px;width:50px;height:70px;border-radius:8px;background:#D6E6D9"></div>
+                <div style="position:absolute;left:99px;top:85px;width:160px;height:160px;border-radius:999px;border:2px solid #2443F5;background:rgba(36,67,245,.12);box-sizing:border-box"></div>
+                <div style="position:absolute;left:163px;top:133px;width:32px;height:32px;border-radius:10px;background:#2443F5;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(36,67,245,.35)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;font-variation-settings:'FILL' 1">storefront</span></div>
+                <div style="position:absolute;left:{{ f.px }};top:{{ f.py }};width:44px;height:44px;border-radius:999px;background:{{ f.halo }};display:flex;align-items:center;justify-content:center"><span style="width:16px;height:16px;border-radius:999px;background:{{ f.pc }};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)"></span></div>
+                <span style="position:absolute;left:12px;bottom:12px;font-size:12px;font-weight:600;background:#fff;padding:5px 10px;border-radius:999px;white-space:nowrap">GPS aniqligi ±8 m</span>
+              </div>
+              <div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:18px;background:{{ f.rb }}">
+                <span style="width:36px;height:36px;border-radius:999px;background:{{ f.rc }};color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ f.ri }}</span></span>
+                <div><div style="font-size:16px;font-weight:700;color:{{ f.rt }}">{{ f.result }}</div><div style="font-size:14px;color:#4B5563;margin-top:2px;line-height:1.4">{{ f.resultSub }}</div></div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f.isCam }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:24px 16px;gap:22px;color:#fff">
+              <div style="font-size:22px;font-weight:700;text-align:center">Yuzingizni ramkaga joylang</div>
+              <div style="position:relative;width:270px;height:360px">
+                <div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#5A6270,#2A2F38 70%);overflow:hidden;display:flex;align-items:flex-end;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:300px;line-height:1;color:#707887;font-variation-settings:'FILL' 1;margin-bottom:-60px">person</span></div>
+                <div style="position:absolute;inset:-8px;border-radius:50%;border:4px solid #16A34A;box-sizing:border-box;clip-path:polygon(0 0,100% 0,100% 62%,0 62%)"></div>
+                <div style="position:absolute;inset:-8px;border-radius:50%;border:4px solid rgba(255,255,255,.25);box-sizing:border-box;clip-path:polygon(0 62%,100% 62%,100% 100%,0 100%)"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 20px 0 14px;border-radius:999px;white-space:nowrap;background:rgba(255,255,255,.12);font-size:17px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:26px;line-height:1">turn_left</span>Boshingizni chapga burang</div>
+              <div style="display:flex;gap:8px;font-size:13px;color:rgba(255,255,255,.7)">
+                <span style="display:flex;align-items:center;gap:4px;color:#4ADE80"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">check_circle</span>Yuz topildi</span>
+                <span>·</span><span>Jonlilik 2/3</span>
+              </div>
+              <div style="margin-top:auto;font-size:12px;color:rgba(255,255,255,.55);text-align:center;line-height:1.5">Faqat jonli kamera. Galereyadan rasm yuklab bo'lmaydi.</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f.isRes }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1;padding:40px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:16px">
+              <div style="width:120px;height:120px;border-radius:999px;background:{{ f.rb }};display:flex;align-items:center;justify-content:center"><div style="width:84px;height:84px;border-radius:999px;background:{{ f.rc }};color:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:48px;line-height:1">{{ f.ri }}</span></div></div>
+              <div style="text-align:center"><div style="font-size:24px;font-weight:700;letter-spacing:-0.02em">{{ f.title }}</div><div style="font-size:40px;font-weight:800;letter-spacing:-0.03em;margin-top:4px">09:07</div></div>
+              <div style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#FFF1E6;color:#B4540C;font-size:15px;font-weight:600;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">{{ f.noteIcon }}</span>{{ f.note }}</div>
+              <div style="width:100%;background:#fff;border-radius:20px;padding:6px 16px;box-sizing:border-box">
+                <sc-for list="{{ f.facts }}" as="x" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F4F5F7;font-size:15px"><span style="color:#6B7280">{{ x.k }}</span><b style="font-weight:700;color:{{ x.c }}">{{ x.v }}</b></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="padding:12px 16px 30px;background:{{ f.bg }}">
+            <div style="height:54px;border-radius:16px;background:{{ f.btnBg }};color:{{ f.btnFg }};display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">{{ f.btn }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const light = { bg:'#F4F5F8', barBg:'#fff', barFg:'#111827', pill:'#F2F4F7' };
+    const dark = { bg:'#0E1116', barBg:'#0E1116', barFg:'#fff', pill:'rgba(255,255,255,.12)' };
+    const bars = n => [0,1,2].map(i => i < n ? '#2443F5' : '#DDE1E8');
+    const primary = { btnBg:'#2443F5', btnFg:'#fff' };
+    const facts = (face, faceC) => [
+      { k:'Yuz mos', v:face, c:faceC }, { k:'Masofa', v:'35 m', c:'#16A34A' },
+      { k:'Filial', v:'Mudom — Markaz', c:'#111827' }, { k:'Manba', v:'Mini App', c:'#111827' }
+    ];
+    const frames = [
+      { n:'a', label:'Lokatsiya — zonada', ...light, ...primary, step:'1 / 3 · Lokatsiya', bars:bars(1), isLoc:true,
+        title:'Lokatsiya tekshirilmoqda…', px:'190px', py:'150px', pc:'#16A34A', halo:'rgba(22,163,74,.2)',
+        rb:'#E8F7EE', rc:'#16A34A', ri:'check', rt:'#15803D', result:'Siz zonadasiz · 35 m', resultSub:'Endi selfi orqali yuzingizni tasdiqlang', btn:'Davom etish' },
+      { n:'a', label:'Lokatsiya — xato varianti', ...light, ...primary, step:'1 / 3 · Lokatsiya', bars:bars(1), isLoc:true,
+        title:'Lokatsiya tekshirildi', px:'300px', py:'20px', pc:'#E5484D', halo:'rgba(229,72,77,.2)',
+        rb:'#FDECEC', rc:'#E5484D', ri:'wrong_location', rt:'#C2262B', result:'Zonadan tashqaridasiz: 420 m', resultSub:'Filialga yaqinroq boring.', btn:'Qayta tekshirish' },
+      { n:'b', label:'Selfi va jonlilik', ...dark, btnBg:'rgba(255,255,255,.12)', btnFg:'#fff', step:'2 / 3 · Selfi', bars:bars(2), isCam:true, btn:'Bekor qilish' },
+      { n:'c', label:'Natija — qabul qilindi', ...light, ...primary, step:'3 / 3 · Natija', bars:bars(3), isRes:true,
+        rb:'#E8F7EE', rc:'#16A34A', ri:'check', title:'Qabul qilindi', noteIcon:'schedule', note:'Kechikdingiz: 7 daqiqa', facts:facts('94%','#16A34A'), btn:'Bosh sahifaga' },
+      { n:'c', label:'Natija — rahbar tekshiradi', ...light, ...primary, step:'3 / 3 · Natija', bars:bars(3), isRes:true,
+        rb:'#FFF1E6', rc:'#F07A1A', ri:'hourglass_top', title:'Qabul qilindi, rahbar tekshiradi', noteIcon:'face_retouching_off', note:'Yuz mos: 58% — rahbar tasdiqlaydi', facts:facts('58%','#F07A1A'), btn:'Bosh sahifaga' }
+    ];
+    return { frames };
+  }
+}
+</script>
+</body>
+</html>

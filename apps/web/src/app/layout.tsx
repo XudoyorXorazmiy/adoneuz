@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ variable: '--font-inter', subsets: ['latin', 'cyrillic'], weight: ['400', '500', '600', '700'] });
+const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] });
 
 export const metadata: Metadata = {
   title: { default: 'adone — davomat va vazifalar', template: '%s · adone' },
@@ -10,11 +10,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(`https://${process.env.ROOT_DOMAIN?.includes('localhost') ? 'adone.uz' : (process.env.ROOT_DOMAIN ?? 'adone.uz')}`),
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#0F766E' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#2443F5' };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="uz" className={inter.variable}>
+    <html lang="uz" className={jakarta.variable}>
+      <head>
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" />
+      </head>
       <body>{children}</body>
     </html>
   );

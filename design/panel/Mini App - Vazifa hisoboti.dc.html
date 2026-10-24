@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#EEF0F4;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}a{color:#2443F5;text-decoration:none}a:hover{color:#1A34D6}</style>
+</helmet>
+<div data-screen-label="Mini App — Vazifa hisoboti" style="box-sizing:border-box;padding:40px;background:#EEF0F4;display:flex;gap:48px;align-items:flex-start;width:max-content">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:14px;font-weight:700;color:#4B5563">{{ f.label }}</div>
+      <div style="padding:10px;border-radius:56px;background:#14161C;box-shadow:0 30px 60px rgba(16,24,40,.18)">
+        <div style="width:390px;height:844px;border-radius:46px;overflow:hidden;background:#F4F5F8;display:flex;flex-direction:column">
+          <div style="height:47px;padding:0 30px 0 34px;display:flex;align-items:center;justify-content:space-between;background:#fff;font-size:15px;font-weight:700">
+            <span>14:58</span>
+            <span style="display:flex;gap:4px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">signal_cellular_alt</span><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">wifi</span><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">battery_full</span></span>
+          </div>
+          <div style="height:52px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #EEF0F3">
+            <span style="display:flex;align-items:center;gap:4px;height:32px;padding:0 12px 0 8px;border-radius:999px;white-space:nowrap;background:#F2F4F7;font-size:14px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">arrow_back</span>Orqaga</span>
+            <div style="font-size:16px;font-weight:700">{{ f.head }}</div>
+            <span style="width:32px;height:32px;border-radius:999px;background:#F2F4F7;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">more_horiz</span></span>
+          </div>
+
+          <sc-if value="{{ f.isTask }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;overflow:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+              <sc-if value="{{ f.returned }}">
+                <div style="display:flex;gap:10px;padding:12px 14px;border-radius:16px;background:#FDECEC;color:#B42318">
+                  <span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">undo</span>
+                  <div style="font-size:14px;line-height:1.4"><b style="font-weight:700">Qaytarildi:</b> «Rasm aniq emas, qayta yuboring»<div style="font-size:12px;color:#B4545A;margin-top:2px">Sardor Rahimov · 14:40</div></div>
+                </div>
+              </sc-if>
+              <div style="background:#fff;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;gap:6px"><span style="display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:999px;white-space:nowrap;background:#FDECEC;color:#E5484D;font-size:12px;font-weight:700"><span style="width:6px;height:6px;border-radius:999px;background:#E5484D"></span>Shoshilinch</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;background:{{ f.sb }};color:{{ f.sc }};border:1.5px solid {{ f.sbd }}">{{ f.st }}</span></div>
+                <div style="font-size:21px;font-weight:700;letter-spacing:-0.02em;line-height:1.25">Yangi kolleksiyani vitrinaga terish</div>
+                <div style="display:flex;flex-direction:column;gap:6px;font-size:14px">
+                  <span style="display:flex;align-items:center;gap:8px;color:#4B5563"><span style="width:22px;height:22px;border-radius:999px;background:#E0F2FE;color:#0369A1;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">SR</span>Kimdan: <b style="font-weight:600;color:#111827">Sardor Rahimov</b></span>
+                  <span style="display:flex;align-items:center;gap:8px;color:#4B5563"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">schedule</span><b style="font-weight:600;color:#111827">Bugun 17:00</b><span style="color:#F07A1A;font-weight:600">· 2 soat qoldi</span></span>
+                </div>
+                <sc-if value="{{ f.full }}"><div style="font-size:14px;color:#4B5563;line-height:1.5">Kuzgi kolleksiyani asosiy vitrinaga joylang. Narx yorliqlari ko'rinib tursin.</div></sc-if>
+              </div>
+              <sc-if value="{{ f.full }}">
+                <div style="background:#fff;border-radius:20px;padding:6px 16px">
+                  <sc-for list="{{ checklist }}" as="c" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;border-bottom:1px solid #F4F5F7"><span style="width:22px;height:22px;border-radius:7px;background:{{ c.bg }};border:1.5px solid {{ c.bd }};box-sizing:border-box;color:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">check</span></span><span style="color:{{ c.tc }}">{{ c.l }}</span></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="background:#fff;border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:16px;font-weight:700">Hisobot</span><span style="display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px 0 6px;border-radius:999px;white-space:nowrap;background:#EEF1FF;color:#2443F5;font-size:12px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">photo_camera</span>Rasm · majburiy</span></div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+                  <sc-for list="{{ f.slots }}" as="s" hint-placeholder-count="3">
+                    <div style="aspect-ratio:1;border-radius:14px;background:{{ s.bg }};border:{{ s.bd }};box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:{{ s.c }};font-size:11px;font-weight:700;position:relative"><span style="font-family:'Material Symbols Rounded';font-size:26px;line-height:1">{{ s.i }}</span>{{ s.l }}</div>
+                  </sc-for>
+                </div>
+                <div style="min-height:64px;border-radius:12px;border:1px solid #ECEEF2;padding:10px 12px;font-size:15px;color:{{ f.cc }};line-height:1.45;box-sizing:border-box">{{ f.comment }}</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f.isLog }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1;overflow:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;gap:4px;padding:4px;border-radius:14px;background:#E9EBF0;font-size:15px;font-weight:600">
+                <span style="flex:1;text-align:center;padding:10px 0;border-radius:11px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08)">Bajardim</span>
+                <span style="flex:1;text-align:center;padding:10px 0;color:#6B7280">Rejalashtiraman</span>
+              </div>
+              <label style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">Nima qildingiz?</span><div style="height:52px;border-radius:14px;background:#fff;border:1.5px solid #2443F5;box-shadow:0 0 0 4px #EEF1FF;display:flex;align-items:center;padding:0 14px;font-size:16px">Vitrinadagi narxlarni yangiladim</div></label>
+              <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">Turi</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ cats }}" as="c" hint-placeholder-count="4"><span style="height:40px;padding:0 16px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;font-size:15px;font-weight:600;background:{{ c.bg }};color:{{ c.c }};border:1.5px solid {{ c.bd }};box-sizing:border-box">{{ c.l }}</span></sc-for></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">Sarflangan vaqt</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ times }}" as="c" hint-placeholder-count="5"><span style="height:40px;padding:0 14px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;font-size:15px;font-weight:600;background:{{ c.bg }};color:{{ c.c }};border:1.5px solid {{ c.bd }};box-sizing:border-box">{{ c.l }}</span></sc-for></div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <div style="width:88px;height:88px;border-radius:16px;border:1.5px dashed #C4CBD6;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#2443F5;font-size:11px;font-weight:700;background:#fff"><span style="font-family:'Material Symbols Rounded';font-size:26px;line-height:1">photo_camera</span>Suratga olish</div>
+                <div style="flex:1;border-radius:14px;background:#fff;border:1px solid #ECEEF2;padding:10px 12px;font-size:15px;color:#9CA3AF;line-height:1.4">Izoh (ixtiyoriy)</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#6B7280"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#2443F5">info</span>Rahbaringiz tasdiqlaydi</div>
+            </div>
+          </sc-if>
+
+          <div style="padding:12px 16px 30px;background:#F4F5F8">
+            <div style="height:54px;border-radius:16px;background:#2443F5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">{{ f.btn }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const photo = { bg:'linear-gradient(150deg,#E3E7EE,#CDD3DD)', bd:'none', c:'#A9B2C2', i:'image', l:'' };
+    const add = { bg:'#fff', bd:'1.5px dashed #C4CBD6', c:'#2443F5', i:'photo_camera', l:'Suratga olish' };
+    const frames = [
+      { label:'Vazifa va hisobot', head:'Vazifa', isTask:true, full:true, st:'Jarayonda', sb:'#fff', sc:'#2443F5', sbd:'#2443F5',
+        slots:[photo, photo, add], comment:'Hammasi joyida, 6 ta maneken kiyintirildi.', cc:'#111827', btn:'Topshirish' },
+      { label:'Qaytarilgan vazifa', head:'Vazifa', isTask:true, full:false, returned:true, st:'Qaytarildi', sb:'#FDECEC', sc:'#E5484D', sbd:'#FDECEC',
+        slots:[add, add, add], comment:'Izoh yozing…', cc:'#9CA3AF', btn:'Qayta topshirish' },
+      { label:"Ish qo'shish", head:"Ish qo'shish", isLog:true, btn:'Saqlash' }
+    ];
+    const on = { bg:'#EEF1FF', c:'#2443F5', bd:'#2443F5' }, off = { bg:'#fff', c:'#374151', bd:'#ECEEF2' };
+    return {
+      frames,
+      checklist: [['Manekenlarga kiydirish',1],['Narx yorliqlarini tekshirish',1],['Vitrina yoritishini yoqish',0]].map(([l,d]) => ({ l, bg: d ? '#16A34A' : '#fff', bd: d ? '#16A34A' : '#C4C9D2', tc: d ? '#111827' : '#4B5563' })),
+      cats: ['Savdo','Ombor','Tozalash','Boshqa'].map((l,i) => ({ l, ...(i === 0 ? on : off) })),
+      times: ['15 daq','30 daq','1 soat','2 soat','Boshqa'].map((l,i) => ({ l, ...(i === 2 ? on : off) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

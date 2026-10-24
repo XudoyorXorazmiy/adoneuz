@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#EEF0F4;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}a{color:#2443F5;text-decoration:none}a:hover{color:#1A34D6}</style>
+</helmet>
+<div data-screen-label="Vazifalar" style="width:1440px;box-sizing:border-box;padding:16px;background:#EEF0F4">
+<div style="display:flex;background:#fff;border-radius:24px;box-shadow:0 1px 3px rgba(16,24,40,.04),0 12px 40px rgba(16,24,40,.06);overflow:hidden">
+  <dc-import name="Sidebar" active="Vazifalar" hint-size="248px,100%" style="width:248px;flex-shrink:0;display:flex"></dc-import>
+  <main style="flex:1;min-width:0;margin:8px 8px 8px 0;border-radius:20px;background:#F7F8FA;display:flex;flex-direction:column">
+    <header style="display:flex;align-items:center;justify-content:space-between;padding:22px 28px 20px;border-bottom:1px solid #ECEEF2">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:28px;font-weight:700;letter-spacing:-0.02em">Vazifalar</span><span style="font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;background:#EEF1FF;color:#2443F5">14 faol</span></div>
+        <div style="font-size:14px;color:#6B7280;margin-top:2px">Bugun 19.10.2026, Dushanba</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="position:relative;width:40px;height:40px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">notifications</span><span style="position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:999px;background:#E5484D;border:2px solid #fff"></span></div>
+        <div style="height:40px;padding:0 8px 0 12px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">search</span><span style="font-size:11px;font-weight:600;padding:3px 6px;border-radius:6px;background:#F2F4F7;color:#6B7280">⌘K</span></div>
+        <div style="height:44px;padding:0 18px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin-left:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">add</span>Ish qo'shish</div>
+        <div style="height:44px;padding:0 22px 0 18px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;box-shadow:0 6px 16px rgba(36,67,245,.25)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">add</span>Vazifa berish</div>
+      </div>
+    </header>
+    <div style="padding:24px 28px 28px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:18px 20px;display:flex;align-items:center;gap:14px">
+            <div style="width:44px;height:44px;border-radius:14px;background:{{ k.tint }};color:{{ k.c }};display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' 1">{{ k.icon }}</span></div>
+            <div style="flex:1"><div style="font-size:13px;color:#6B7280;font-weight:500">{{ k.l }}</div><div style="font-size:28px;font-weight:800;letter-spacing:-0.03em">{{ k.v }}</div></div>
+            <span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">arrow_outward</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:4px;padding:4px;border-radius:999px;white-space:nowrap;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);font-size:13px;font-weight:600">
+          <span style="padding:8px 16px;border-radius:999px;white-space:nowrap;background:#0B1B4F;color:#fff">Berilgan</span>
+          <span style="padding:8px 16px;color:#4B5563;display:flex;gap:6px;align-items:center">O'zi qo'shgan<span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:#EEF1FF;color:#2443F5">6</span></span>
+          <span style="padding:8px 16px;color:#4B5563">Mening ishlarim</span>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:4px;padding:4px;border-radius:999px;white-space:nowrap;background:#F2F4F7;font-size:13px;font-weight:600">
+          <span style="padding:7px 14px;color:#6B7280;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">view_list</span>Ro'yxat</span>
+          <span style="padding:7px 14px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08);display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#2443F5">view_kanban</span>Kanban</span>
+        </div>
+      </div>
+
+      <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:16px 20px 20px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;gap:4px">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;white-space:nowrap;font-size:13px;font-weight:{{ t.w }};background:{{ t.bg }};color:{{ t.c }}">{{ t.l }}<span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:{{ t.cb }};color:{{ t.cc }};display:{{ t.show }}">{{ t.n }}</span></div>
+            </sc-for>
+          </div>
+          <div style="flex:1"></div>
+          <div style="height:36px;width:200px;padding:0 12px;box-sizing:border-box;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;color:#9CA3AF;font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">search</span>Qidirish…</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F1F2F5">
+          <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+            <div style="height:34px;padding:0 10px 0 14px;border-radius:999px;white-space:nowrap;border:1px dashed #D5D9E0;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#4B5563">{{ f }}<span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">expand_more</span></div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px">
+          <sc-for list="{{ cols }}" as="col" hint-placeholder-count="4">
+            <div style="background:#F7F8FA;border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:560px">
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 6px 2px">
+                <span style="width:8px;height:8px;border-radius:999px;background:{{ col.c }}"></span>
+                <span style="font-size:14px;font-weight:700">{{ col.l }}</span>
+                <span style="font-size:12px;font-weight:700;color:#6B7280">{{ col.n }}</span>
+                <span style="flex:1"></span>
+                <span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">add</span>
+              </div>
+              <sc-for list="{{ col.cards }}" as="t" hint-placeholder-count="2">
+                <div style="background:#fff;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(16,24,40,.05);display:flex;flex-direction:column;gap:10px;border:1px solid {{ t.bd }}">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                    <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:11px;font-weight:700;background:{{ t.sb }};color:{{ t.sc }};border:1.5px solid {{ t.sbd }}">{{ t.st }}</span>
+                    <sc-if value="{{ t.overdue }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;white-space:nowrap;font-size:11px;font-weight:700;background:#FDECEC;color:#E5484D">Muddati o'tdi</span></sc-if>
+                    <sc-if value="{{ t.self }}"><span style="display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:999px;white-space:nowrap;font-size:11px;font-weight:700;background:#F2F4F7;color:#4B5563"><span style="font-family:'Material Symbols Rounded';font-size:13px;line-height:1">edit_note</span>O'zi qo'shdi</span></sc-if>
+                    <sc-if value="{{ t.repeat }}"><span style="display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:999px;white-space:nowrap;font-size:11px;font-weight:700;background:#F5F7FF;color:#2443F5"><span style="font-family:'Material Symbols Rounded';font-size:13px;line-height:1">repeat</span>Har kuni</span></sc-if>
+                  </div>
+                  <div style="font-size:14px;font-weight:700;line-height:1.35;text-wrap:pretty">{{ t.title }}</div>
+                  <sc-if value="{{ t.group }}">
+                    <div style="display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:#F7F8FA">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <div style="display:flex">
+                          <span style="width:26px;height:26px;border-radius:999px;background:#EEF1FF;color:#2443F5;border:2px solid #F7F8FA;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">GS</span>
+                          <span style="width:26px;height:26px;border-radius:999px;background:#FCE7F3;color:#9D174D;border:2px solid #F7F8FA;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-left:-8px">ME</span>
+                          <span style="width:26px;height:26px;border-radius:999px;background:#FEF3C7;color:#92400E;border:2px solid #F7F8FA;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-left:-8px">BT</span>
+                        </div>
+                        <span style="font-size:12px;font-weight:600">3 ijrochi · 1/3 tasdiqlandi</span>
+                      </div>
+                      <div style="display:flex;gap:3px;height:5px"><span style="flex:1;border-radius:999px;background:#16A34A"></span><span style="flex:1;border-radius:999px;background:#F07A1A"></span><span style="flex:1;border-radius:999px;background:#E5484D"></span></div>
+                      <div style="font-size:11px;color:#6B7280">Madina ✓ · Gulnora tekshiruvda · Bekzod qaytarildi</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ t.single }}">
+                    <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#4B5563;font-weight:600">
+                      <span style="width:24px;height:24px;border-radius:999px;background:{{ t.ab }};color:{{ t.af }};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">{{ t.ini }}</span>{{ t.who }}
+                      <span style="flex:1"></span><span style="color:#6B7280;font-weight:500">{{ t.spent }}</span>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid #F4F5F7;font-size:12px">
+                    <span style="display:flex;align-items:center;gap:4px;font-weight:600;white-space:nowrap;color:{{ t.dueC }}"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">schedule</span>{{ t.due }}</span>
+                    <span style="display:flex;align-items:center;gap:4px;color:#6B7280;white-space:nowrap"><span style="width:7px;height:7px;border-radius:999px;background:{{ t.pc }}"></span>{{ t.pr }}</span>
+                    <span style="flex:1"></span>
+                    <sc-for list="{{ t.proof }}" as="p" hint-placeholder-count="1"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1;color:#6B7280">{{ p }}</span></sc-for>
+                  </div>
+                  <sc-if value="{{ t.late }}"><div style="font-size:12px;font-weight:700;color:#E5484D;margin-top:-4px">{{ t.late }}</div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const kpis = [
+      { l:'Faol vazifalar', v:14, icon:'assignment', c:'#2443F5', tint:'#EEF1FF' },
+      { l:'Tekshiruvda', v:3, icon:'pending_actions', c:'#F07A1A', tint:'#FFF1E6' },
+      { l:"Muddati o'tgan", v:1, icon:'alarm', c:'#E5484D', tint:'#FDECEC' },
+      { l:"O'z vaqtida", v:'82%', icon:'verified', c:'#16A34A', tint:'#E8F7EE' }
+    ];
+    const tabs = [['Barchasi',''],['Yangi',''],['Jarayonda',''],['Tekshiruvda',3],["Muddati o'tgan",1],['Tasdiqlangan','']].map(([l,n],i) => ({
+      l, n, show: n ? 'inline-block' : 'none', w: i === 0 ? 700 : 500, bg: i === 0 ? '#F2F4F7' : 'transparent', c: i === 0 ? '#111827' : '#6B7280',
+      cb: l === "Muddati o'tgan" ? '#FDECEC' : '#FFF1E6', cc: l === "Muddati o'tgan" ? '#E5484D' : '#F07A1A' }));
+    const S = {
+      yangi:['Yangi','#EEF1FF','#2443F5','#EEF1FF'], qabul:['Qabul qilindi','#0B1B4F','#fff','#0B1B4F'], jar:['Jarayonda','#fff','#2443F5','#2443F5'],
+      tek:['Tekshiruvda','#FFF1E6','#F07A1A','#FFF1E6'], ok:['Tasdiqlandi','#E8F7EE','#16A34A','#E8F7EE'], ret:['Qaytarildi','#FDECEC','#E5484D','#FDECEC']
+    };
+    const P = { s:["Shoshilinch",'#E5484D'], o:["O'rta",'#F07A1A'], d:['Oddiy','#9CA3AF'] };
+    const AV = { GS:['#EEF1FF','#2443F5'], DR:['#E8F7EE','#15803D'], ME:['#FCE7F3','#9D174D'], JK:['#E0F2FE','#0369A1'], US:['#EDE9FE','#6D28D9'] };
+    const card = (o) => {
+      const s = S[o.s], p = P[o.p || 'd'], a = AV[o.ini] || ['#F2F4F7','#4B5563'];
+      return { ...o, st:s[0], sb:s[1], sc:s[2], sbd:s[3], pr:p[0], pc:p[1], ab:a[0], af:a[1], single: !o.group, dueC: o.overdue ? '#E5484D' : o.due.startsWith('Bugun') ? '#111827' : '#6B7280', bd: o.overdue ? '#F8C9CB' : 'transparent', proof: o.proof || [] };
+    };
+    const cols = [
+      { l:'Yangi', c:'#2443F5', cards:[
+        card({ s:'yangi', title:'Ombor inventarizatsiyasi — oyoq kiyim', ini:'JK', who:'Jasur Karimov', due:'Ertaga 18:00', p:'o', proof:['photo_camera','checklist'] })
+      ]},
+      { l:'Jarayonda', c:'#0B1B4F', cards:[
+        card({ s:'jar', group:true, title:'Yangi kolleksiyani vitrinaga terish', due:'Bugun 17:00', p:'s', proof:['photo_camera'] }),
+        card({ s:'jar', overdue:true, title:'Yetkazib berish — Pitnak filialiga', ini:'US', who:"Ulug'bek Sobirov", due:'Bugun 15:00', p:'o', proof:['location_on'], late:'1 soat 20 daq kechikdi' }),
+        card({ s:'qabul', repeat:true, title:'Kassa hisobotini topshirish', ini:'DR', who:'Dilshod Rahimov', due:'Bugun 21:30', p:'d', proof:['photo_camera'] })
+      ]},
+      { l:'Tekshiruvda', c:'#F07A1A', cards:[
+        card({ s:'tek', self:true, title:'Vitrinadagi narxlarni yangiladim', ini:'ME', who:'Madina Ergasheva', spent:'1 soat 30 daq', due:'Bugun 11:40', p:'d', proof:['photo_camera'] }),
+        card({ s:'tek', title:'Yangi kolleksiyani vitrinaga terish', ini:'GS', who:'Gulnora Saidova · 1/3 nusxa', due:'Bugun 17:00', p:'s', proof:['photo_camera'] }),
+        card({ s:'tek', repeat:true, title:'Kassa hisobotini topshirish — 18.10', ini:'DR', who:'Dilshod Rahimov', due:'Kecha 21:30', p:'d', proof:['photo_camera'] })
+      ]},
+      { l:'Tasdiqlandi', c:'#16A34A', cards:[
+        card({ s:'ok', self:true, title:'Yangi kelgan 40 ta tovarni qabul qildim', ini:'JK', who:'Jasur Karimov', spent:'2 soat', due:'Bugun 10:15', p:'d', proof:['photo_camera'] }),
+        card({ s:'ok', title:'Yangi kolleksiyani vitrinaga terish', ini:'ME', who:'Madina Ergasheva · 1/3 nusxa', due:'Bugun 12:02', p:'s', proof:['photo_camera'] })
+      ]}
+    ].map(c => ({ ...c, n: c.cards.length }));
+    return { kpis, tabs, cols, filters:['Ijrochi',"Bo'lim",'Muhimlik','Muddat'] };
+  }
+}
+</script>
+</body>
+</html>
