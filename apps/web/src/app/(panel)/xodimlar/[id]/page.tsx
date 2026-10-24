@@ -7,6 +7,8 @@ import { requireArea } from '@/lib/auth/guard';
 import { employeeProfile, profileTotals } from '@/server/profile';
 import { employeeOptions } from '@/server/employees';
 import { today } from '@/server/attendance';
+import { employeeJournal } from '@/server/task-queries';
+import { StatusPill, minutesText } from '@/components/tasks/task-card';
 import { saveEmployeeAction, setEmployeeStatusAction } from '@/lib/actions/employees';
 import { EmptyState, PageHeader } from '@/components/ui/page-header';
 import { FormDrawer } from '@/components/ui/form-drawer';
@@ -26,7 +28,6 @@ const shiftMonth = (m: string, n: number) => {
 const TABS = [['tabel', 'Tabel'], ['vazifalar', 'Vazifalar'], ['sorovlar', "So'rovlar"], ['ish-haqi', 'Ish haqi'], ['malumot', "Ma'lumotlar"]] as const;
 type Tab = (typeof TABS)[number][0];
 const LATER: Partial<Record<Tab, string>> = {
-  vazifalar: "Vazifalar 2-bosqichda qo'shiladi: berilgan va o'zi qo'shgan ishlar, ish jurnali.",
   sorovlar: "Ruxsat so'rovlari (kasal, ta'til, shaxsiy) 3-bosqichda qo'shiladi.",
   'ish-haqi': "Ish haqi hisobi (stavka, jarima, bonus) 4-bosqichda qo'shiladi.",
 };
@@ -40,7 +41,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
   const cur = today(user).slice(0, 7);
   const month = typeof sp.oy === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.oy) && sp.oy <= cur ? sp.oy : cur;
   const tab: Tab = (TABS.map((t) => t[0]) as string[]).includes(String(sp.tab)) ? (String(sp.tab) as Tab) : 'tabel';
-  const [p, options] = await Promise.all([employeeProfile(user, id, month), employeeOptions(user.tenantId)]);
+  const [p, options, journal] = await Promise.all([employeeProfile(user, id, month), employeeOptions(user.tenantId), employeeJournal(user, id, month)]);
   if (!p) notFound();
   const { e } = p;
   const tot = profileTotals(p.days, p.today);
@@ -58,7 +59,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
     ['Ish kunlari', String(tot.workedDays), `/ ${tot.plannedSoFar}`, `Oy rejasi: ${tot.planned} kun`],
     ['Kechikishlar', String(tot.lateDays), '', tot.lateMinutes ? `jami ${tot.lateMinutes} daq` : "kechikish yo'q"],
     ['Ishlagan soat', hm(tot.worked), '', tot.workedDays ? `O'rtacha ${hm(Math.round(tot.worked / tot.workedDays))} / kun` : '—'],
-    ['Kelmagan kunlar', String(tot.absent), '', tot.leave ? `Ruxsatda ${tot.leave} kun` : 'Sababsiz'],
+    ["Vazifalar o'z vaqtida", journal.onTimePct == null ? '—' : `${journal.onTimePct}%`, '', `${journal.onTimeOf[0]} / ${journal.onTimeOf[1]} vazifa${tot.absent ? ` · kelmagan ${tot.absent} kun` : ''}`],
   ];
 
   return (
@@ -81,7 +82,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
             </div>
           </div>
           <div className="flex items-center gap-2.5">
-            <button type="button" disabled title="Vazifalar 2-bosqichda" className="btn-primary h-11 pr-[22px] pl-[18px] text-sm"><Icon name="add" />Vazifa berish</button>
+            {e.status === 'active' && <Link href={`/vazifalar?ijrochi=${e.id}`} className="btn-primary h-11 pr-[22px] pl-[18px] text-sm"><Icon name="add" />Vazifa berish</Link>}
             {e.status !== 'disabled' && (
               <FormDrawer trigger={<Icon name="edit" />} triggerClass="btn-icon size-11" title="Xodimni tahrirlash" subtitle={e.fullName} action={saveEmployeeAction}
                 danger={<form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="disabled" /><button className="btn-ghost text-danger">Ishdan bo&apos;shatish</button></form>}>
@@ -149,6 +150,32 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
                   <div key={k} className="flex flex-col gap-0.5 border-b border-line-soft pb-3"><dt className="text-xs font-medium text-muted">{k}</dt><dd className="m-0 font-semibold">{v}</dd></div>
                 ))}
               </dl>
+            </section>
+          )}
+          {tab === 'vazifalar' && (
+            <section className="card flex flex-col gap-4 p-6 max-sm:p-4">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="card-icon"><Icon name="task_alt" size={18} fill /></span>
+                <h2 className="m-0 flex-1 text-base font-bold">Ish jurnali · {MONTHS[m - 1]} {y}</h2>
+                <span className="text-[13px] text-muted">{journal.doneCount} ta tasdiqlangan{journal.minutes ? ` · ${minutesText(journal.minutes)}` : ''}</span>
+              </div>
+              {journal.items.length === 0 ? <EmptyState text="Bu oyda vazifa yoki qayd etilgan ish yo'q." /> : (
+                [...new Set(journal.items.map((i) => i.day))].map((day) => (
+                  <div key={day} className="flex flex-col gap-1.5">
+                    <div className="text-xs font-bold text-muted">{formatDate(`${day}T12:00:00Z`)}</div>
+                    {journal.items.filter((i) => i.day === day).map((i) => (
+                      <Link key={i.id} href={`/vazifalar/${i.id}`} className="flex flex-wrap items-center gap-2.5 rounded-xl bg-page px-3 py-2.5 text-[13px] hover:bg-primary-soft">
+                        <Icon name={i.source === 'assigned' ? 'assignment' : 'edit_note'} size={18} className="text-muted" />
+                        <span className="min-w-0 flex-1 font-semibold">{i.title}</span>
+                        {i.spentMinutes ? <span className="text-xs text-muted">{minutesText(i.spentMinutes)}</span> : null}
+                        {i.onTime === false && <span className="text-xs font-semibold text-danger">kechikdi</span>}
+                        {i.rating ? <span className="text-xs text-warning">{'★'.repeat(i.rating)}</span> : null}
+                        <StatusPill status={i.status} />
+                      </Link>
+                    ))}
+                  </div>
+                ))
+              )}
             </section>
           )}
           {LATER[tab] && <section className="card"><EmptyState text={LATER[tab]!} /></section>}

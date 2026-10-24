@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { db, pool } from './client';
 import { withAuth, withPlatform, withTenant } from './scoped';
-import { attendanceEvents, auditLog, botSessions, employees, jobs, memberships, plans, tenants, users } from './schema/index';
+import { attendanceEvents, auditLog, botSessions, employees, jobs, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
 
 async function main() {
   // Kontekstsiz — hech narsa ko'rinmaydi
@@ -67,6 +67,23 @@ async function main() {
     await assert.rejects(tx.transaction((sp) => sp.update(attendanceEvents).set({ checkStatus: 'ok' })), 'attendance_events o‘zgarmaydi');
     await assert.rejects(tx.transaction((sp) => sp.delete(attendanceEvents)), 'attendance_events o‘chmaydi');
     await assert.rejects(tx.transaction((sp) => sp.select().from(botSessions)), 'bot_sessions tenant uchun yopiq');
+  });
+
+  // 2-bosqich: vazifalar — boshqa ishxonada ko'rinmaydi; task_events/task_reports append-only; vazifa o'chirilmaydi
+  await withTenant(mudom.id, async (tx) => {
+    const emp = (await tx.select().from(employees).limit(1))[0]!;
+    const [b] = await tx.insert(taskBatches).values({ tenantId: mudom.id, title: 'rls_test' }).returning();
+    const [t] = await tx.insert(tasks).values({ tenantId: mudom.id, batchId: b!.id, assigneeEmployeeId: emp.id }).returning();
+    await tx.insert(taskEvents).values({ tenantId: mudom.id, taskId: t!.id, toStatus: 'new' });
+    await tx.insert(taskReports).values({ tenantId: mudom.id, taskId: t!.id, text: 'x' });
+    await assert.rejects(tx.transaction((sp) => sp.update(taskEvents).set({ comment: 'x' })), 'task_events o‘zgarmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.delete(taskReports)), 'task_reports o‘chmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.delete(tasks)), 'vazifa o‘chirilmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.insert(tasks).values({ tenantId: other.id, batchId: b!.id })), 'begona tenant_id bilan vazifa yo‘q');
+    throw Object.assign(new Error('rollback'), { rollback: true });
+  }).catch((e) => { if (!e.rollback) throw e; });
+  await withTenant(other.id, async (tx) => {
+    assert.equal((await tx.select().from(tasks)).length, 0, 'Test do‘konda Mudom vazifalari ko‘rinmaydi');
   });
 
   // Siyosatlarda OR yo'q (indekslar ishlashi uchun)

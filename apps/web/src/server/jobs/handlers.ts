@@ -8,11 +8,12 @@ import type { TgUpdate } from '@/server/telegram/types';
 import { TelegramError } from '@/server/telegram/api';
 import { notifyEmployee, notifyMembers } from '@/server/notify';
 import { absentDigest, attendanceTick } from '@/server/ticks';
+import { taskNotify, type TaskNotifyKind } from '@/server/task-notify';
 import { needTenant, PermanentError, str, type JobOutcome, type JobRow } from './types';
 
 export { PermanentError, type JobRow };
 
-export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest'] as const;
+export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest', 'task_notify'] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
 type Handler = (job: JobRow) => Promise<JobOutcome>;
@@ -48,6 +49,12 @@ export const HANDLERS: Record<JobType, Handler> = {
   },
   async attendance_tick(job) {
     return attendanceTick(needTenant(job));
+  },
+  async task_notify(job) {
+    const taskId = str(job.payload.taskId);
+    const kind = str(job.payload.kind) as TaskNotifyKind | null;
+    if (!taskId || !kind) throw new PermanentError('payload noto‘g‘ri');
+    return tgSafe(() => taskNotify(needTenant(job), taskId, kind, { comment: str(job.payload.comment), by: str(job.payload.by) }));
   },
   async absent_digest(job) {
     const date = str(job.payload.date);

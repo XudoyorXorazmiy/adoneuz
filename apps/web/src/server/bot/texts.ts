@@ -7,6 +7,8 @@ export const BTN = {
   today: '📊 Bugun',
   help: '❓ Yordam',
   contact: '📱 Raqamni yuborish',
+  tasks: '📋 Vazifalarim',
+  addWork: "➕ Ish qo'shish",
 } as const;
 
 export const CONSENT_VERSION = 'v1-2026-10';
@@ -47,13 +49,13 @@ export const T = {
   checkedOut: (time: string, worked: string) => `🏁 Ketish qayd etildi · <b>${time}</b>\nBugun ishladingiz: <b>${worked}</b>. Rahmat!`,
   pickCompany: 'Qaysi ishxona uchun?',
   help:
-    `<b>Qanday ishlaydi</b>\n\n${BTN.checkIn} — ishga kelganda: jonli joylashuv + dumaloq video.\n${BTN.checkOut} — ketayotganda: jonli joylashuv.\n${BTN.today} — bugungi holatingiz.\n\nMuammo bo'lsa rahbaringizga yozing.`,
-  memberLinked: (company: string) => `✅ Telegram ulandi. <b>${company}</b> bo'yicha bildirishnomalar (kechikkanlar, kelmaganlar, yangi xodimlar) shu yerga keladi.`,
+    `<b>Qanday ishlaydi</b>\n\n${BTN.checkIn} — ishga kelganda: jonli joylashuv + dumaloq video.\n${BTN.checkOut} — ketayotganda: jonli joylashuv.\n${BTN.tasks} — sizga berilgan vazifalar: qabul qilish, «Bajardim» va hisobot.\n${BTN.addWork} — o'zingiz qilgan yoki rejalashtirgan ish.\n${BTN.today} — bugungi holatingiz.\n\nMuammo bo'lsa rahbaringizga yozing.`,
+  memberLinked: (company: string) => `✅ Telegram ulandi. <b>${company}</b> bo'yicha bildirishnomalar (kechikkanlar, kelmaganlar, yangi xodimlar, vazifa hisobotlari) shu yerga keladi. Hisobotni shu yerdan tasdiqlash yoki qaytarish mumkin.`,
   unknown: `Tugmalardan birini tanlang.`,
 };
 
 export const menuKeyboard: Keyboard = {
-  keyboard: [[{ text: BTN.checkIn }, { text: BTN.checkOut }], [{ text: BTN.today }, { text: BTN.help }]],
+  keyboard: [[{ text: BTN.checkIn }, { text: BTN.checkOut }], [{ text: BTN.tasks }, { text: BTN.addWork }], [{ text: BTN.today }, { text: BTN.help }]],
   resize_keyboard: true,
   is_persistent: true,
 };

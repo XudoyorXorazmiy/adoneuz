@@ -11,7 +11,7 @@ export type FormState = { error?: string; ok?: string } | undefined;
  * `open` / `onOpenChange` berilsa — tashqaridan boshqariladi (masalan, qator menyusidan), `trigger` shart emas.
  */
 export function FormDrawer({
-  trigger, triggerClass = 'btn-primary', title, subtitle, action, submitLabel = 'Saqlash', children, danger, open: openProp, onOpenChange,
+  trigger, triggerClass = 'btn-primary', title, subtitle, action, submitLabel = 'Saqlash', children, danger, open: openProp, onOpenChange, defaultOpen = false,
 }: {
   trigger?: ReactNode;
   triggerClass?: string;
@@ -23,8 +23,10 @@ export function FormDrawer({
   danger?: ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Sahifa ochilganda darhol ochiq (masalan, bosh sahifadagi «Vazifa berish» → /vazifalar?ber=1). */
+  defaultOpen?: boolean;
 }) {
-  const [inner, setInner] = useState(false);
+  const [inner, setInner] = useState(defaultOpen);
   const open = openProp ?? inner;
   const setOpen = (v: boolean) => (onOpenChange ? onOpenChange(v) : setInner(v));
   const [state, formAction, pending] = useActionState<FormState, FormData>(action, undefined);

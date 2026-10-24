@@ -12,6 +12,12 @@ export type BotState =
       step: 'ci_video'; tenantId: string; employeeId: string; action: 'check_in'; startedAt: number;
       loc: { lat: number; lng: number; accuracyM: number | null; distanceM: number; branchId: string; live: boolean; at: number };
     }
+  /** Vazifa hisoboti (yoki yangi «Ish qo'shish» — taskId null, title bor): fayllar, lokatsiya, izoh yig'iladi. */
+  | { step: 'task_report'; tenantId: string; employeeId: string; taskId: string | null; title?: string; mediaIds: string[]; lat?: number; lng?: number; text?: string }
+  | { step: 'task_ask'; tenantId: string; employeeId: string; taskId: string }
+  | { step: 'task_revise'; tenantId: string; userId: string; taskId: string }
+  | { step: 'work_title'; tenantId: string; employeeId: string }
+  | { step: 'work_mode'; tenantId: string; employeeId: string; title: string }
   | { step: 'idle' };
 
 export const SESSION_TTL_MS = 15 * 60_000;

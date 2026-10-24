@@ -7,10 +7,10 @@ import { Icon } from '@/components/ui/icon';
 import { shellInfo } from '@/server/shell';
 
 /** Menyu tartibi dizayn bo'yicha (design/panel/Sidebar.dc.html). `ready: false` — keyingi bosqich. */
-const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready: boolean; count?: 'pending' }> = [
+const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready: boolean; count?: 'pending' | 'review' }> = [
   { href: '/', label: 'Bosh sahifa', area: 'dashboard', icon: 'dashboard', ready: true },
   { href: '/davomat', label: 'Davomat', area: 'attendance', icon: 'how_to_reg', ready: true },
-  { href: '/vazifalar', label: 'Vazifalar', area: 'tasks', icon: 'task_alt', ready: false },
+  { href: '/vazifalar', label: 'Vazifalar', area: 'tasks', icon: 'task_alt', ready: true, count: 'review' },
   { href: '/sorovlar', label: "So'rovlar", area: 'requests', icon: 'inbox', ready: false },
   { href: '/xodimlar', label: 'Xodimlar', area: 'employees', icon: 'group', ready: true, count: 'pending' },
   { href: '/jadvallar', label: 'Jadvallar', area: 'schedules', icon: 'calendar_month', ready: true },
@@ -43,7 +43,7 @@ export default async function PanelLayout({ children }: LayoutProps<'/'>) {
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
             <div className="px-3 pb-1.5 text-[11px] font-bold tracking-[0.08em] text-placeholder">MENYU</div>
             {NAV.filter((n) => can(user.role, n.area)).map((n) => (
-              <NavLink key={n.href} href={n.href} icon={n.icon} disabled={!n.ready} count={n.count === 'pending' ? info.pending : undefined}>{n.label}</NavLink>
+              <NavLink key={n.href} href={n.href} icon={n.icon} disabled={!n.ready} count={n.count === 'pending' ? info.pending : n.count === 'review' && user.role !== 'manager' ? info.review : undefined}>{n.label}</NavLink>
             ))}
           </nav>
           <div className="flex flex-col gap-3">

@@ -4,6 +4,7 @@ import { addDays, formatMinutes, formatTime, isoWeekday, monthDays, MONTHS, WEEK
 import { requireArea } from '@/lib/auth/guard';
 import { listDay, summarize, today } from '@/server/attendance';
 import { dailyAgg, deltaPct, memberLinked, pendingEmployees, setupState, weekStart } from '@/server/dashboard';
+import { onTimeStats } from '@/server/task-queries';
 import { setEmployeeStatusAction } from '@/lib/actions/employees';
 import { CardHead, PageHeader } from '@/components/ui/page-header';
 import { Icon } from '@/components/ui/icon';
@@ -19,6 +20,11 @@ export const metadata: Metadata = { title: 'Bosh sahifa' };
 const hm = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 const greeting = (h: number) => (h < 5 ? 'Xayrli tun!' : h < 12 ? 'Xayrli tong!' : h < 18 ? 'Xayrli kun!' : 'Xayrli kech!');
 
+const shiftMonthKey = (m: string, n: number) => {
+  const [y, mo] = m.split('-').map(Number) as [number, number];
+  return new Date(Date.UTC(y, mo - 1 + n, 1)).toISOString().slice(0, 7);
+};
+
 export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
   const user = await requireArea('dashboard');
   const sp = await searchParams;
@@ -29,12 +35,13 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
   const ws = weekStart(t);
   const prevWs = addDays(ws, -7);
   const from = [`${month}-01`, prevWs].sort()[0]!;
-  const [setup, rows, agg, linked, pending] = await Promise.all([
+  const [setup, rows, agg, linked, pending, ot] = await Promise.all([
     setupState(user.tenantId),
     listDay(user, { date: t }),
     dailyAgg(user, from, addDays(ws, 6) > `${month}-31` ? addDays(ws, 6) : `${month}-31`),
     memberLinked(user.tenantId, user.id),
     pendingEmployees(user),
+    onTimeStats(user, t.slice(0, 7), shiftMonthKey(t.slice(0, 7), -1)),
   ]);
   const hour = zonedParts(new Date(), tz).h;
   const header = (decisions: number) => (
@@ -51,7 +58,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
       ) : undefined}
     >
       <a href={`/api/eksport/tabel?oy=${t.slice(0, 7)}`} title="Tabel — Excel" className="btn-icon size-11"><Icon name="download" /></a>
-      <Link href="/xodimlar" className="btn-primary h-11 px-5"><Icon name="add" />Xodim qo&apos;shish</Link>
+      <Link href="/vazifalar?ber=1" className="btn-primary h-11 px-5"><Icon name="add" />Vazifa berish</Link>
     </PageHeader>
   );
 
@@ -233,21 +240,38 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
           <div className="mt-3"><PresenceTable rows={presence} total={inside.length} /></div>
         </section>
 
-        {/* Vazifalar bajarilishi — 2-bosqichda */}
+        {/* Vazifalar bajarilishi — oy bo'yicha o'z vaqtida topshirilgan, bo'limlar kesimi */}
         <section className="card flex flex-col gap-3.5 p-5">
-          <CardHead icon={<Icon name="check_box" fill size={18} />} title="Vazifalar bajarilishi" />
+          <CardHead icon={<Icon name="check_box" fill size={18} />} title="Vazifalar bajarilishi">
+            <Link href="/vazifalar" className="btn-icon size-9" title="Vazifalar"><Icon name="arrow_outward" size={18} /></Link>
+          </CardHead>
           <div>
-            <div className="flex items-center gap-2.5"><span className="text-[32px] font-extrabold tracking-[-0.03em] text-placeholder">—</span></div>
-            <div className="mt-0.5 text-[13px] text-muted">Bu oy o&apos;z vaqtida bajarilgan</div>
+            <div className="flex items-center gap-2.5">
+              <span className={`text-[32px] font-extrabold tracking-[-0.03em] ${ot.pct == null ? 'text-placeholder' : ''}`}>{ot.pct == null ? '—' : `${ot.pct}%`}</span>
+              {ot.pct != null && ot.prev != null && ot.pct !== ot.prev && <span className={`delta ${ot.pct > ot.prev ? 'bg-success-tint text-success' : 'bg-warning-tint text-warning'}`}>{ot.pct > ot.prev ? '↗' : '↘'} {Math.abs(ot.pct - ot.prev)}%</span>}
+            </div>
+            <div className="mt-0.5 text-[13px] text-muted">Bu oy o&apos;z vaqtida bajarilgan{ot.total ? ` · ${ot.total} ta topshirilgan` : ''}</div>
           </div>
-          <div className="grid min-h-[200px] flex-1 grid-cols-4 gap-3">
-            {[60, 80, 45, 70].map((h, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
-                <div className="flex w-full max-w-[52px] flex-1 items-end overflow-hidden rounded-full bg-line-soft"><div className="w-full rounded-full bg-[#E6E9EF]" style={{ height: `${h}%` }} /></div>
-              </div>
-            ))}
+          <div className="flex min-h-[220px] flex-1 gap-2.5">
+            <div className="flex w-[30px] flex-col justify-between pb-[26px] text-right text-[11px] text-placeholder"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div>
+            <div className="grid flex-1 grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map((i) => {
+                const d = ot.deps[i];
+                const tone = i === 0 ? 'bg-primary text-white' : i === 1 ? 'bg-navy text-white' : 'bg-primary-tint text-primary';
+                return (
+                  <div key={i} className="flex min-w-0 flex-col items-center gap-2">
+                    <div className="flex w-full max-w-[52px] flex-1 items-end overflow-hidden rounded-full bg-line-soft">
+                      {d && <div className={`flex w-full justify-center rounded-full pt-3.5 ${tone}`} style={{ height: `${Math.max(d.pct, 18)}%` }}><span className="rotate-180 text-xs font-bold [writing-mode:vertical-rl]">{d.pct}%</span></div>}
+                    </div>
+                    <span className="w-full truncate text-center text-xs font-semibold text-ink-2" title={d?.name}>{d?.name ?? ''}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="rounded-xl bg-primary-soft px-3 py-2 text-center text-xs font-semibold text-primary">Vazifalar bo&apos;limi keyingi yangilanishda ochiladi</div>
+          <div className="text-center text-xs font-semibold text-primary">
+            {ot.pct == null ? 'Topshirilgan vazifalar bo‘lsa shu yerda ko‘rinadi' : ot.prev == null ? 'O‘tgan oy bilan solishtirish uchun ma’lumot yo‘q' : ot.pct === ot.prev ? 'O‘tgan oy bilan bir xil' : `O‘tgan oydan ${Math.abs(ot.pct - ot.prev)}% ${ot.pct > ot.prev ? 'yuqori' : 'past'}`}
+          </div>
         </section>
       </div>
 

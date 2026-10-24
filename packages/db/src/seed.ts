@@ -130,6 +130,63 @@ async function seedMudom(tenantId: string, userIds: Record<string, string>) {
     });
   }
 
+  await seedTasks(tenantId, emps, userIds, now);
+}
+
+/** Vazifalar demo (2-bosqich): har holatdan, ko'p ijrochili, o'zi qo'shgan va takroriy. Bildirishnoma navbatga yozilmaydi. */
+async function seedTasks(tenantId: string, emps: Array<typeof s.employees.$inferSelect>, userIds: Record<string, string>, now: Date) {
+  const E = Object.fromEntries(emps.map((e) => [e.fullName, e.id]));
+  const owner = userIds['Aziz Karimov']!;
+  const H = 3600_000;
+  const at = (h: number) => new Date(now.getTime() + h * H);
+  const tpl = await db.insert(s.taskTemplates).values({
+    tenantId, title: 'Kassa hisobotini topshirish', priority: 'low', proofs: ['photo'], checklist: [], assigneeEmployeeIds: [E['Dilshod Rahimov']!],
+    recurrence: { kind: 'daily', weekdays: [], monthDay: 1 }, dueTime: '21:30', createdByUserId: owner, lastRunDate: localDate(now, 'Asia/Tashkent'),
+  }).returning();
+  type Copy = { who: string; status: typeof s.tasks.$inferInsert['status']; rating?: number; spent?: number; report?: string; late?: boolean };
+  const specs: Array<{ title: string; description?: string; priority: 'low' | 'medium' | 'high'; proofs: string[]; checklist?: string[]; due: number | null; source?: 'assigned' | 'self_plan' | 'self_done'; by?: string; template?: boolean; copies: Copy[] }> = [
+    { title: 'Ombor inventarizatsiyasi — oyoq kiyim', priority: 'medium', proofs: ['photo'], checklist: ['Qoldiqni sanash', 'Farqni yozish'], due: 26, copies: [{ who: 'Jasur Karimov', status: 'new' }] },
+    { title: 'Yangi kolleksiyani vitrinaga terish', description: "Kuzgi kolleksiyani asosiy vitrinaga, manekenlarga kiydirib joylang. Narx yorliqlari ko'rinib tursin.", priority: 'high', proofs: ['photo'], checklist: ['Manekenlarga kiydirish', 'Narx yorliqlarini tekshirish'], due: 6,
+      copies: [{ who: 'Madina Ergasheva', status: 'approved', rating: 5, report: "Vitrina tayyor, 3 ta maneken" }, { who: 'Gulnora Saidova', status: 'submitted', report: 'Tayyor, rasmga oldim' }, { who: 'Bekzod Tursunov', status: 'revision' }] },
+    { title: 'Yetkazib berish — Pitnak filialiga', priority: 'medium', proofs: ['location'], due: -1.3, copies: [{ who: "Ulug'bek Sobirov", status: 'in_progress' }] },
+    { title: 'Kassa hisobotini topshirish', priority: 'low', proofs: ['photo'], due: 10, template: true, copies: [{ who: 'Dilshod Rahimov', status: 'accepted' }] },
+    { title: 'Kassa hisobotini topshirish — kecha', priority: 'low', proofs: ['photo'], due: -14, template: true, copies: [{ who: 'Dilshod Rahimov', status: 'submitted', report: 'Z-hisobot ilova qilindi' }] },
+    { title: 'Vitrinadagi narxlarni yangiladim', priority: 'low', proofs: ['button'], due: null, source: 'self_done', copies: [{ who: 'Madina Ergasheva', status: 'submitted', spent: 90, report: '45 ta yorliq almashtirildi' }] },
+    { title: 'Yangi kelgan 40 ta tovarni qabul qildim', priority: 'low', proofs: ['button'], due: null, source: 'self_done', copies: [{ who: 'Jasur Karimov', status: 'approved', spent: 120, rating: 5 }] },
+    { title: 'Mijozlar bazasini yangilash', priority: 'low', proofs: ['button'], due: 30, source: 'self_plan', copies: [{ who: 'Feruza Qodirova', status: 'accepted' }] },
+    { title: 'Oylik hisobotni tayyorlash', priority: 'high', proofs: ['button'], due: -30, copies: [{ who: 'Feruza Qodirova', status: 'approved', rating: 4, report: 'Excel ilova' }] },
+  ];
+  for (const sp of specs) {
+    const src = sp.source ?? 'assigned';
+    const [b] = await db.insert(s.taskBatches).values({
+      tenantId, source: src, title: sp.title, description: sp.description ?? null, priority: sp.priority, proofs: sp.proofs, checklist: sp.checklist ?? [],
+      dueAt: sp.due == null ? null : at(sp.due), templateId: sp.template ? tpl[0]!.id : null,
+      createdByUserId: src === 'assigned' ? owner : null, createdByEmployeeId: src === 'assigned' ? null : E[sp.copies[0]!.who] ?? null, createdAt: at(-30),
+    }).returning();
+    for (const c of sp.copies) {
+      const done = ['submitted', 'approved'].includes(c.status!);
+      const submittedAt = done ? at(sp.due != null && sp.due < 0 ? sp.due - 0.5 : -1) : null;
+      const [t] = await db.insert(s.tasks).values({
+        tenantId, batchId: b!.id, assigneeEmployeeId: E[c.who]!, status: c.status, dueAt: b!.dueAt,
+        acceptedAt: c.status === 'new' ? null : at(-20), startedAt: ['in_progress', 'submitted', 'approved', 'revision'].includes(c.status!) ? at(-10) : null,
+        submittedAt, approvedAt: c.status === 'approved' ? at(-0.5) : null, rating: c.rating ?? null, spentMinutes: c.spent ?? null,
+        revisionCount: c.status === 'revision' ? 1 : 0, reviewedByUserId: ['approved', 'revision'].includes(c.status!) ? owner : null,
+        checklistDone: (sp.checklist ?? []).map(() => done), createdAt: at(-30),
+      }).returning();
+      const ev = (from: typeof s.taskEvents.$inferInsert['fromStatus'], to: typeof s.taskEvents.$inferInsert['toStatus'], h: number, comment?: string, byEmp = false) =>
+        db.insert(s.taskEvents).values({ tenantId, taskId: t!.id, fromStatus: from, toStatus: to, comment: comment ?? null, createdAt: at(h), actorUserId: byEmp ? null : owner, actorEmployeeId: byEmp ? E[c.who]! : null });
+      await ev(null, src === 'assigned' ? 'new' : src === 'self_plan' ? 'accepted' : 'submitted', -30, src === 'self_done' ? c.report : undefined, src !== 'assigned');
+      if (src !== 'assigned') { if (c.status === 'approved') await ev('submitted', 'approved', -0.5, c.rating ? `Baho: ${c.rating}/5` : undefined); continue; }
+      if (c.status !== 'new') await ev('new', 'accepted', -20, undefined, true);
+      if (['in_progress', 'submitted', 'approved', 'revision'].includes(c.status!)) await ev('accepted', 'in_progress', -10, undefined, true);
+      if (['submitted', 'approved', 'revision'].includes(c.status!)) {
+        await ev('in_progress', 'submitted', -2, c.report ?? 'Bajarildi', true);
+        await db.insert(s.taskReports).values({ tenantId, taskId: t!.id, text: c.report ?? 'Bajarildi', source: 'bot', createdAt: at(-2) });
+      }
+      if (c.status === 'approved') await ev('submitted', 'approved', -0.5, c.rating ? `Baho: ${c.rating}/5` : undefined);
+      if (c.status === 'revision') await ev('submitted', 'revision', -1, "Narx yorliqlari ko'rinmayapti — qayta suratga oling");
+    }
+  }
 }
 
 main().catch(async (e) => { console.error(e); await pool.end(); process.exit(1); });

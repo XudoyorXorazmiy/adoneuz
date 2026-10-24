@@ -40,6 +40,24 @@ export async function send(chatId: number, text: string, keyboard?: Keyboard) {
   return tg('sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...(keyboard ? { reply_markup: keyboard } : {}) });
 }
 
+/** Diskdagi faylni yuborish (rahbarga hisobot rasmi/videosi). multipart — Bot API 50 MB gacha. */
+export async function sendFile(chatId: number, kind: 'photo' | 'video', data: Buffer, filename: string, caption?: string) {
+  if (!token()) throw new TelegramError('send' + kind, 0, 'PLATFORM_BOT_TOKEN sozlanmagan');
+  const form = new FormData();
+  form.set('chat_id', String(chatId));
+  if (caption) { form.set('caption', caption); form.set('parse_mode', 'HTML'); }
+  form.set(kind, new Blob([new Uint8Array(data)]), filename);
+  const method = kind === 'photo' ? 'sendPhoto' : 'sendVideo';
+  const res = await fetch(`${base()}/bot${token()}/${method}`, { method: 'POST', body: form, signal: AbortSignal.timeout(60_000) });
+  const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error_code?: number; description?: string };
+  if (!json.ok) throw new TelegramError(method, json.error_code ?? res.status, json.description ?? 'xato');
+}
+
+/** Inline tugmali xabarni tahrirlash (bosilgandan keyin tugmalarni olib tashlash). Xato — jim. */
+export async function editMarkup(chatId: number, messageId: number, keyboard?: Keyboard) {
+  return tg('editMessageReplyMarkup', { chat_id: chatId, message_id: messageId, reply_markup: keyboard ?? { inline_keyboard: [] } }).catch(() => undefined);
+}
+
 export async function answerCallback(id: string, text?: string) {
   return tg('answerCallbackQuery', { callback_query_id: id, ...(text ? { text } : {}) }).catch(() => undefined);
 }

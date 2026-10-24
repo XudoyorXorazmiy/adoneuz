@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, eq, inArray } from 'drizzle-orm';
 import { departments, memberships, tgLinks, withPlatform, withTenant, type Tx } from '@adone/db';
-import { send } from '@/server/telegram/api';
+import { send, type Keyboard } from '@/server/telegram/api';
 import { menuKeyboard } from '@/server/bot/texts';
 import { employeeChat } from '@/server/bot/links';
 import { enqueue } from '@/server/jobs/enqueue';
@@ -20,6 +20,18 @@ export async function queueNotifyEmployee(tx: Tx, tenantId: string, employeeId: 
 }
 
 export async function notifyMembers(tenantId: string, text: string, departmentId: string | null): Promise<JobOutcome> {
+  const chats = await memberChats(tenantId, departmentId);
+  if (chats === null) return { skip: 'rahbar yo‘q' };
+  if (chats.length === 0) return { skip: 'rahbarlar Telegram ulamagan' };
+  for (const c of chats) await send(c.chatId, text);
+  return {};
+}
+
+/**
+ * Rahbarlar chatlari: egasi + adminlar + (bo'lim berilsa) bo'lim boshlig'i — Telegram ulaganlari.
+ * `exclude` — o'zi amalni qilgan rahbar (o'ziga xabar ketmaydi). null — rahbar umuman yo'q.
+ */
+export async function memberChats(tenantId: string, departmentId: string | null, exclude?: string | null): Promise<Array<{ chatId: number; userId: string }> | null> {
   const userIds = await withTenant(tenantId, async (tx) => {
     const admins = await tx.select({ id: memberships.userId }).from(memberships).where(and(eq(memberships.isActive, true), inArray(memberships.role, ['owner', 'admin'])));
     const ids = new Set(admins.map((a) => a.id));
@@ -27,20 +39,18 @@ export async function notifyMembers(tenantId: string, text: string, departmentId
       const [d] = await tx.select({ m: departments.managerUserId }).from(departments).where(eq(departments.id, departmentId)).limit(1);
       if (d?.m) ids.add(d.m);
     }
+    if (exclude) ids.delete(exclude);
     return [...ids];
   });
-  if (userIds.length === 0) return { skip: 'rahbar yo‘q' };
-  const chats = await withPlatform((tx) =>
-    tx.select({ chatId: tgLinks.chatId }).from(tgLinks).where(and(eq(tgLinks.tenantId, tenantId), eq(tgLinks.kind, 'member'), inArray(tgLinks.refId, userIds))),
+  if (userIds.length === 0) return null;
+  return withPlatform((tx) =>
+    tx.select({ chatId: tgLinks.chatId, userId: tgLinks.refId }).from(tgLinks).where(and(eq(tgLinks.tenantId, tenantId), eq(tgLinks.kind, 'member'), inArray(tgLinks.refId, userIds))),
   );
-  if (chats.length === 0) return { skip: 'rahbarlar Telegram ulamagan' };
-  for (const c of chats) await send(c.chatId, text);
-  return {};
 }
 
-export async function notifyEmployee(tenantId: string, employeeId: string, text: string): Promise<JobOutcome> {
+export async function notifyEmployee(tenantId: string, employeeId: string, text: string, keyboard: Keyboard = menuKeyboard): Promise<JobOutcome> {
   const chatId = await employeeChat(tenantId, employeeId);
   if (!chatId) return { skip: 'xodim botga ulanmagan' };
-  await send(chatId, text, menuKeyboard);
+  await send(chatId, text, keyboard);
   return {};
 }

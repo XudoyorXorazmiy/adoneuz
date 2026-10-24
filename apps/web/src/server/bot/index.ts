@@ -15,6 +15,7 @@ import { kick } from '@/server/jobs/enqueue';
 import type { JobOutcome } from '@/server/jobs/types';
 import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from './session';
 import { employeeLinks, linkTelegram, type EmployeeLink } from './links';
+import { isTaskState, onTaskCallback, onTaskMessage, showMyTasks, startAddWork } from './tasks';
 import { BTN, CONSENT_VERSION, consentKeyboard, contactKeyboard, menuKeyboard, removeKeyboard, T } from './texts';
 
 /** Jonli joylashuv xabari shundan eski bo'lsa — eskirgan (forward/qayta yuborish). */
@@ -38,6 +39,14 @@ export async function processUpdate(u: TgUpdate): Promise<JobOutcome> {
     return {};
   }
   if (msg.contact) return onContact(msg);
+  if (text === BTN.tasks || text === '/vazifalar') return showMyTasks(uid, chat);
+  if (text === BTN.addWork || text === '/ish') return startAddWork(uid, chat);
+  // Vazifa sessiyasi (hisobot fayli, lokatsiya, izoh, savol) — menyu tugmalari bosilmagan bo'lsa shu yerga
+  const menuTexts: string[] = Object.values(BTN);
+  if (!menuTexts.includes(text)) {
+    const st = await getState(uid);
+    if (isTaskState(st)) return onTaskMessage(msg, st);
+  }
   if (msg.location) return onLocation(msg);
   if (msg.video_note) return onVideoNote(msg);
   if (text === BTN.checkIn || text === '/keldim') return startAction(msg, 'check_in');
@@ -140,6 +149,7 @@ async function onCallback(cb: TgCallback): Promise<JobOutcome> {
     await send(chat, T.faceAsk);
     return {};
   }
+  if (data.startsWith('tk:') || data.startsWith('wk:')) return onTaskCallback(cb);
   // Bir nechta ishxona: act:<check_in|check_out>:<tenantId>
   const m = /^act:(check_in|check_out):([0-9a-f-]{36})$/.exec(data);
   if (m) {

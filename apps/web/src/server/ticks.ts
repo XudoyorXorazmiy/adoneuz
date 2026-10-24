@@ -12,6 +12,7 @@ import { esc } from '@/server/telegram/api';
 import { enqueue } from '@/server/jobs/enqueue';
 import { notifyMembers, queueNotifyEmployee, queueNotifyMembers } from '@/server/notify';
 import type { JobOutcome } from '@/server/jobs/types';
+import { runTaskTemplates } from '@/server/tasks';
 
 const AUTO_CLOSE_HOURS = 3;
 /** Jadvalsiz (erkin) xodim kirgandan keyin shuncha soatda avto-yopiladi. */
@@ -54,6 +55,8 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
         await rebuildDay(tx, { tenantId, employeeId: e.id, workDate: date, tz, now });
       }
     }
+    // Takrorlanuvchi vazifalar (kuniga bir marta, last_run_date bilan)
+    await runTaskTemplates(tx, tenantId, now);
     // Kelmaganlar ro'yxati — kuniga bir marta, belgilangan vaqtdan keyin
     const digestAt = typeof t!.settings?.absentDigestAt === 'string' ? (t!.settings.absentDigestAt as string) : '10:00';
     const p = zonedParts(now, tz);
