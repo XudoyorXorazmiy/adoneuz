@@ -50,7 +50,13 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
 
 ## 4. Telegram bot
 
-@BotFather → `/newbot` → `adone` / `adoneuz_bot` → token Coolify env'ga. Keyin `/setdomain` (Mini App uchun `app.adone.uz`), `/setmenubutton` → Web App `https://app.adone.uz/tg`. Webhook o'rnatish route'i (`/api/cron/setup-bot`) 1-bosqichda yoziladi.
+@BotFather → `/newbot` → `adone` / `adoneuz_bot` → token Coolify env'ga (`PLATFORM_BOT_TOKEN`, `PLATFORM_BOT_USERNAME=adoneuz_bot`) → Redeploy. Keyin webhook va buyruqlar (bir marta):
+
+```bash
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://app.adone.uz/api/cron/setup-bot
+```
+
+Mini App (3-bosqich): `/setdomain` → `app.adone.uz`, `/setmenubutton` → Web App `https://app.adone.uz/tg`.
 
 ## 5. Migratsiya (prod)
 

@@ -37,4 +37,5 @@ export const REASON_LABELS: Record<string, string> = {
   face_pending: 'Yuz tekshiruvi kutilmoqda',
   face_mismatch: 'Yuz mos kelmadi',
   no_branch: 'Filial biriktirilmagan',
+  forgot_checkout: '«Ketdim» bosilmagan — avto-yopildi',
 };

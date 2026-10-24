@@ -1,6 +1,6 @@
 import 'server-only';
 import { and, count, eq, gte, sql } from 'drizzle-orm';
-import { attendanceDays, branches, employees, schedules, withTenant } from '@adone/db';
+import { attendanceDays, branches, employees, schedules, tgLinks, withTenant } from '@adone/db';
 import { addDays } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope, inScope } from './scope';
@@ -34,5 +34,13 @@ export async function lastWeek(user: TenantUser, today: string) {
       const by = (st: string) => rows.filter((r) => r.d === d && r.status === st).reduce((a, r) => a + r.n, 0);
       return { date: d, present: by('present'), late: by('late'), absent: by('absent') };
     });
+  });
+}
+
+/** Rahbarning Telegram'i ulanganmi (tg_links, tenant konteksti). */
+export async function memberLinked(tenantId: string, userId: string) {
+  return withTenant(tenantId, async (tx) => {
+    const [r] = await tx.select({ id: tgLinks.id }).from(tgLinks).where(and(eq(tgLinks.kind, 'member'), eq(tgLinks.refId, userId))).limit(1);
+    return !!r;
   });
 }

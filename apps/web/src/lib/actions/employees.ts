@@ -8,6 +8,10 @@ import { assertArea } from '@/lib/auth/guard';
 import type { TenantUser } from '@/lib/auth/session';
 import type { FormState } from '@/components/ui/form-drawer';
 import { createInvite } from '@/server/employees';
+import { queueNotifyEmployee } from '@/server/notify';
+import { kick } from '@/server/jobs/enqueue';
+import { T } from '@/server/bot/texts';
+import { esc } from '@/server/telegram/api';
 import { departmentScope } from '@/server/scope';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
@@ -79,8 +83,15 @@ export async function setEmployeeStatusAction(f: FormData): Promise<void> {
     await tx.update(employees).set({ status, joinedAt: status === 'active' && !e.joinedAt ? new Date() : e.joinedAt }).where(eq(employees.id, id));
     // O'chirilgan xodim botdan uziladi (ishxona ichidagi bog'lanish); biometrika 3-bosqichda shu yerda o'chadi (§1.4)
     if (status === 'disabled') await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
+    if (status === 'active' && e.status === 'disabled') {
+      // Qayta yoqilgan xodim botga qayta bog'lanadi (shaxsiy chatda chat id = Telegram user id)
+      await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
+      await tx.insert(tgLinks).values({ telegramUserId: e.telegramUserId!, chatId: e.telegramUserId!, tenantId: user.tenantId, kind: 'employee', refId: id });
+    }
+    if (status === 'active' && e.status !== 'active') await queueNotifyEmployee(tx, user.tenantId, id, T.approved(esc(user.tenantName)));
     await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: `employee.${status}`, entity: 'employee', entityId: id });
   });
+  kick();
   revalidatePath('/xodimlar');
 }
 

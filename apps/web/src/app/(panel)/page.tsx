@@ -4,7 +4,8 @@ import { Check, CheckCircle2, Circle, X } from 'lucide-react';
 import { formatDate, formatTime, isoWeekday, WEEKDAY_LONG, WEEKDAY_SHORT } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { listDay, summarize, today } from '@/server/attendance';
-import { lastWeek, setupState } from '@/server/dashboard';
+import { lastWeek, memberLinked, setupState } from '@/server/dashboard';
+import { TelegramLinkCard } from '@/components/shell/telegram-link';
 import { resolveSuspiciousAction } from '@/lib/actions/attendance';
 import { Kpi } from '@/components/ui/page-header';
 import { REASON_LABELS } from '@/components/attendance/badges';
@@ -15,7 +16,7 @@ export default async function DashboardPage() {
   const user = await requireArea('dashboard');
   const t = today(user);
   const tz = user.tenantTimezone;
-  const [setup, rows, week] = await Promise.all([setupState(user.tenantId), listDay(user, { date: t }), lastWeek(user, t)]);
+  const [setup, rows, week, linked] = await Promise.all([setupState(user.tenantId), listDay(user, { date: t }), lastWeek(user, t), memberLinked(user.tenantId, user.id)]);
   const c = summarize(rows);
   const title = `Bugun, ${formatDate(`${t}T12:00:00Z`)} · ${WEEKDAY_LONG[isoWeekday(t) - 1]}`;
 
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
     return (
       <>
         <div className="flex flex-col gap-1"><h1 className="page-title">{title}</h1><span className="text-muted">Xush kelibsiz, {user.name.split(' ')[0]}.</span></div>
+        {!linked && <TelegramLinkCard />}
         <div className="card-pad flex flex-col gap-4">
           <h2 className="m-0 text-base font-semibold">Ishga tushirish</h2>
           <ol className="m-0 flex list-none flex-col gap-3 p-0">
@@ -59,6 +61,7 @@ export default async function DashboardPage() {
   return (
     <>
       <h1 className="page-title">{title}</h1>
+      {!linked && <TelegramLinkCard />}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <Kpi label="Ishda" value={<>{c.inside} <span className="text-base text-muted">/ {c.all}</span></>} tone="success" />
         <Kpi label="Kechikdi" value={c.late} tone="warning" />

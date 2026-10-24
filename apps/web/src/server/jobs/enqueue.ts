@@ -27,10 +27,17 @@ export async function enqueue(
     .onConflictDoNothing();
 }
 
-/** Javob ketgandan keyin navbatni darhol aylantirish (server cron — zaxira). */
+/**
+ * Javob ketgandan keyin navbatni darhol aylantirish (server cron — zaxira).
+ * So'rov konteksti bo'lmasa (navbat ishchisining o'zi, skriptlar) — jim: keyingi aylanish/cron oladi.
+ */
 export function kick() {
-  after(async () => {
-    const { kickJobs } = await import('./runner');
-    await kickJobs();
-  });
+  try {
+    after(async () => {
+      const { kickJobs } = await import('./runner');
+      await kickJobs();
+    });
+  } catch {
+    // after() faqat so'rov ichida ishlaydi
+  }
 }

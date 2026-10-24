@@ -6,8 +6,10 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 
 **Bu fayl — loyihaning haqiqat manbai. Har sessiya boshida o'qi.** Dizayn: `docs/DIZAYN-PROMPT.md`. Deploy: `docs/DEPLOY.md`.
 
-> **Holat (2026-10-20):** 0-bosqich kodi tayyor (lokal tekshirilgan): monorepo, platforma sxemasi + RLS rollari, kirish,
-> ishxona paneli qobig'i, super admin (ishxona yaratish/bloklash, navbat), jobs runner, Dockerfile. Domen va Coolify hali ulanmagan.
+> **Holat (2026-10-24):** 0- va 1-bosqich kodi tayyor (lokal tekshirilgan, `main`da). Panel: filiallar (xarita havolasidan koordinata),
+> jadvallar (haftalik / navbatli / erkin, tungi smena), bo'limlar, xodimlar + taklif havolasi, kunlik davomat (isbot, tuzatish),
+> oylik tabel + Excel, jonli bosh sahifa. Bot: ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), keldi (jonli lokatsiya + geofence +
+> dumaloq video) / ketdi, bugun, rahbarlarga bildirishnomalar, avto-yopish, kunlik «Kelmaganlar». Domen, Coolify va bot tokeni hali ulanmagan.
 > Pilot: **Mudom bozor** (Hazorasp, kiyim do'koni; boshqaruv-tizim va chaat'da ham mijoz).
 
 ## 1. Asosiy qoidalar — buni buzma
@@ -29,7 +31,7 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 - Kod yozishdan oldin `node_modules/next/dist/docs/` ni o'qi (Next 16 o'zgarishlari).
 - PostgreSQL 18 (+ `pgvector` — yuz embedding'lari uchun, image `pgvector/pgvector:pg18`), Drizzle `casing: 'snake_case'`.
 - Sessiya: jose HS256 cookie (host-only), parol scrypt, 5 xato → 15 daqiqa qulf (boshqaruv-tizim qoidalari).
-- Telegram: **grammY**, webhook + `secret_token`. **Bitta platforma boti** (`@adoneuz_bot`) — hamma ishxona uchun; xodim ishxonaga taklif havolasi `/start inv_<kod>` bilan bog'lanadi. Keyin: ishxona o'z botini ulashi mumkin (chaat naqshi).
+- Telegram: yupqa fetch mijozi (`server/telegram/api.ts`, grammY shart bo'lmadi), webhook + `secret_token` (AUTH_SECRET'dan HMAC). **Bitta platforma boti** (`@adoneuz_bot`) — hamma ishxona uchun; xodim `/start inv_<kod>`, rahbar bildirishnomalar uchun `/start mem_<kod>` bilan bog'lanadi. Webhook → `tg_updates` (idempotent) → `tg_update` ishi → `server/bot`. Keyin: ishxona o'z botini ulashi mumkin (chaat naqshi).
 - Mini App: `app.adone.uz/tg/...` (openstore naqshi) — `initData` HMAC tekshiruvi, `LocationManager` / `navigator.geolocation`, kamera (`getUserMedia`). Bot zaxira yo'li: **live location + dumaloq video (video_note)**.
 - Yuz servisi: alohida konteyner `services/face` (Python, FastAPI + InsightFace `buffalo_l`, CPU) — faqat ichki tarmoqda. API: `POST /embed` (rasm → 512 vektor + sifat), `POST /verify` (rasm + namuna vektorlari → o'xshashlik), `POST /liveness` (video kadrlar → ball). Next.js uni `FACE_SERVICE_URL` orqali chaqiradi; servis ishlamasa check-in `suspicious` bo'lib saqlanadi (bloklanmaydi).
 - Navbat: `jobs` jadvali + runner (`FOR UPDATE SKIP LOCKED`, qayta urinish 2^n, `dedupe_key`) + server cron har daqiqa `/api/cron/jobs`. Redis yo'q. Eslatmalar, kechikkanlar ro'yxati, kunlik hisobot, takrorlanuvchi vazifalar — shu orqali.
@@ -58,7 +60,10 @@ pnpm --filter @adone/db set-app-password   # adone_app paroli = DATABASE_URL dag
 pnpm db:seed                    # HAMMASINI o'chirib demo yozadi (faqat lokal)
 pnpm dev                        # http://localhost:3140 · app.localhost:3140 · admin.localhost:3140
 pnpm test && pnpm db:check && pnpm db:test-rls && pnpm typecheck && pnpm build
+cd apps/web && node --conditions=react-server --import tsx scripts/test-bot.ts   # bot oqimi, soxta Telegram API (seed'dan keyin, o'zi tozalaydi)
 ```
+
+Next.js `16.4.2` (16.4.0 xavfsizlik zaifligi sababli build'da bloklanadi — versiyani pastga tushirmang).
 
 Demo kirishlar (seed): super admin `admin.localhost:3140` — 998900000000 / admin123 · Mudom bozor egasi 998901112233, admin 998901112244, menejer 998901112255 — hammasi `demo123` · izolyatsiya uchun «Test do'kon» 998905556677 / demo123.
 
@@ -124,7 +129,7 @@ har qanday ochiq → cancelled (izoh majburiy) · muddat o'tsa → overdue belgi
 | # | Nima | Natija |
 |---|---|---|
 | 0 ✅ | Monorepo, Postgres + RLS rollari, kirish, tenant/a'zolik, jobs runner, sirlar, host yuzalari, super admin: ishxona yaratish, Dockerfile (Coolify deploy — domen ulangach) | `admin.adone.uz`da ishxona ochiladi |
-| 1 | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** |
+| 1 ✅ | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** (deploy'dan keyin) |
 | 2 | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, muddat so'rovi, takrorlanuvchi, eslatmalar) | |
 | 3 | Yuz servisi (InsightFace) + liveness, shubhali navbat, Mini App (GPS, kamera, qurilma bog'lash), ruxsat so'rovlari | to'liq anti-fraud |
 | 4 | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, KPI va reyting, Excel/PDF | |
@@ -140,7 +145,16 @@ har qanday ochiq → cancelled (izoh majburiy) · muddat o'tsa → overdue belgi
 - `packages/core/src` — enums (rollar, holatlar, o'zbekcha yorliqlar), permissions (`can`, `canUsePanel`), phone, slug, format (tz bilan), geo (`checkGeofence`). Testlar `tests/core.test.ts`.
 - `packages/db/src` — schema/platform.ts, client (adone_app pool), scoped (`withTenant` / `withPlatform` / `withAuth` — `SET LOCAL ROLE`), migrate, seed, bootstrap, set-app-password, db-check, test-rls. Migratsiyalar `migrations/` (0000 — drizzle, 0001_rls — qo'lda, `drizzle-kit generate --custom`).
 - `apps/web/src` — `proxy.ts` (host → yuza), `lib/host.ts`, `lib/auth/*` (jose cookie `adone_session`, login, guard), `lib/actions/*` (auth, platform), `server/jobs/*` (enqueue + `dedupeKey`, runner, handlers), `server/platform.ts`.
-- Sahifalar: `app/(panel)/*` (ishxona paneli, menyu `layout.tsx` NAV — `ready: false` bo'limlar «tez orada»), `app/platforma/(admin)/*` (super admin: Ishxonalar, Navbat), `app/kirish`, `app/sayt` (vaqtinchalik landing), `app/api/{health,cron/jobs}`.
+- `packages/core/src` (1-bosqich) — time (tz, sana), schedule (`shiftFor`, `workdayFor` — tungi smena), attendance (`computeDay`, `effectiveEvents` — tuzatishlar: add_in/add_out/void/approve, `nextAction`). Testlar `tests/attendance.test.ts`.
+- `packages/db/src/attendance.ts` — `rebuildDay` (jurnal → attendance_days, yagona yozuvchi), `workdayOf`, `dayEvents`. Sxema: `schema/tenant.ts` (branches, departments, schedules, employees, consents, media, attendance_events, attendance_days), `schema/bot.ts` (invites, tg_links, bot_sessions, tg_updates — platforma roli o'qiydi).
+- `apps/web/src/server` — structure, employees (taklif kodi), attendance (kunlik ko'rinish, tabel), dashboard, scope (menejer → o'z bo'limlari), media (disk), notify, ticks (avto-yopish, kelmaganlar), telegram/api, bot/ (index — oqimlar, session, links, texts).
+- Sahifalar: `app/(panel)/*` — bosh sahifa, davomat (+ `/davomat/tabel`), xodimlar, jadvallar, filiallar (qolganlari «tez orada»); `app/platforma/(admin)/*` (super admin: Ishxonalar, Navbat), `app/kirish`, `app/sayt` (vaqtinchalik landing). API: `health`, `cron/jobs` (+ tick'lar), `cron/setup-bot`, `telegram/webhook`, `media/[id]`, `eksport/tabel`.
+
+## 9b. Bot oqimlari (1-bosqich)
+
+- **Ro'yxatdan o'tish:** `/start inv_<kod>` → «📱 Raqamni yuborish» (`contact.user_id === from.id`, panelda kiritilgan raqam bilan solishtiriladi) → rozilik (`consents`, `CONSENT_VERSION`) → dumaloq video (`media` face_sample) → `pending` (yoki `tenants.settings.autoApprove`) → rahbarlarga xabar. Panelda «Tasdiqlash» → xodimga xabar.
+- **Keldim:** jonli lokatsiya (`live_period` majburiy; forward va 120 s dan eski — rad) → geofence (tashqarida — `rejected` hodisa jurnalga) → dumaloq video → `check_in` (`ok`; yuz tekshiruvi 3-bosqichda) → kechiksa rahbarga xabar. **Ketdim:** faqat jonli lokatsiya. Sessiya 15 daqiqa.
+- **Tick (har 10 daqiqa, har ishxona):** bugun/kecha yig'masi, smena tugaganidan 3 soat keyin (erkin grafikda 16 soat) `auto_close`, `absentDigestAt` (standart 10:00) dan keyin kunlik «Kelmaganlar / kechikkanlar».
 
 ## 10. Qarorlar va ochiq savollar
 
