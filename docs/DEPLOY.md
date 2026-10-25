@@ -1,6 +1,8 @@
 # adone — deploy
 
-> Holat (2026-10-20): **hali sozlanmagan.** Quyidagi qadamlar egasi tomonidan (yoki egasining kompyuteridagi Claude Code sessiyasida — u yerda Chrome, SSH kaliti va Coolify tokeni bor) bajariladi. Bulutli sessiyada Cloudflare/ahost/Coolify'ga kirish yo'q.
+> Holat (2026-10-25): **sozlangan** (egasining kompyuteridagi Claude Code sessiyasidan, Coolify API + Cloudflare API + SSH). Sirlar lokal `~/server-backups/adoneuz/secrets.env` da (chatga chiqarilmaydi); bot tokenini egasi Coolify env'ga o'zi kiritadi.
+>
+> Coolify: project `adone` `5rftf2lcsanzcg3colkmqo0g` · Postgres `adone-pg` `efcybajfcovqhctvtgltdxrb` (ichki host shu uuid, backup har kuni 22:15, 14 nusxa) · `adone-web` `rwsu4i5qshtgp9wumch8efrl` · `adone-face` `5gkaljf2cg2ijtc92wrcx0lt` (network alias `adone-face`, watch path `services/face/**`, RAM chegarasi 1.5 GB).
 
 ## Qayerda nima (reja)
 
@@ -8,12 +10,12 @@
 |---|---|
 | Server | Contabo VPS `109.199.121.164` (chaat, openstore bilan bir server), Coolify v4 — panel `http://109.199.121.164:8000` |
 | Repo | `github.com/XudoyorXorazmiy/adoneuz`, branch **`main`** — push = avtomatik build + deploy (GitHub App `xudoyor-coolify`) |
-| Domen | `adone.uz` — registrar **ahost**, DNS **Cloudflare** |
+| Domen | `adone.uz` — registrar **SUVAN NET**, NS allaqachon **Cloudflare** (`anahi`/`sevki`), A yozuvlar DNS only. MX/TXT — timeweb pochtasi (tegilmaydi) |
 | Hostlar | `adone.uz` (landing), `www` → apex, `app.adone.uz` (panel + Mini App + webhook), `admin.adone.uz` (super admin) |
 | Baza | Coolify Postgres, image `pgvector/pgvector:pg18`, db/user `adone` (ega, migratsiya), ilova roli `adone_app` (NOBYPASSRLS) |
-| Yuz servisi | Coolify'da alohida ilova `adone-face` (`services/face/Dockerfile`, base dir `services/face`), faqat ichki tarmoq (domen YO'Q), port 8000. Model build paytida yuklanadi (~330 MB), RAM ~1 GB |
-| Cron | `/etc/cron.d/adone` — har daqiqa `/api/cron/jobs` (Bearer `CRON_SECRET`) |
-| Media | volume `/data/adone/media` → `/app/media-data` (egasi uid 1001) |
+| Yuz servisi | Coolify'da alohida ilova `adone-face` (`services/face/Dockerfile`, base dir `services/face`), faqat ichki tarmoq (domen YO'Q — API bilan yaratilganda Coolify sslip domen qo'yadi, `domains:""` PATCH bilan olib tashlanadi), port 8000, `FACE_SERVICE_URL=http://adone-face:8000` (network alias). Model build paytida yuklanadi (~330 MB), RAM ~1 GB |
+| Cron | `/etc/cron.d/adone` — har daqiqa `curl -K /etc/adone/cron.curl` (chmod 600: Bearer `CRON_SECRET` + `https://app.adone.uz/api/cron/jobs`; sir cron qatorida emas — chaat naqshi) |
+| Media | Docker volume `rwsu4i5qshtgp9wumch8efrl-adone-media` → `/app/media-data` (Coolify API `host_path` qabul qilmaydi; konteyner root bilan ishlaydi) |
 
 ## 1. Cloudflare'ga domen qo'shish
 

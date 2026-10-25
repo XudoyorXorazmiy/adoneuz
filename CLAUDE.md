@@ -13,7 +13,8 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 > qolgani pastdagi jadvalda. **3-bosqich tayyor (2026-10-25)**: Mini App (GPS + jonli selfi), yuz servisi (InsightFace, liveness), qurilma bog'lash, ruxsat so'rovlari.
 > **4-bosqich — ish haqi tayyor (2026-10-25)**: tahrirlanadigan qoidalar, oylik vedomost, qo'lda tuzatish + audit, oyni yopish (snapshot), Excel, Mini App'da o'z ish haqi.
 > **Landing (5-bosqich qismi) tayyor (2026-10-25)**: `design/landing` (Tessel uslubi) 1:1, ariza formasi → `leads`, platformada «Arizalar».
-> Domen, Coolify va bot tokeni hali ulanmagan.
+> **Prod (2026-10-25):** `adone.uz`, `app.`, `admin.` jonli (Coolify, Let's Encrypt), baza migratsiya qilingan, yuz servisi va cron ishlayapti (`docs/DEPLOY.md`).
+> Kutilmoqda: bot tokeni (egasi Coolify env'ga o'zi kiritadi) → restart + `setup-bot`; super admin `bootstrap` (egasi raqami).
 > Pilot: **Mudom bozor** (Hazorasp, kiyim do'koni; boshqaruv-tizim va chaat'da ham mijoz).
 
 ## 1. Asosiy qoidalar — buni buzma
