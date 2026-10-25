@@ -41,7 +41,8 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
 5. Environment Variables (qiymatlar faqat Coolify'da, chatga chiqarilmaydi):
    - `DATABASE_URL=postgres://adone_app:…@<db-host>:5432/adone?sslmode=disable` (**`sslmode=disable` shart**)
    - `DATABASE_URL_MIGRATE=postgres://adone:…@<db-host>:5432/adone?sslmode=disable`
-   - `ROOT_DOMAIN=adone.uz`, `PUBLIC_URL=https://adone.uz`
+   - `ROOT_DOMAIN=adone.uz`, `PUBLIC_URL=https://app.adone.uz` (webhook va Mini App manzili — `/tg` faqat `app.` hostda ochiladi, `adone.uz` bo'lsa Mini App 404)
+   - `TELEGRAM_WEBHOOK_IP=109.199.121.164` (setWebhook `ip_address` — Telegram DNS'ga qaramaydi)
    - `AUTH_SECRET`, `SECRET_KEY` (AES-GCM), `CRON_SECRET` — har biri `openssl rand -hex 32`
    - `MEDIA_DIR=/app/media-data`, `DB_POOL_MAX=10`
    - Bot: `PLATFORM_BOT_TOKEN` (@BotFather'dan, `@adoneuz_bot`), `PLATFORM_BOT_USERNAME=adoneuz_bot`

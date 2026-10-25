@@ -12,7 +12,9 @@ export async function POST(req: Request) {
   if (!process.env.CRON_SECRET || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) return new Response('Unauthorized', { status: 401 });
   if (!botConfigured()) return Response.json({ ok: false, error: 'PLATFORM_BOT_TOKEN sozlanmagan' }, { status: 400 });
   const url = `${publicApiOrigin()}/api/telegram/webhook`;
-  await tg('setWebhook', { url, secret_token: webhookSecret(), allowed_updates: ['message', 'callback_query'], drop_pending_updates: false, max_connections: 20 });
+  // TELEGRAM_WEBHOOK_IP — Telegram DNS'ga qaramay to'g'ridan-to'g'ri serverga ulanadi (prod: 109.199.121.164)
+  const ip = process.env.TELEGRAM_WEBHOOK_IP;
+  await tg('setWebhook', { url, secret_token: webhookSecret(), allowed_updates: ['message', 'callback_query'], drop_pending_updates: false, max_connections: 20, ...(ip ? { ip_address: ip } : {}) });
   await tg('setMyCommands', {
     commands: [
       { command: 'keldim', description: 'Ishga keldim' },
