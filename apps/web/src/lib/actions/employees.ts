@@ -13,6 +13,7 @@ import { kick } from '@/server/jobs/enqueue';
 import { T } from '@/server/bot/texts';
 import { esc } from '@/server/telegram/api';
 import { departmentScope } from '@/server/scope';
+import { deleteBiometrics } from '@/server/face';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
 const optUuid = (v: string) => (z.uuid().safeParse(v).success ? v : null);
@@ -81,8 +82,12 @@ export async function setEmployeeStatusAction(f: FormData): Promise<void> {
     if (!e) throw new Error('Xodim topilmadi');
     if (status === 'active' && !e.telegramUserId) throw new Error("Xodim hali botda ro'yxatdan o'tmagan");
     await tx.update(employees).set({ status, joinedAt: status === 'active' && !e.joinedAt ? new Date() : e.joinedAt }).where(eq(employees.id, id));
-    // O'chirilgan xodim botdan uziladi (ishxona ichidagi bog'lanish); biometrika 3-bosqichda shu yerda o'chadi (§1.4)
-    if (status === 'disabled') await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
+    // O'chirilgan xodim botdan uziladi; biometrika (yuz vektorlari va namuna videolari) o'chiriladi (§1.4)
+    if (status === 'disabled') {
+      await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
+      await deleteBiometrics(tx, id);
+      await tx.update(employees).set({ deviceId: null, deviceLabel: null, deviceBoundAt: null }).where(eq(employees.id, id));
+    }
     if (status === 'active' && e.status === 'disabled') {
       // Qayta yoqilgan xodim botga qayta bog'lanadi (shaxsiy chatda chat id = Telegram user id)
       await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
@@ -105,4 +110,29 @@ export async function regenerateInviteAction(f: FormData): Promise<void> {
     await createInvite(tx, user.tenantId, id);
   });
   revalidatePath('/xodimlar');
+}
+
+/** Qurilmani uzish: keyingi Mini App «Keldim» yangi qurilmani bog'laydi (telefon almashganda). */
+export async function unbindDeviceAction(f: FormData): Promise<void> {
+  const user = await assertArea('employees');
+  const id = z.uuid().parse(f.get('id'));
+  await withTenant(user.tenantId, async (tx) => {
+    if (!(await canTouch(tx, user, id, null))) throw new Error("Ruxsat yo'q");
+    await tx.update(employees).set({ deviceId: null, deviceLabel: null, deviceBoundAt: null }).where(eq(employees.id, id));
+    await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'employee.device_unbind', entity: 'employee', entityId: id });
+  });
+  revalidatePath(`/xodimlar/${id}`);
+}
+
+/** Yuz namunasini qayta olish: xodimga botda /yuz buyrug'i haqida xabar. */
+export async function requestFaceResampleAction(f: FormData): Promise<void> {
+  const user = await assertArea('employees');
+  const id = z.uuid().parse(f.get('id'));
+  await withTenant(user.tenantId, async (tx) => {
+    if (!(await canTouch(tx, user, id, null))) throw new Error("Ruxsat yo'q");
+    await queueNotifyEmployee(tx, user.tenantId, id, "🔄 Rahbaringiz yuz namunasini yangilashni so'radi. /yuz buyrug'ini bosing va 3–5 soniyalik dumaloq video yuboring.");
+    await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'employee.face_resample', entity: 'employee', entityId: id });
+  });
+  kick();
+  revalidatePath(`/xodimlar/${id}`);
 }

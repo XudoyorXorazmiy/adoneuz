@@ -6,14 +6,14 @@ import 'server-only';
  */
 import { eq } from 'drizzle-orm';
 import { attendanceEvents, branches, dayEvents, employees, rebuildDay, tenants, workdayOf, type Tx } from '@adone/db';
-import { checkGeofence, effectiveEvents, formatTime, nextAction } from '@adone/core';
+import { checkGeofence, effectiveEvents, facePercent, formatTime, nextAction, type FaceDecision } from '@adone/core';
 import { escHtml as esc } from '@/lib/task-text';
 import { queueNotifyMembers } from '@/server/notify';
 
 export type CheckAction = 'check_in' | 'check_out';
 
 export type CheckResult =
-  | { ok: true; time: string; lateMinutes: number; workedMinutes: number; distanceM: number; branchName: string }
+  | { ok: true; time: string; lateMinutes: number; workedMinutes: number; distanceM: number; branchName: string; status: 'ok' | 'suspicious'; reasons: string[]; facePercent: number | null }
   | { ok: false; reason: 'outside' | 'low_accuracy' | 'state' | 'no_branch' | 'inactive' | 'no_photo'; message: string; distanceM?: number; branchName?: string };
 
 /** Lokatsiya oldindan tekshiruvi (1-qadam ekrani): faqat masofa, hech narsa yozilmaydi. */
@@ -28,6 +28,10 @@ export async function previewGeofence(tx: Tx, employeeId: string, p: { lat: numb
 
 export async function recordCheck(tx: Tx, input: {
   tenantId: string; employeeId: string; action: CheckAction; lat: number; lng: number; accuracyM: number | null; mediaId: string | null; source: 'miniapp' | 'bot';
+  /** Yuz qarori (faceDecision) — faqat Keldim'da; tranzaksiyadan oldin hisoblangan. */
+  face?: FaceDecision;
+  /** Mini App qurilmasi: birinchi marta bog'lanadi, boshqasidan — «shubhali». */
+  device?: { id: string; label: string } | null;
 }): Promise<CheckResult> {
   const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
   const tz = t!.tz;
@@ -51,13 +55,24 @@ export async function recordCheck(tx: Tx, input: {
     await tx.insert(attendanceEvents).values({ ...base, kind: input.action, checkStatus: 'rejected', reasons: ['outside'] });
     return { ok: false, reason: 'outside', message: `Zonadan tashqaridasiz: ${g.distanceM} m. Filialga yaqinroq boring.`, distanceM: g.distanceM, branchName: b.name };
   }
-  // Yuz tekshiruvi (services/face) ulanmaguncha selfi saqlanadi va rahbar ko'radi; holat — ok
-  await tx.insert(attendanceEvents).values({ ...base, kind: input.action, checkStatus: 'ok' });
+  const reasons = [...(input.face?.reasons ?? [])];
+  if (input.device) {
+    if (!e.deviceId) await tx.update(employees).set({ deviceId: input.device.id, deviceLabel: input.device.label, deviceBoundAt: new Date() }).where(eq(employees.id, e.id));
+    else if (e.deviceId !== input.device.id) reasons.push('other_device');
+  }
+  const checkStatus = reasons.length ? 'suspicious' : 'ok';
+  await tx.insert(attendanceEvents).values({ ...base, kind: input.action, checkStatus, reasons, faceScore: input.face?.score ?? null, livenessScore: input.face?.liveness ?? null });
   const r = await rebuildDay(tx, { tenantId: input.tenantId, employeeId: e.id, workDate: wd.date, tz });
   if (input.action === 'check_in' && r.lateMinutes > 0) {
     await queueNotifyMembers(tx, input.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, tz)}, Mini App).`, e.departmentId);
   }
-  return { ok: true, time: formatTime(new Date(), tz), lateMinutes: input.action === 'check_in' ? r.lateMinutes : 0, workedMinutes: r.workedMinutes, distanceM: g.distanceM, branchName: b.name };
+  if (checkStatus === 'suspicious') {
+    await queueNotifyMembers(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Panel → Davomat → «Shubhali».`, e.departmentId);
+  }
+  return {
+    ok: true, time: formatTime(new Date(), tz), lateMinutes: input.action === 'check_in' ? r.lateMinutes : 0, workedMinutes: r.workedMinutes, distanceM: g.distanceM, branchName: b.name,
+    status: checkStatus, reasons, facePercent: facePercent(input.face?.score),
+  };
 }
 
 /** Tanaffus: faqat ishda bo'lganda; boshlangan bo'lsa — tugatadi. */

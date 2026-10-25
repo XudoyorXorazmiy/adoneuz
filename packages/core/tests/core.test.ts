@@ -60,3 +60,18 @@ test('koordinata va xarita havolasi', async () => {
   assert.equal(parseCoordinates('Hazorasp'), null);
   assert.equal(parseCoordinates('0, 0'), null);
 });
+
+test('yuz qarori: chegara, servis yo‘q, namuna yo‘q, liveness', async () => {
+  const { faceDecision, faceSettings } = await import('../src/index');
+  const v = (similarity: number, yawRange = 0, manyFaces = false) => ({ ok: true as const, similarity, faceFrames: 3, frames: 3, manyFaces, yawRange });
+  assert.equal(faceDecision(v(0.82, 30), { templates: 1, challenge: true }).status, 'ok');
+  assert.deepEqual(faceDecision(v(0.3, 30), { templates: 1, challenge: true }).reasons, ['face_mismatch']);
+  assert.deepEqual(faceDecision(v(0.8, 2), { templates: 1, challenge: true }).reasons, ['liveness_low']);
+  assert.equal(faceDecision(v(0.8, 2), { templates: 1, challenge: false }).status, 'ok', 'bot videosida liveness talab yo‘q');
+  assert.deepEqual(faceDecision(v(0.9, 30, true), { templates: 1, challenge: true }).reasons, ['many_faces']);
+  assert.deepEqual(faceDecision(null, { templates: 1, challenge: true }).reasons, ['face_unavailable']);
+  assert.deepEqual(faceDecision(v(0.9), { templates: 0, challenge: false }).reasons, ['no_face_template']);
+  assert.deepEqual(faceDecision({ ok: false, reason: 'no_face' }, { templates: 2, challenge: false }).reasons, ['no_face']);
+  assert.equal(faceSettings({ threshold: 5 }).threshold, 0.45, 'yaroqsiz sozlama — standart');
+  assert.equal(faceDecision(v(0.5), { templates: 1, challenge: false, settings: faceSettings({ threshold: 0.6 }) }).status, 'suspicious');
+});

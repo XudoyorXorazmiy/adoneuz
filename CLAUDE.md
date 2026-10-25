@@ -150,7 +150,7 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 | 0 ✅ | Monorepo, Postgres + RLS rollari, kirish, tenant/a'zolik, jobs runner, sirlar, host yuzalari, super admin: ishxona yaratish, Dockerfile (Coolify deploy — domen ulangach) | `admin.adone.uz`da ishxona ochiladi |
 | 1 ✅ | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** (deploy'dan keyin) |
 | 2 ✅ | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, takrorlanuvchi, eslatmalar) + **o'zi qo'shgan ishlar va ish jurnali** (§7a). Qolgan: muddatni uzaytirish so'rovi (`deadline_requests`), «Vazifa berish»da fayl/ovozli xabar ilovasi, `selfTasksNeedApproval` sozlamasi UI'si (Sozlamalar sahifasi bilan) | |
-| 3 | Yuz servisi (InsightFace) + liveness, shubhali navbat, ~~Mini App (GPS, kamera)~~ ✅, qurilma bog'lash, ruxsat so'rovlari | to'liq anti-fraud |
+| 3 | ~~Yuz servisi (InsightFace) + liveness~~ ✅, ~~shubhali navbat~~ ✅ (bosh sahifa «Qaror kutmoqda»), ~~Mini App (GPS, kamera)~~ ✅, ~~qurilma bog'lash~~ ✅, ruxsat so'rovlari | to'liq anti-fraud |
 | 4 | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, KPI va reyting, Excel/PDF | |
 | 5 | Landing, o'zi ro'yxatdan o'tish, tariflar (xodim soniga qarab), sinov 14 kun, Click/Payme, kirill/rus, QR rejim | sotuvga chiqish |
 
@@ -173,6 +173,15 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 - Mini App: `app/tg/*` (layout — initData auth), `components/tg/*` (webapp yordamchilari, check-flow, presence-card, task-report, add-work), `lib/tg/*` (init-data, session), `lib/actions/miniapp.ts`, `server/miniapp.ts`, `server/checkin.ts`, `app/api/tg/auth`.
 - Sahifalar: `app/(panel)/*` — bosh sahifa, davomat (+ `/davomat/tabel`), vazifalar (+ `/vazifalar/[id]`; kanban/ro'yxat, `?kor=berilgan|ozi|mening`, `?ber=1` — «Vazifa berish» ochiq), xodimlar (+ `/xodimlar/[id]` profil, `?tab=vazifalar` — ish jurnali), jadvallar, filiallar (qolganlari «tez orada»); `app/platforma/(admin)/*` (super admin: Ishxonalar, Navbat), `app/kirish`, `app/sayt` (vaqtinchalik landing). API: `health`, `cron/jobs` (+ tick'lar), `cron/setup-bot`, `telegram/webhook`, `media/[id]`, `eksport/tabel`.
 
+## 9d. Yuz tekshiruvi (3-bosqich, 2026-10-25)
+
+- **Servis** `services/face` (FastAPI + InsightFace buffalo_l, CPU): `/embed` (namuna → 512 vektor + sifat; yuz yo'q / sifatsiz — rad), `/verify` (rasm(lar) yoki video + namunalar → eng yaxshi kosinus, yuzli kadrlar, `many_faces`, liveness = bosh burilishi `yaw_range`). Rasm/vektor diskka va logga yozilmaydi. Sinov: `python test_service.py` (paketdagi namunaviy rasmlar: o'zi ≥0.8, boshqalar <0.3). `X-Face-Key` ixtiyoriy.
+- **Qaror** `packages/core/src/face.ts faceDecision` — Next.js tomonida, ishxona sozlamasi `tenants.settings.face` (`threshold` 0.45, `minYawRange` 15°). Yuz sababli RAD yo'q — faqat `suspicious` + sabab (`face_mismatch`, `no_face`, `many_faces`, `liveness_low`, `face_unavailable`, `no_face_template`); geofence esa `rejected`.
+- **Namuna:** ro'yxatda dumaloq video → `face_enroll` ishi → `face_templates` (`real[]`, pgvector shart emas — 1:1 solishtirish). Sifatsiz bo'lsa xodimga «/yuz» va rahbarga xabar. `/yuz` (bot) — namunani yangilash (eski namunalar `is_active=false`). Panel profil: «Qayta olish» → xodimga /yuz haqida xabar.
+- **Check-in:** bot — dumaloq video (liveness talab yo'q, video o'zi jonli); Mini App — 3 kadr (to'g'ri / chapga / o'ngga, avtomatik) → liveness talab. Servis chaqiruvi TRANZAKSIYADAN TASHQARIDA (25 s timeout); yo'q bo'lsa `face_unavailable`. `attendance_events.face_score` (0..1), `liveness_score` (gradus).
+- **Qurilma:** Mini App localStorage `adone_device` (uuid) — birinchi Keldim bog'laydi (`employees.device_id/label/bound_at`), boshqasidan — `other_device` (shubhali). Panel profil «Qurilma» → «Uzish».
+- **Biometrika o'chirish:** xodim `disabled` → `deleteBiometrics` (vektorlar + face_sample fayllari) va qurilma.
+
 ## 9c. Mini App (`app.adone.uz/tg`)
 
 - **Kirish:** `telegram-web-app.js` → `initData` → `POST /api/tg/auth` (HMAC: `WebAppData` + bot tokeni, 24 soatdan eski rad, `lib/tg/init-data.ts`) → Telegram user → `tg_links` (employee) → cookie `adone_tg` (jose, kalit AUTH_SECRET + `:miniapp`, 12 soat, prod'da SameSite=None; Secure). Har so'rovda `currentTgUser()` bog'lanish, xodim holati va `telegram_user_id` ni qayta tekshiradi. Panel sessiyasi bilan aralashmaydi; proxy `/tg` ni panel cookie'siz o'tkazadi (faqat app host'da).
@@ -184,7 +193,7 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 ## 9b. Bot oqimlari
 
 - **Ro'yxatdan o'tish:** `/start inv_<kod>` → «📱 Raqamni yuborish» (`contact.user_id === from.id`, panelda kiritilgan raqam bilan solishtiriladi) → rozilik (`consents`, `CONSENT_VERSION`) → dumaloq video (`media` face_sample) → `pending` (yoki `tenants.settings.autoApprove`) → rahbarlarga xabar. Panelda «Tasdiqlash» → xodimga xabar.
-- **Keldim:** jonli lokatsiya (`live_period` majburiy; forward va 120 s dan eski — rad) → geofence (tashqarida — `rejected` hodisa jurnalga) → dumaloq video → `check_in` (`ok`; yuz tekshiruvi 3-bosqichda) → kechiksa rahbarga xabar. **Ketdim:** faqat jonli lokatsiya. Sessiya 15 daqiqa.
+- **Keldim:** jonli lokatsiya (`live_period` majburiy; forward va 120 s dan eski — rad) → geofence (tashqarida — `rejected` hodisa jurnalga) → dumaloq video → yuz servisi (§9d) → `check_in` (`ok` yoki `suspicious`) → kechiksa rahbarga xabar. **Ketdim:** faqat jonli lokatsiya. Sessiya 15 daqiqa.
 - **Vazifalar (2-bosqich):** yangi vazifa → xodimga karta (`✅ Qabul qildim` / `❓ Savol`, callback `tk:<amal>:<uuid>`) → `▶️ Boshladim` → `✅ Bajardim`: hisobot sessiyasi (`task_report`) — rasm/video/dumaloq video (`media` task_report), lokatsiya (forward rad), izoh; talab qilingan isbot yetmasa server rad etadi → `submitted` → rahbarlarga (egasi, admin, bo'lim boshlig'i; o'zi emas) xabar + fayllar + `✅ Tasdiqlash` (baho 1–5) / `🔁 Qaytarish` (sabab matni). `📋 Vazifalarim` — ochiq ro'yxat. `➕ Ish qo'shish` — nom → `Bajardim` (isbot ixtiyoriy, `self_done`, tasdiq kutadi) yoki `Rejalashtiraman` (`self_plan`). Eslatmalar: 30 daq qabul qilinmasa, muddatga 1 soat, muddat o'tganda (xodim + rahbar); 22:00–08:00 ertalabga suriladi.
 - **Tick (har 10 daqiqa, har ishxona):** takrorlanuvchi vazifalar (kuniga bir marta), bugun/kecha yig'masi, smena tugaganidan 3 soat keyin (erkin grafikda 16 soat) `auto_close`, `absentDigestAt` (standart 10:00) dan keyin kunlik «Kelmaganlar / kechikkanlar».
 

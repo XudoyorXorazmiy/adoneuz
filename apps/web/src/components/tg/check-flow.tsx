@@ -8,7 +8,11 @@ import { TgHeader } from './tg-shell';
 import { getCoords, haptic, shrinkImage, type Coords } from './webapp';
 
 type Geo = { status: 'ok' | 'outside' | 'low_accuracy'; distanceM: number; branchName: string; radiusM: number } | { error: string };
-const PROMPTS = ['Yuzingizni ramkaga joylang', 'Boshingizni chapga burang', "Endi o'ngga burang", 'Kameraga qarang'];
+const PROMPTS = ['Yuzingizni ramkaga joylang', 'Boshingizni chapga burang', "Endi o'ngga burang", 'Tayyor — yuboring'];
+const SUS_TEXT: Record<string, string> = {
+  face_mismatch: 'Yuz namunaga mos kelmadi', no_face: 'Yuz aniqlanmadi', many_faces: 'Kadrda boshqa odam bor', liveness_low: "Bosh burilmadi",
+  face_unavailable: 'Yuz tekshiruvi vaqtincha ishlamadi', no_face_template: "Yuz namunasi yo'q", other_device: 'Boshqa telefondan',
+};
 
 /**
  * Keldim / Ketdim (dizayn): 1) lokatsiya — server masofani hisoblaydi; 2) jonli selfi (faqat kamera, galereya yo'q; faqat Keldim);
@@ -41,13 +45,15 @@ export function CheckFlow({ action, branchName, radiusM }: { action: 'check_in' 
   }, []);
   useEffect(() => { void locate(); }, [locate]);
 
-  const submit = async (photo?: Blob) => {
+  const submit = async (photos?: Blob[]) => {
     if (!coords) return;
     setBusy(true);
     const fd = new FormData();
     fd.set('action', action); fd.set('lat', String(coords.lat)); fd.set('lng', String(coords.lng));
     if (coords.accuracy != null) fd.set('accuracy', String(coords.accuracy));
-    if (photo) fd.set('photo', new File([photo], 'selfie.jpg', { type: 'image/jpeg' }));
+    photos?.forEach((p, i) => fd.append('photo', new File([p], `selfie${i}.jpg`, { type: 'image/jpeg' })));
+    const dev = deviceInfo();
+    fd.set('deviceId', dev.id); fd.set('deviceLabel', dev.label);
     try {
       const r = await tgCheckAction(fd);
       setResult(r);
@@ -135,32 +141,58 @@ function Banner({ tone, icon, title, sub }: { tone: 'success' | 'danger' | 'warn
   );
 }
 
-/** Jonli kamera (getUserMedia, old kamera). Galereyadan tanlash imkoni yo'q. Ko'rsatmalar — keyin yuz servisi liveness'ga ulanadi. */
-function Selfie({ busy, onShot, onCancel }: { busy: boolean; onShot: (b: Blob) => void; onCancel: () => void }) {
+/** Shu qurilmaning doimiy identifikatori (Telegram webview localStorage) — qurilmani bog'lash uchun. */
+function deviceInfo(): { id: string; label: string } {
+  let id = '';
+  try {
+    id = localStorage.getItem('adone_device') ?? '';
+    if (!/^[0-9a-f-]{36}$/.test(id)) { id = crypto.randomUUID(); localStorage.setItem('adone_device', id); }
+  } catch { id = crypto.randomUUID(); }
+  const ua = navigator.userAgent;
+  const label = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? (/Android[^;]*;\s*([^;)]+)/.exec(ua)?.[1]?.trim() ?? 'Android') : 'Kompyuter';
+  return { id, label };
+}
+
+/**
+ * Jonli kamera (getUserMedia, old kamera; galereya yo'q). Uch kadr: to'g'ri, chapga, o'ngga — yuz servisi
+ * bosh burilishini (yaw) o'lchaydi: rasmni kameraga tutib aldash qiyinlashadi (liveness).
+ */
+function Selfie({ busy, onShot, onCancel }: { busy: boolean; onShot: (b: Blob[]) => void; onCancel: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState(0);
+  const [phase, setPhase] = useState(0);
   const [ready, setReady] = useState(false);
+  const shots = useRef<Blob[]>([]);
   useEffect(() => {
     let stream: MediaStream | null = null;
     navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false })
       .then((s) => { stream = s; if (video.current) { video.current.srcObject = s; void video.current.play(); } setReady(true); })
       .catch(() => setErr("Kameraga ruxsat berilmadi. Telegram sozlamalarida kamerani yoqing va qayta urinib ko'ring."));
-    const t = setInterval(() => setPrompt((p) => Math.min(p + 1, PROMPTS.length - 1)), 1600);
-    return () => { clearInterval(t); stream?.getTracks().forEach((x) => x.stop()); };
+    return () => { stream?.getTracks().forEach((x) => x.stop()); };
   }, []);
-  const shoot = async () => {
+  const grab = async (): Promise<Blob | null> => {
     const v = video.current;
-    if (!v || !v.videoWidth) return;
+    if (!v || !v.videoWidth) return null;
     const c = document.createElement('canvas');
     c.width = v.videoWidth; c.height = v.videoHeight;
     const g = c.getContext('2d')!;
     g.translate(c.width, 0); g.scale(-1, 1); // oynadagi kabi
     g.drawImage(v, 0, 0);
     const blob = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/jpeg', 0.85));
-    if (blob) onShot(await shrinkImage(blob, 960));
+    return blob ? shrinkImage(blob, 960) : null;
   };
-  const done = prompt === PROMPTS.length - 1;
+  // Har ko'rsatma ~1.8 s: oxirida kadr olinadi
+  useEffect(() => {
+    if (!ready || phase >= 3) return;
+    const t = setTimeout(async () => {
+      const b = await grab();
+      if (b) shots.current[phase] = b;
+      setPhase((p) => p + 1);
+    }, 1800);
+    return () => clearTimeout(t);
+  }, [ready, phase]);
+  const restart = () => { shots.current = []; setPhase(0); };
+  const prompt = phase < 3 ? PROMPTS[phase === 0 ? 0 : phase === 1 ? 1 : 2] : PROMPTS[3];
   return (
     <div className="flex flex-1 flex-col items-center gap-5 px-4 pt-6 pb-5">
       <h1 className="m-0 text-center text-[22px] font-bold">{PROMPTS[0]}</h1>
@@ -170,14 +202,20 @@ function Selfie({ busy, onShot, onCancel }: { busy: boolean; onShot: (b: Blob) =
       </div>
       {err ? <p className="m-0 rounded-2xl bg-danger/20 p-3 text-center text-sm">{err}</p> : (
         <>
-          <div className="flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 text-[15px] font-semibold"><Icon name={prompt === 1 ? 'turn_left' : prompt === 2 ? 'turn_right' : 'face'} />{PROMPTS[prompt]}</div>
-          <div className="flex items-center gap-2 text-xs text-white/70">{ready && <span className="flex items-center gap-1 text-success"><Icon name="check_circle" size={15} />Kamera tayyor</span>}<span>· Faqat jonli kamera</span></div>
+          <div className="flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 text-[15px] font-semibold"><Icon name={phase === 1 ? 'turn_left' : phase === 2 ? 'turn_right' : 'face'} />{prompt}</div>
+          <div className="flex items-center gap-2 text-xs text-white/70">
+            {ready && <span className="flex items-center gap-1 text-success"><Icon name="check_circle" size={15} />Kamera tayyor</span>}
+            <span>· Jonlilik {Math.min(phase, 3)}/3</span>
+          </div>
         </>
       )}
+      <p className="m-0 text-center text-xs text-white/50">Faqat jonli kamera. Galereyadan rasm yuklab bo&apos;lmaydi.</p>
       <div className="mt-auto flex w-full flex-col gap-2.5">
-        <button disabled={!ready || !done || busy} onClick={shoot} className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-bold disabled:opacity-40">
-          <Icon name="photo_camera" />{busy ? 'Yuborilmoqda…' : 'Suratga olish'}
+        <button disabled={phase < 3 || busy || shots.current.filter(Boolean).length === 0} onClick={() => onShot(shots.current.filter(Boolean))}
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-bold disabled:opacity-40">
+          <Icon name="send" />{busy ? 'Tekshirilmoqda…' : 'Yuborish'}
         </button>
+        {phase >= 3 && !busy && <button onClick={restart} className="h-11 w-full text-sm font-bold text-white/80">Qayta olish</button>}
         <button onClick={onCancel} className="h-[52px] w-full rounded-full bg-white/10 text-base font-bold">Bekor qilish</button>
       </div>
     </div>
@@ -198,14 +236,21 @@ function Result({ r, action, onRetry }: { r: CheckResult; action: 'check_in' | '
       </div>
     );
   }
+  const sus = r.status === 'suspicious';
   return (
     <div className="flex flex-1 flex-col items-center gap-3 px-4 pt-10 pb-5 text-center">
-      <span className="flex size-[104px] items-center justify-center rounded-full bg-success-tint"><span className="flex size-20 items-center justify-center rounded-full bg-success text-white"><Icon name="check" size={46} /></span></span>
-      <h1 className="m-0 mt-2 text-2xl font-bold">{action === 'check_in' ? 'Qabul qilindi' : 'Ketish qayd etildi'}</h1>
+      {sus ? (
+        <span className="flex size-[104px] items-center justify-center rounded-full bg-warning-tint"><span className="flex size-20 items-center justify-center rounded-full bg-warning text-white"><Icon name="hourglass_top" fill size={44} /></span></span>
+      ) : (
+        <span className="flex size-[104px] items-center justify-center rounded-full bg-success-tint"><span className="flex size-20 items-center justify-center rounded-full bg-success text-white"><Icon name="check" size={46} /></span></span>
+      )}
+      <h1 className="m-0 mt-2 text-2xl font-bold">{sus ? 'Qabul qilindi, rahbar tekshiradi' : action === 'check_in' ? 'Qabul qilindi' : 'Ketish qayd etildi'}</h1>
       <div className="tnum text-[40px] leading-none font-extrabold tracking-[-0.03em]">{r.time}</div>
+      {sus && <div className="mt-2 flex w-full items-center gap-2 rounded-2xl bg-warning-tint px-4 py-3 text-left text-sm font-semibold text-warning-text"><Icon name="face_retouching_off" size={20} />{r.reasons.map((x) => SUS_TEXT[x] ?? x).join(' · ')}</div>}
       {r.lateMinutes > 0 && <div className="mt-2 flex w-full items-center gap-2 rounded-2xl bg-warning-tint px-4 py-3 text-sm font-semibold text-warning-text"><Icon name="schedule" size={20} />Kechikdingiz: {r.lateMinutes} daqiqa</div>}
       <div className="mt-1 w-full divide-y divide-line-soft rounded-2xl border border-line text-left text-sm">
         {[
+          ...(r.facePercent != null ? [['Yuz mos', `${r.facePercent}%`, sus && r.reasons.includes('face_mismatch') ? 'text-warning' : 'text-success']] : []),
           ['Masofa', `${r.distanceM} m`, 'text-success'],
           ['Filial', r.branchName, ''],
           ...(action === 'check_out' ? [['Bugun ishladingiz', `${Math.floor(r.workedMinutes / 60)} soat ${r.workedMinutes % 60} daq`, '']] : []),

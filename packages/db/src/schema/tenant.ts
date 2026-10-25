@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, date, doublePrecision, index, integer, jsonb, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, date, doublePrecision, index, integer, jsonb, pgTable, real, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, id, updatedAt } from './columns';
 import { attendanceEventKindEnum, attendanceSourceEnum, checkStatusEnum, dayStatusEnum, employeeStatusEnum, mediaKindEnum, payTypeEnum, scheduleKindEnum } from './enums';
 import { tenants, users } from './platform';
@@ -79,6 +79,10 @@ export const employees = pgTable(
     payType: payTypeEnum().notNull().default('monthly'),
     payRate: bigint({ mode: 'number' }).notNull().default(0), // so'm
     joinedAt: timestamp({ withTimezone: true }),
+    /** Mini App qurilmasi (birinchi Keldim'da bog'lanadi). Boshqa qurilmadan — check-in «shubhali». */
+    deviceId: text(),
+    deviceLabel: text(),
+    deviceBoundAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -172,4 +176,23 @@ export const attendanceDays = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex('att_days_uq').on(t.tenantId, t.employeeId, t.workDate), index('att_days_date_idx').on(t.tenantId, t.workDate)],
+);
+
+/**
+ * Yuz namunasi vektorlari (CLAUDE.md §1.4): faqat rozilik bilan, services/face /embed natijasi (512, normallangan).
+ * pgvector shart emas — xodimda 1–3 ta namuna, solishtirish servisda (1:1). Xodim o'chirilsa — o'chiriladi.
+ */
+export const faceTemplates = pgTable(
+  'face_templates',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    employeeId: uuid().notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    embedding: real().array().notNull(),
+    quality: jsonb().$type<{ det_score: number; face_px: number; sharpness: number }>(),
+    mediaId: uuid().references(() => media.id, { onDelete: 'set null' }),
+    isActive: boolean().notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index('face_templates_emp_idx').on(t.tenantId, t.employeeId)],
 );

@@ -14,11 +14,22 @@ import { Pool } from 'pg';
 
 type Call = { method: string; body: Record<string, unknown> };
 const calls: Call[] = [];
+const faceCalls: string[] = [];
+let faceSim = 0.9;
 const VIDEO = Buffer.from('fake-mp4-bytes');
 const server = createServer((req, res) => {
   let raw = '';
   req.on('data', (c) => (raw += c));
   req.on('end', () => {
+    if (req.url?.startsWith('/face/')) {
+      // Soxta yuz servisi: /embed — doimiy vektor, /verify — testda o'rnatiladigan o'xshashlik
+      faceCalls.push(req.url);
+      const v = Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));
+      const body = req.url.endsWith('/embed') ? { ok: true, embedding: v, quality: { det_score: 0.9, face_px: 220, sharpness: 150 } }
+        : { ok: true, similarity: faceSim, face_frames: 6, frames: 8, many_faces: false, liveness: { yaw_range: 3 } };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(body));
+    }
     if (req.url?.startsWith('/file/')) {
       res.writeHead(200, { 'Content-Type': 'video/mp4' });
       return res.end(VIDEO);
@@ -36,12 +47,15 @@ await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
 const port = (server.address() as { port: number }).port;
 process.env.TELEGRAM_API_BASE = `http://127.0.0.1:${port}`;
 process.env.PLATFORM_BOT_TOKEN = 'test:token';
+process.env.FACE_SERVICE_URL = `http://127.0.0.1:${port}/face`;
 process.env.MEDIA_DIR = await mkdtemp(path.join(tmpdir(), 'adone-media-'));
 
 const { withTenant, withPlatform, employees, branches, schedules, tenants, attendanceEvents, invites, tgLinks, media, consents, jobs, pool } = await import('@adone/db');
 const { createInvite } = await import('../src/server/employees');
 const { processUpdate } = await import('../src/server/bot');
 const { attendanceTick } = await import('../src/server/ticks');
+const { enrollFace, deleteBiometrics } = await import('../src/server/face');
+const { faceTemplates } = await import('@adone/db');
 const { createTasks, runTaskTemplates } = await import('../src/server/tasks');
 const { taskNotify } = await import('../src/server/task-notify');
 const { tasks: tasksT, taskBatches, taskReports, taskEvents, taskTemplates } = await import('@adone/db');
@@ -101,6 +115,11 @@ try {
   const notif = await withPlatform((tx) => tx.select().from(jobs).where(and(eq(jobs.tenantId, T), eq(jobs.type, 'notify_members'))));
   assert.ok(notif.some((j) => String(j.payload.text).includes('Bot Sinov')), 'rahbarlarga xabar navbatda');
   ok("ro'yxatdan o'tish: rozilik, yuz namunasi, pending, rahbarga xabar");
+  const enrollJob = (await withPlatform((tx) => tx.select().from(jobs).where(and(eq(jobs.tenantId, T), eq(jobs.type, 'face_enroll'))))).find((j) => j.payload.employeeId === empId);
+  assert.ok(enrollJob, 'yuz namunasi navbatda');
+  await enrollFace(T, empId, String(enrollJob!.payload.mediaId), false);
+  assert.equal((await withTenant(T, (tx) => tx.select().from(faceTemplates).where(eq(faceTemplates.employeeId, empId)))).length, 1, 'vektor saqlandi');
+  ok('yuz namunasi → vektor (face_templates)');
 
   // 4. Tasdiqlanmagan — Keldim ishlamaydi
   await processUpdate(msg({ text: '✅ Keldim' }));
@@ -124,7 +143,9 @@ try {
   assert.equal(evs.filter((x) => x.checkStatus === 'rejected' && x.reasons.includes('outside')).length, 1, 'uzoq urinish jurnalda');
   const cin = evs.find((x) => x.kind === 'check_in' && x.checkStatus === 'ok')!;
   assert.ok(cin.mediaId && cin.isLiveLocation && cin.distanceM! < 100);
-  ok('keldim: geofence, jonli lokatsiya, forward, video');
+  assert.equal(cin.faceScore, 0.9, 'yuz o‘xshashligi yozildi');
+  assert.ok(faceCalls.some((u) => u.endsWith('/verify')), 'yuz servisi chaqirildi');
+  ok('keldim: geofence, jonli lokatsiya, forward, video, yuz mos (ok)');
 
   await processUpdate(msg({ text: '✅ Keldim' }));
   assert.match(lastText(), /allaqachon ishdasiz/);
@@ -136,6 +157,17 @@ try {
   await processUpdate(msg({ text: '📊 Bugun' }));
   assert.match(lastText(), /Ketdingiz/);
   ok('ketdim va bugun');
+
+  // 6b. Ikkinchi kirish — boshqa odam yuzi: o'tadi, lekin «shubhali» (rad etilmaydi), xodimga ogohlantirish
+  faceSim = 0.12;
+  await processUpdate(msg({ text: '✅ Keldim' }));
+  await processUpdate(msg({ location: { latitude: branch.lat + 0.0002, longitude: branch.lng, live_period: 900, horizontal_accuracy: 10 } }));
+  await processUpdate(msg({ video_note: { file_id: 'F9', file_unique_id: 'U9', duration: 3, length: 240 } }));
+  assert.match(lastText(), /rahbar ko‘rib chiqadi/);
+  const sus = (await withTenant(T, (tx) => tx.select().from(attendanceEvents).where(and(eq(attendanceEvents.employeeId, empId), eq(attendanceEvents.kind, 'check_in'))))).find((x) => x.checkStatus === 'suspicious');
+  assert.ok(sus && sus.reasons.includes('face_mismatch') && sus.faceScore === 0.12, 'face_mismatch shubhali');
+  faceSim = 0.9;
+  ok('boshqa yuz → shubhali (face_mismatch)');
 
   // 7. Rahbar Telegram'i (mem_)
   const memCode = 'testmem' + Date.now();
@@ -247,6 +279,12 @@ try {
   assert.ok(made1 >= 1 && made2 === 0, 'takroriy vazifa kuniga bir marta');
   ok('takrorlanuvchi vazifa');
 
+  // 12. Xodim o'chirilsa biometrika o'chadi (§1.4)
+  await withTenant(T, (tx) => deleteBiometrics(tx, empId));
+  assert.equal((await withTenant(T, (tx) => tx.select().from(faceTemplates).where(eq(faceTemplates.employeeId, empId)))).length, 0);
+  assert.equal((await withTenant(T, (tx) => tx.select().from(media).where(and(eq(media.employeeId, empId), eq(media.kind, 'face_sample'))))).length, 0);
+  ok('biometrika o‘chirildi');
+
   console.log(`\nBot: hammasi joyida ✓ (Telegram chaqiruvlari: ${calls.length})`);
 } finally {
   await odb.execute(sql`delete from task_templates where ${empId} = any(assignee_employee_ids)`);
@@ -255,7 +293,7 @@ try {
   await odb.execute(sql`delete from tg_links where telegram_user_id in (${UID}, ${OTHER})`);
   await odb.execute(sql`delete from bot_sessions where telegram_user_id in (${UID}, ${OTHER})`);
   await odb.execute(sql`delete from invites where tenant_id = ${T} and (ref_id = ${empId} or code like 'testmem%')`);
-  await odb.execute(sql`delete from jobs where tenant_id = ${T} and type in ('notify_members', 'notify_employee', 'absent_digest', 'task_notify')`);
+  await odb.execute(sql`delete from jobs where tenant_id = ${T} and type in ('notify_members', 'notify_employee', 'absent_digest', 'task_notify', 'face_enroll')`);
   await owner.end();
   await pool.end();
   server.close();

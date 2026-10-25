@@ -6,12 +6,13 @@ import 'server-only';
  */
 import { and, eq, isNull } from 'drizzle-orm';
 import { attendanceEvents, branches, consents, employees, invites, rebuildDay, tenants, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
-import { checkGeofence, computeDay, formatDistance, formatMinutes, formatTime, nextAction, normalizePhone, shiftFor } from '@adone/core';
+import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatTime, nextAction, normalizePhone, shiftFor } from '@adone/core';
 import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
 import type { TgCallback, TgMessage, TgUpdate } from '@/server/telegram/types';
 import { saveMedia } from '@/server/media';
 import { queueNotifyMembers } from '@/server/notify';
-import { kick } from '@/server/jobs/enqueue';
+import { enqueue, kick } from '@/server/jobs/enqueue';
+import { faceContext, verifyFace } from '@/server/face';
 import type { JobOutcome } from '@/server/jobs/types';
 import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from './session';
 import { employeeLinks, linkTelegram, type EmployeeLink } from './links';
@@ -52,6 +53,7 @@ export async function processUpdate(u: TgUpdate): Promise<JobOutcome> {
   if (text === BTN.checkIn || text === '/keldim') return startAction(msg, 'check_in');
   if (text === BTN.checkOut || text === '/ketdim') return startAction(msg, 'check_out');
   if (text === BTN.today || text === '/bugun') return showToday(msg);
+  if (text === '/yuz') return startResample(msg);
   if (text === BTN.help || text === '/yordam') {
     await send(chat, T.help, menuKeyboard);
     return {};
@@ -168,6 +170,7 @@ async function onVideoNote(msg: TgMessage): Promise<JobOutcome> {
   const state = await getState(uid);
   if (state.step === 'reg_face') return finishRegistration(msg, state);
   if (state.step === 'ci_video') return finishCheckIn(msg, state);
+  if (state.step === 'face_resample') return finishResample(msg, state);
   const links = await employeeLinks(uid);
   await send(chat, links.length ? `Avval «${BTN.checkIn}» tugmasini bosing.` : T.noInvite, links.length ? menuKeyboard : undefined);
   return { skip: 'video kutilmagan' };
@@ -181,7 +184,8 @@ async function finishRegistration(msg: TgMessage, state: Extract<BotState, { ste
     const [t] = await tx.select({ name: tenants.name, settings: tenants.settings }).from(tenants).limit(1);
     const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).limit(1);
     if (!t || !e) return null;
-    await saveMedia(tx, { tenantId: state.tenantId, employeeId: e.id, kind: 'face_sample', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
+    const sampleId = await saveMedia(tx, { tenantId: state.tenantId, employeeId: e.id, kind: 'face_sample', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
+    await enqueue(tx, state.tenantId, 'face_enroll', { employeeId: e.id, mediaId: sampleId }, { maxAttempts: 5 });
     const autoApprove = t.settings?.autoApprove === true;
     await tx.update(employees).set({ status: autoApprove ? 'active' : 'pending', joinedAt: autoApprove ? new Date() : e.joinedAt }).where(eq(employees.id, e.id));
     await queueNotifyMembers(
@@ -342,6 +346,12 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     return { skip: 'muddat o‘tdi' };
   }
   const file = await downloadFile(msg.video_note!.file_id);
+  // Yuz: namunalar tranzaksiyada o'qiladi, servis chaqiruvi — tashqarida (§2), servis yo'q bo'lsa — suspicious
+  const fc = await withTenant(state.tenantId, (tx) => faceContext(tx, state.employeeId));
+  const verdict = faceDecision(
+    fc.templates.length ? await verifyFace([{ data: file.data, mime: 'video/mp4', name: 'checkin.mp4' }], fc.templates) : null,
+    { templates: fc.templates.length, challenge: false, settings: fc.settings },
+  );
   const res = await withTenant(state.tenantId, async (tx) => {
     const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
     const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).limit(1);
@@ -349,17 +359,16 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     const wd = await workdayOf(tx, e.id, new Date(), t!.tz);
     if (nextAction(await dayEvents(tx, e.id, wd.date)) === 'check_out') return { already: true as const };
     const mediaId = await saveMedia(tx, { tenantId: state.tenantId, employeeId: e.id, kind: 'checkin_video', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
-    // Yuz tekshiruvi 3-bosqichda (services/face). Hozircha video saqlanadi va rahbar ko'ra oladi.
     await tx.insert(attendanceEvents).values({
       tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, kind: 'check_in', branchId: state.loc.branchId,
       lat: state.loc.lat, lng: state.loc.lng, accuracyM: state.loc.accuracyM, distanceM: state.loc.distanceM, isLiveLocation: state.loc.live,
-      mediaId, checkStatus: 'ok', source: 'bot',
+      mediaId, checkStatus: verdict.status, reasons: verdict.reasons, faceScore: verdict.score, livenessScore: verdict.liveness, source: 'bot',
     });
     const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
     if (r.lateMinutes > 0) {
       await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId);
     }
-    return { already: false as const, time: formatTime(r.firstIn ?? new Date(), t!.tz), late: r.lateMinutes };
+    return { already: false as const, time: formatTime(r.firstIn ?? new Date(), t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious' };
   });
   await clearState(uid);
   if (!res) {
@@ -371,7 +380,7 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     return { skip: 'allaqachon ishda' };
   }
   kick();
-  await send(chat, T.checkedIn(res.time, res.late), menuKeyboard);
+  await send(chat, T.checkedIn(res.time, res.late) + (res.suspicious ? '\n\n🔎 Yuz tekshiruvi aniq emas — rahbar ko‘rib chiqadi.' : ''), menuKeyboard);
   return {};
 }
 
@@ -400,5 +409,37 @@ async function showToday(msg: TgMessage): Promise<JobOutcome> {
     parts.push(line);
   }
   await send(chat, `📊 Bugun\n\n${parts.join('\n\n')}`, menuKeyboard);
+  return {};
+}
+
+// ---------------- Yuz namunasini qayta olish (/yuz) ----------------
+
+async function startResample(msg: TgMessage): Promise<JobOutcome> {
+  const uid = msg.from!.id;
+  const links = await employeeLinks(uid);
+  if (links.length === 0) {
+    await send(msg.chat.id, T.noInvite);
+    return { skip: 'bog‘lanmagan' };
+  }
+  const l = links[0]!;
+  const hasConsent = await withTenant(l.tenantId, async (tx) => (await tx.select({ id: consents.id }).from(consents).where(eq(consents.employeeId, l.employeeId)).limit(1)).length > 0);
+  if (!hasConsent) {
+    await send(msg.chat.id, 'Biometrika roziligi yo‘q. Rahbaringizga murojaat qiling.');
+    return { skip: 'rozilik yo‘q' };
+  }
+  await setState(uid, { step: 'face_resample', tenantId: l.tenantId, employeeId: l.employeeId });
+  await send(msg.chat.id, `🔄 <b>Yuz namunasini yangilash</b>\n\n${T.faceAsk.split('\n\n').slice(1).join('\n\n')}`);
+  return {};
+}
+
+async function finishResample(msg: TgMessage, state: Extract<BotState, { step: 'face_resample' }>): Promise<JobOutcome> {
+  const file = await downloadFile(msg.video_note!.file_id);
+  await withTenant(state.tenantId, async (tx) => {
+    const mediaId = await saveMedia(tx, { tenantId: state.tenantId, employeeId: state.employeeId, kind: 'face_sample', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
+    await enqueue(tx, state.tenantId, 'face_enroll', { employeeId: state.employeeId, mediaId, replace: true }, { maxAttempts: 5 });
+  });
+  await clearState(msg.from!.id);
+  kick();
+  await send(msg.chat.id, '✅ Yangi yuz namunasi qabul qilindi.', menuKeyboard);
   return {};
 }

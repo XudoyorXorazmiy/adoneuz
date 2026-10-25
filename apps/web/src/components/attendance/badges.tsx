@@ -43,6 +43,12 @@ export const REASON_LABELS: Record<string, string> = {
   no_video: "Video yo'q",
   face_pending: 'Yuz tekshiruvi kutilmoqda',
   face_mismatch: 'Yuz mos kelmadi',
+  no_face: 'Yuz aniqlanmadi',
+  many_faces: 'Kadrda boshqa odam',
+  liveness_low: 'Bosh burilmadi (jonlilik)',
+  face_unavailable: 'Yuz servisi ishlamadi',
+  no_face_template: "Yuz namunasi yo'q",
+  other_device: 'Boshqa qurilmadan',
   no_branch: 'Filial biriktirilmagan',
   forgot_checkout: '«Ketdim» bosilmagan — avto-yopildi',
 };

@@ -3,12 +3,13 @@ import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { tasks, taskBatches, withTenant } from '@adone/db';
-import { isValidDate, isValidTime, zonedTime } from '@adone/core';
+import { faceDecision, isValidDate, isValidTime, zonedTime, type FaceDecision } from '@adone/core';
 import { assertTgUser } from '@/lib/tg/session';
 import { saveMedia } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
 import { createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
 import { kick } from '@/server/jobs/enqueue';
+import { faceContext, verifyFace } from '@/server/face';
 
 /**
  * Mini App amallari. Kim — FAQAT Mini App sessiyasidan (initData bilan berilgan cookie), formadan emas.
@@ -50,12 +51,21 @@ export async function tgCheckAction(f: FormData): Promise<CheckResult> {
   const action = f.get('action') === 'check_out' ? 'check_out' : 'check_in';
   const c = coords(f);
   if (!c) return { ok: false, reason: 'low_accuracy', message: 'Lokatsiya aniqlanmadi' };
-  const img = action === 'check_in' ? photos(f)[0] : undefined;
-  const file = img ? await readImage(img) : null;
-  if (action === 'check_in' && !file) return { ok: false, reason: 'no_photo', message: 'Selfi olinmadi — kamerani qayta yoqing' };
+  // Keldim: 1–3 kadr (markaz, chapga, o'ngga) — birinchisi saqlanadi, hammasi yuz servisiga (liveness = bosh burilishi)
+  const frames: Array<NonNullable<Awaited<ReturnType<typeof readImage>>>> = [];
+  if (action === 'check_in') for (const p of photos(f).slice(0, 3)) { const img = await readImage(p); if (img) frames.push(img); }
+  if (action === 'check_in' && frames.length === 0) return { ok: false, reason: 'no_photo', message: 'Selfi olinmadi — kamerani qayta yoqing' };
+  const deviceId = String(f.get('deviceId') ?? '');
+  const device = /^[0-9a-f-]{36}$/.test(deviceId) ? { id: deviceId, label: String(f.get('deviceLabel') ?? '').slice(0, 60) || 'Telefon' } : null;
+  let face: FaceDecision | undefined;
+  if (action === 'check_in') {
+    const fc = await withTenant(u.tenantId, (tx) => faceContext(tx, u.employeeId));
+    const r = fc.templates.length ? await verifyFace(frames.map((x, i) => ({ data: x.data, mime: x.mime, name: `f${i}.${x.ext}` })), fc.templates) : null;
+    face = faceDecision(r, { templates: fc.templates.length, challenge: frames.length > 1, settings: fc.settings });
+  }
   const res = await withTenant(u.tenantId, async (tx) => {
-    const mediaId = file ? await saveMedia(tx, { tenantId: u.tenantId, employeeId: u.employeeId, kind: 'checkin_photo', ...file }) : null;
-    return recordCheck(tx, { tenantId: u.tenantId, employeeId: u.employeeId, action, ...c, mediaId, source: 'miniapp' });
+    const mediaId = frames[0] ? await saveMedia(tx, { tenantId: u.tenantId, employeeId: u.employeeId, kind: 'checkin_photo', ...frames[0] }) : null;
+    return recordCheck(tx, { tenantId: u.tenantId, employeeId: u.employeeId, action, ...c, mediaId, source: 'miniapp', face, device });
   });
   revalidatePath('/tg');
   kick();

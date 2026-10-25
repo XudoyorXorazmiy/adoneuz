@@ -9,7 +9,7 @@ import { employeeOptions } from '@/server/employees';
 import { today } from '@/server/attendance';
 import { employeeJournal } from '@/server/task-queries';
 import { StatusPill, minutesText } from '@/components/tasks/task-card';
-import { saveEmployeeAction, setEmployeeStatusAction } from '@/lib/actions/employees';
+import { requestFaceResampleAction, saveEmployeeAction, setEmployeeStatusAction, unbindDeviceAction } from '@/lib/actions/employees';
 import { EmptyState, PageHeader } from '@/components/ui/page-header';
 import { FormDrawer } from '@/components/ui/form-drawer';
 import { Avatar } from '@/components/ui/avatar';
@@ -202,12 +202,17 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
               })}
             </div>
             <div className="flex items-center justify-between text-xs text-muted">
-              <span>{p.faces[0] ? `Yangilangan ${formatDate(p.faces[0].createdAt, tz)}` : "Namuna hali yo'q"}</span>
-              {p.consent
-                ? <span className="flex items-center gap-1 font-bold text-success"><Icon name="verified" size={15} fill />Rozilik bor</span>
-                : <span className="font-semibold text-warning">Rozilik yo&apos;q</span>}
+              <span>{p.templates[0] ? `Yangilangan ${formatDate(p.templates[0].createdAt, tz)}` : p.faces[0] ? 'Namuna tekshirilmoqda' : "Namuna hali yo'q"}</span>
+              {!p.consent ? <span className="font-semibold text-warning">Rozilik yo&apos;q</span>
+                : p.templates[0] ? <span className="flex items-center gap-1 font-bold text-success" title={p.templates[0].quality ? `aniqlik ${p.templates[0].quality.det_score}, yuz ${p.templates[0].quality.face_px}px` : undefined}><Icon name="verified" size={15} fill />Sifatli</span>
+                  : <span className="font-semibold text-warning">Vektor yo&apos;q</span>}
             </div>
-            <p className="m-0 text-xs leading-normal text-muted">Namuna xodim botda ro&apos;yxatdan o&apos;tganda dumaloq video bilan olinadi. Yuzni avtomatik solishtirish — 3-bosqichda.</p>
+            {p.consent && e.status !== 'disabled' && (
+              <form action={requestFaceResampleAction}><input type="hidden" name="id" value={e.id} />
+                <button className="btn-secondary h-10 w-full text-[13px]"><Icon name="photo_camera" size={18} />Qayta olish</button>
+              </form>
+            )}
+            <p className="m-0 text-xs leading-normal text-muted">Har «Keldim»da selfi shu namuna bilan solishtiriladi; mos kelmasa — «Shubhali» (rahbar qaror qiladi). Xodim o&apos;chirilsa namuna ham o&apos;chadi.</p>
           </section>
 
           <section className="card flex flex-col gap-3.5 p-5">
@@ -223,7 +228,22 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
               </div>
               {e.telegramUsername && <a href={`https://t.me/${e.telegramUsername}`} target="_blank" rel="noreferrer" className="btn-secondary h-8 px-3.5 text-xs">Yozish</a>}
             </div>
-            <p className="m-0 text-xs leading-normal text-muted">Keldi/ketdi faqat shu Telegram akkauntidan qabul qilinadi. Qurilmani bog&apos;lash Mini App bilan qo&apos;shiladi.</p>
+            <p className="m-0 text-xs leading-normal text-muted">Keldi/ketdi faqat shu Telegram akkauntidan qabul qilinadi.</p>
+          </section>
+
+          <section className="card flex flex-col gap-3.5 p-5">
+            <div className="flex items-center gap-2.5">
+              <span className="card-icon"><Icon name="phone_iphone" size={18} fill /></span>
+              <h2 className="m-0 flex-1 text-base font-bold">Qurilma</h2>
+            </div>
+            {e.deviceId ? (
+              <div className="flex items-center gap-3 rounded-[14px] bg-page p-3">
+                <Icon name="phone_iphone" size={26} className="text-ink-2" />
+                <div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{e.deviceLabel ?? 'Telefon'}</div><div className="text-xs font-semibold text-success">bog&apos;langan{e.deviceBoundAt ? ` · ${formatDate(e.deviceBoundAt, tz)}` : ''}</div></div>
+                <form action={unbindDeviceAction}><input type="hidden" name="id" value={e.id} /><button className="btn-secondary h-8 px-3.5 text-xs text-danger">Uzish</button></form>
+              </div>
+            ) : <p className="m-0 rounded-[14px] bg-page p-3 text-[13px] text-muted">Hali bog&apos;lanmagan — Mini App&apos;dagi birinchi «Keldim» bog&apos;laydi.</p>}
+            <p className="m-0 text-xs leading-normal text-muted">Boshqa qurilmadan kirilsa, check-in «Shubhali» deb belgilanadi.</p>
           </section>
         </div>
       </div>

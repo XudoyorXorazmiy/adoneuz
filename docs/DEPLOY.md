@@ -11,7 +11,7 @@
 | Domen | `adone.uz` — registrar **ahost**, DNS **Cloudflare** |
 | Hostlar | `adone.uz` (landing), `www` → apex, `app.adone.uz` (panel + Mini App + webhook), `admin.adone.uz` (super admin) |
 | Baza | Coolify Postgres, image `pgvector/pgvector:pg18`, db/user `adone` (ega, migratsiya), ilova roli `adone_app` (NOBYPASSRLS) |
-| Yuz servisi | Coolify'da alohida ilova `adone-face` (`services/face/Dockerfile`, 3-bosqichda), faqat ichki tarmoq, port 8000 |
+| Yuz servisi | Coolify'da alohida ilova `adone-face` (`services/face/Dockerfile`, base dir `services/face`), faqat ichki tarmoq (domen YO'Q), port 8000. Model build paytida yuklanadi (~330 MB), RAM ~1 GB |
 | Cron | `/etc/cron.d/adone` — har daqiqa `/api/cron/jobs` (Bearer `CRON_SECRET`) |
 | Media | volume `/data/adone/media` → `/app/media-data` (egasi uid 1001) |
 
@@ -45,7 +45,7 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
    - `AUTH_SECRET`, `SECRET_KEY` (AES-GCM), `CRON_SECRET` — har biri `openssl rand -hex 32`
    - `MEDIA_DIR=/app/media-data`, `DB_POOL_MAX=10`
    - Bot: `PLATFORM_BOT_TOKEN` (@BotFather'dan, `@adoneuz_bot`), `PLATFORM_BOT_USERNAME=adoneuz_bot`
-   - 3-bosqichda: `FACE_SERVICE_URL=http://adone-face:8000`
+   - Yuz servisi: `FACE_SERVICE_URL=http://<adone-face konteyner nomi>:8000`, `FACE_SERVICE_KEY=…` (ikkala ilovada bir xil, `openssl rand -hex 24`). Servis o'chiq bo'lsa ham keldi/ketdi ishlaydi — «shubhali» bo'lib tushadi
 6. Cron (serverda): `/etc/cron.d/adone` → har daqiqa `curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://app.adone.uz/api/cron/jobs`.
 
 ## 4. Telegram bot

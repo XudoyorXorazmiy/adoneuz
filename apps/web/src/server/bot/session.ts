@@ -18,6 +18,7 @@ export type BotState =
   | { step: 'task_revise'; tenantId: string; userId: string; taskId: string }
   | { step: 'work_title'; tenantId: string; employeeId: string }
   | { step: 'work_mode'; tenantId: string; employeeId: string; title: string }
+  | { step: 'face_resample'; tenantId: string; employeeId: string }
   | { step: 'idle' };
 
 export const SESSION_TTL_MS = 15 * 60_000;
