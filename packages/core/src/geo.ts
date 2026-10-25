@@ -46,7 +46,8 @@ export function isValidLatLng(p: Partial<LatLng>): p is LatLng {
 
 /**
  * Filial koordinatasi: «41.3194, 61.0742», Google/Yandex xarita havolasi (…/@41.31,61.07,17z, ?q=41.31,61.07,
- * !3d41.31!4d61.07, ?ll=61.07,41.31 — Yandex'da avval uzunlik). Topilmasa null.
+ * !3d41.31!4d61.07, /maps/search/41.31,+61.07 — qisqa havola ochilgandagi ko'rinish, ?ll=61.07,41.31 — Yandex'da
+ * avval uzunlik). Qisqa havolani (maps.app.goo.gl) server avval ochadi — `isShortMapLink`. Topilmasa null.
  */
 export function parseCoordinates(input: string): LatLng | null {
   const s = decodeURIComponent(input.trim());
@@ -54,7 +55,8 @@ export function parseCoordinates(input: string): LatLng | null {
   const tries: Array<[RegExp, boolean]> = [
     [new RegExp(`!3d${num}!4d${num}`), false],
     [new RegExp(`@${num},${num}`), false],
-    [new RegExp(`[?&](?:q|query|destination)=${num},\\s*${num}`), false],
+    [new RegExp(`[?&](?:q|query|destination)=${num},\\s*\\+?${num}`), false],
+    [new RegExp(`/(?:search|place)/${num},\\s*\\+?${num}`), false],
     [new RegExp(`[?&](?:ll|pt)=${num},${num}`), true],
     [new RegExp(`^${num}\\s*[,; ]\\s*${num}$`), false],
   ];
@@ -67,4 +69,19 @@ export function parseCoordinates(input: string): LatLng | null {
     if (isValidLatLng(p)) return p;
   }
   return null;
+}
+
+/**
+ * Koordinatasiz qisqa xarita havolasi (Google «Ulashish»: maps.app.goo.gl/…, goo.gl/maps/…) — server uni ochib,
+ * redirect manzilidan koordinata oladi. Faqat shu hostlar: boshqa manzilga server so'rov yubormaydi (SSRF).
+ */
+export function isShortMapLink(input: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(input.trim());
+  } catch {
+    return false;
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  return u.hostname === 'maps.app.goo.gl' || (u.hostname === 'goo.gl' && u.pathname.startsWith('/maps/'));
 }

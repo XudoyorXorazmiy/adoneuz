@@ -59,6 +59,23 @@ test('koordinata va xarita havolasi', async () => {
   assert.deepEqual(parseCoordinates('https://yandex.uz/maps/?ll=61.0742%2C41.3194&z=17'), { lat: 41.3194, lng: 61.0742 });
   assert.equal(parseCoordinates('Hazorasp'), null);
   assert.equal(parseCoordinates('0, 0'), null);
+  // maps.app.goo.gl ochilgandagi manzil (Mudom bozor havolasi)
+  assert.deepEqual(parseCoordinates('https://www.google.com/maps/search/41.325259,+61.069181?entry=tts&g_ep=EgoyMDI2MTAyMC4wIPu8ASoASAFQAw%3D%3D'), { lat: 41.325259, lng: 61.069181 });
+  assert.deepEqual(parseCoordinates('https://www.google.com/maps/place/41.3194,61.0742'), { lat: 41.3194, lng: 61.0742 });
+  assert.deepEqual(parseCoordinates('https://maps.google.com/?q=41.3194,+61.0742'), { lat: 41.3194, lng: 61.0742 });
+  assert.equal(parseCoordinates('https://maps.app.goo.gl/KhNDipQMCTFL1tH49'), null, 'qisqa havolada koordinata yo‘q — server ochadi');
+});
+
+test('qisqa xarita havolasi — faqat ruxsat etilgan hostlar', async () => {
+  const { isShortMapLink } = await import('../src/index');
+  assert.equal(isShortMapLink('https://maps.app.goo.gl/KhNDipQMCTFL1tH49'), true);
+  assert.equal(isShortMapLink(' https://goo.gl/maps/AbC123 '), true);
+  assert.equal(isShortMapLink('https://goo.gl/AbC123'), false, 'goo.gl — faqat /maps/');
+  assert.equal(isShortMapLink('https://maps.app.goo.gl.evil.example/x'), false);
+  assert.equal(isShortMapLink('https://evil.example/maps.app.goo.gl/x'), false);
+  assert.equal(isShortMapLink('http://127.0.0.1/maps/x'), false);
+  assert.equal(isShortMapLink('ftp://maps.app.goo.gl/x'), false);
+  assert.equal(isShortMapLink('41.3194, 61.0742'), false);
 });
 
 test('yuz qarori: chegara, servis yo‘q, namuna yo‘q, liveness', async () => {

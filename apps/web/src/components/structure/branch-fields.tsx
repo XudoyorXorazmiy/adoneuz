@@ -10,7 +10,7 @@ export function BranchFields({ b }: { b?: { id: string; name: string; address: s
         label="Joylashuv"
         hint={<>Google yoki Yandex xaritada filial nuqtasini bosib, havolani shu yerga qo&apos;ying — yoki «41.3194, 61.0742».</>}
       >
-        <input name="coords" defaultValue={b ? `${b.lat}, ${b.lng}` : ''} placeholder="https://maps.google.com/… yoki 41.3194, 61.0742" className="input tnum" required />
+        <input name="coords" defaultValue={b ? `${b.lat}, ${b.lng}` : ''} placeholder="https://maps.app.goo.gl/… yoki 41.3194, 61.0742" className="input tnum" required />
       </Field>
       <Field label="Radius (metr)" hint="Xodim shu doira ichida «Keldim» qila oladi. Odatda 50–150 m.">
         <input name="radiusM" type="number" min={20} max={2000} defaultValue={b?.radiusM ?? 100} className="input tnum" required />

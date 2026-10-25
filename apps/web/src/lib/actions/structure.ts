@@ -6,6 +6,7 @@ import { auditLog, branches, departments, memberships, schedules, withTenant, ty
 import { isValidDate, isValidTime, parseCoordinates } from '@adone/core';
 import { assertArea } from '@/lib/auth/guard';
 import type { FormState } from '@/components/ui/form-drawer';
+import { expandMapLink } from '@/server/maps';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
 const optUuid = (v: string) => (z.uuid().safeParse(v).success ? v : null);
@@ -21,7 +22,7 @@ export async function saveBranchAction(_p: FormState, f: FormData): Promise<Form
   const id = optUuid(str(f, 'id'));
   const name = str(f, 'name');
   if (name.length < 2) return { error: 'Filial nomini kiriting' };
-  const point = parseCoordinates(str(f, 'coords'));
+  const point = parseCoordinates(await expandMapLink(str(f, 'coords')));
   if (!point) return { error: "Koordinata topilmadi. «41.3194, 61.0742» ko'rinishida yoki Google/Yandex xarita havolasini qo'ying." };
   const radiusM = Number(str(f, 'radiusM'));
   if (!Number.isInteger(radiusM) || radiusM < 20 || radiusM > 2000) return { error: 'Radius 20–2000 metr oralig‘ida' };
