@@ -89,9 +89,17 @@ async function seedMudom(tenantId: string, userIds: Record<string, string>) {
     departmentId: dep[d], branchId: b === 'm' ? markaz!.id : ombor!.id,
     scheduleId: sch === 'k' ? kassa!.id : sch === 'f' ? ofis!.id : asosiy!.id,
     telegramUserId: status === 'invited' ? null : 700000000 + i,
-    payType: 'monthly' as const, payRate: 4_500_000,
+    // Stavkalar: sotuvchi/kassir — oylik, omborchi — kunbay, hisobchi — oylik (yuqori)
+    payType: position === 'Omborchi' ? 'daily' as const : 'monthly' as const,
+    payRate: position === 'Omborchi' ? 180_000 : position === 'Hisobchi' ? 6_000_000 : position === 'Kassir' ? 4_000_000 : 4_500_000,
     joinedAt: status === 'active' ? new Date('2026-09-01T04:00:00Z') : null,
   }))).returning();
+
+  // Ish haqi qoidalari (ishxona ma'lumoti; panel → Ish haqi → Qoidalar)
+  await db.insert(s.payRules).values({ tenantId, rules: {
+    monthlyProration: true, paidLeave: true, late: { mode: 'per_case', amount: 20_000 }, absentPenalty: 100_000, earlyPerMinute: 0, overtimePerHour: 25_000,
+    task: { onTimeBonus: 10_000, latePenalty: 15_000, fiveStarBonus: 20_000, countSelfTasks: false }, maxPenaltyPercent: 30, showToEmployee: true,
+  } });
 
   // Joriy oy davomati: kun boshidan bugungi soatgacha. Psevdo-tasodif — qayta seed'da bir xil.
   let seed = 7;

@@ -1,7 +1,7 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 import {
   ATTENDANCE_EVENT_KINDS, ATTENDANCE_SOURCES, CHECK_STATUSES, DAY_STATUSES, EMPLOYEE_STATUSES, JOB_STATUSES, MEDIA_KINDS, MEMBER_ROLES,
-  LEAVE_KINDS, LEAVE_STATUSES, PAY_TYPES, SCHEDULE_KINDS, SUBSCRIPTION_STATUSES, TASK_PRIORITIES, TASK_SOURCES, TASK_STATUSES, TENANT_STATUSES,
+  LEAVE_KINDS, LEAVE_STATUSES, PAY_TYPES, PAYROLL_STATUSES, SCHEDULE_KINDS, SUBSCRIPTION_STATUSES, TASK_PRIORITIES, TASK_SOURCES, TASK_STATUSES, TENANT_STATUSES,
 } from '@adone/core';
 
 // pgEnum'ga massiv to'g'ridan-to'g'ri beriladi (cast qilinmaydi) — aks holda tiplar string bo'lib qoladi.
@@ -22,3 +22,4 @@ export const taskSourceEnum = pgEnum('task_source', TASK_SOURCES);
 export const taskPriorityEnum = pgEnum('task_priority', TASK_PRIORITIES);
 export const leaveKindEnum = pgEnum('leave_kind', LEAVE_KINDS);
 export const leaveStatusEnum = pgEnum('leave_status', LEAVE_STATUSES);
+export const payrollStatusEnum = pgEnum('payroll_status', PAYROLL_STATUSES);

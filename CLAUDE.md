@@ -11,6 +11,7 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 > oylik tabel + Excel, jonli bosh sahifa. Bot: ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), keldi (jonli lokatsiya + geofence +
 > dumaloq video) / ketdi, bugun, rahbarlarga bildirishnomalar, avto-yopish, kunlik «Kelmaganlar». **2-bosqich (vazifalar) asosiy qismi tayyor (2026-10-25)** —
 > qolgani pastdagi jadvalda. **3-bosqich tayyor (2026-10-25)**: Mini App (GPS + jonli selfi), yuz servisi (InsightFace, liveness), qurilma bog'lash, ruxsat so'rovlari.
+> **4-bosqich — ish haqi tayyor (2026-10-25)**: tahrirlanadigan qoidalar, oylik vedomost, qo'lda tuzatish + audit, oyni yopish (snapshot), Excel, Mini App'da o'z ish haqi.
 > Domen, Coolify va bot tokeni hali ulanmagan.
 > Pilot: **Mudom bozor** (Hazorasp, kiyim do'koni; boshqaruv-tizim va chaat'da ham mijoz).
 
@@ -63,6 +64,7 @@ pnpm db:seed                    # HAMMASINI o'chirib demo yozadi (faqat lokal)
 pnpm dev                        # http://localhost:3140 · app.localhost:3140 · admin.localhost:3140
 pnpm test && pnpm db:check && pnpm db:test-rls && pnpm typecheck && pnpm build
 cd apps/web && node --conditions=react-server --import tsx scripts/test-bot.ts   # bot oqimi, soxta Telegram API (seed'dan keyin, o'zi tozalaydi)
+cd apps/web && node --conditions=react-server --import tsx scripts/test-payroll.ts   # ish haqi: hisob, tuzatish, yopish/qayta ochish (seed'dan keyin)
 ```
 
 Next.js `16.4.2` (16.4.0 xavfsizlik zaifligi sababli build'da bloklanadi — versiyani pastga tushirmang).
@@ -151,7 +153,7 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 | 1 ✅ | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** (deploy'dan keyin) |
 | 2 ✅ | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, takrorlanuvchi, eslatmalar) + **o'zi qo'shgan ishlar va ish jurnali** (§7a). Qolgan: muddatni uzaytirish so'rovi (`deadline_requests`), «Vazifa berish»da fayl/ovozli xabar ilovasi, `selfTasksNeedApproval` sozlamasi UI'si (Sozlamalar sahifasi bilan) | |
 | 3 ✅ | Yuz servisi (InsightFace) + liveness, shubhali navbat (bosh sahifa «Qaror kutmoqda»), Mini App (GPS, kamera), qurilma bog'lash, ruxsat so'rovlari. Qolgan: `leave_balances` (ta'til qoldig'i), `holidays` taqvimi | to'liq anti-fraud |
-| 4 | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, KPI va reyting, Excel/PDF | |
+| 4 ✅ | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, Excel, profil va Mini App'da ko'rinish. Qolgan: KPI va reyting, PDF, bayram kunlari (`holidays`) | |
 | 5 | Landing, o'zi ro'yxatdan o'tish, tariflar (xodim soniga qarab), sinov 14 kun, Click/Payme, kirill/rus, QR rejim | sotuvga chiqish |
 
 ## 9. Deploy (qisqa — batafsil `docs/DEPLOY.md`)
@@ -188,6 +190,13 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 - Yozish faqat `server/leave.ts`: `createLeave` (ustma-ust pending/approved — rad), `decideLeave` (CAS, menejer — o'z bo'limi, xodim — o'zinikini bekor qiladi; tasdiqlansa o'tgan/bugungi kunlar `rebuildDay`), `leave_notify` ishi (rahbarlarga `lv:ok/no` tugmalari, xodimga qaror).
 - Tasdiqlangan ruxsat kuni — `computeDay({ onLeave })` → «Ruxsatda» (kelmagan emas): `rebuildDay` (`onLeave` db helper), kunlik davomat (`leavesOn`), «Kelmaganlar» xabari, profil, Mini App, bot «Bugun».
 - Bot: «📝 So'rov» / `/sorov` → tur → «Bugun / Ertaga» yoki `25.10–28.10` → sabab. Mini App: `/tg/sorov` (Tarix'dan). Panel: `/sorovlar` (Kutilmoqda / Tasdiqlangan / Rad etilgan; rad etishda sabab), menyuda kutilayotganlar soni.
+
+## 9f. Ish haqi (4-bosqich)
+
+- Core `payroll.ts`: `PayRules` (`normalizePayRules` — butun so'm, manfiy yo'q), `computePay({ payType, rate, days, tasks }, rules)` → asosiy (oylik — reja kunlariga mutanosib, ruxsat kunlari to'lanadi; kunbay — kun × stavka; soatbay — daqiqa), jarimalar (kechikish har daqiqa / har holat, sababsiz kelmagan kun, erta ketish, vazifa kechikdi), bonuslar (qo'shimcha soat, vazifa o'z vaqtida, 5 baho), jarima chegarasi (% asosiydan, standart 30), jami ≥ 0. Testlar `tests/payroll.test.ts`.
+- Baza (0010/0011): `pay_rules` (ishxonaga bitta qator, jsonb), `payroll_periods` (`YYYY-MM`, `draft|closed`, ishlatilgan qoidalar nusxasi; DELETE yo'q), `payroll_lines` (xodim × davr snapshot: asosiy, jarima, bonus, tuzatish + sabab, jami, `breakdown` — PayResult).
+- Yozish faqat `server/payroll.ts`: `recomputePeriod` (qoralama — `attendance_days` + reja kunlari `shiftFor` + shu oyda TASDIQLANGAN vazifalar; o'zi qo'shgan ishlar faqat `countSelfTasks` bilan; tuzatish saqlanadi), `adjustLine` (faqat qoralama, sabab majburiy, `audit_log`), `setPeriodStatus` (yopish — yakuniy hisob bilan; qayta ochish — faqat egasi; CAS), `savePayRules` (audit: oldin/keyin). Qoralama `/ish-haqi` ochilganda qayta hisoblanadi, yopilgan oy o'zgarmaydi.
+- Panel `/ish-haqi` (egasi, admin — `payroll`): KPI, jadval (qator ochilsa — davomat va hisob tafsiloti, «Tuzatish»), «Qoidalar» drawer, «Oyni yopish» / «Qayta ochish», Excel `/api/eksport/ish-haqi`. Xodim profilida «Ish haqi» tabi (menejerga ko'rinmaydi), «So'rovlar» tabi. Mini App profilida — faqat `showToEmployee` yoqilgan bo'lsa (`ownPay`).
 
 ## 9c. Mini App (`app.adone.uz/tg`)
 

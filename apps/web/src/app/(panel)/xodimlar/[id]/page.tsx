@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { can, describeSchedule, formatDate, formatPhone, formatSom, MONTHS } from '@adone/core';
-import { toRule } from '@adone/db';
+import { can, describeSchedule, formatDate, formatPhone, formatSom, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_STATUS_LABELS, leaveDays, MONTHS, PAY_TYPE_LABELS, type LeaveStatus } from '@adone/core';
+import { toRule, withTenant } from '@adone/db';
+import { leavePeriod, myLeaves } from '@/server/leave';
+import { employeePay } from '@/server/payroll';
 import { requireArea } from '@/lib/auth/guard';
 import { employeeProfile, profileTotals } from '@/server/profile';
 import { employeeOptions } from '@/server/employees';
@@ -25,12 +27,9 @@ const shiftMonth = (m: string, n: number) => {
   const [y, mo] = m.split('-').map(Number) as [number, number];
   return new Date(Date.UTC(y, mo - 1 + n, 1)).toISOString().slice(0, 7);
 };
-const TABS = [['tabel', 'Tabel'], ['vazifalar', 'Vazifalar'], ['sorovlar', "So'rovlar"], ['ish-haqi', 'Ish haqi'], ['malumot', "Ma'lumotlar"]] as const;
-type Tab = (typeof TABS)[number][0];
-const LATER: Partial<Record<Tab, string>> = {
-  sorovlar: "Ruxsat so'rovlari (kasal, ta'til, shaxsiy) 3-bosqichda qo'shiladi.",
-  'ish-haqi': "Ish haqi hisobi (stavka, jarima, bonus) 4-bosqichda qo'shiladi.",
-};
+const ALL_TABS = [['tabel', 'Tabel'], ['vazifalar', 'Vazifalar'], ['sorovlar', "So'rovlar"], ['ish-haqi', 'Ish haqi'], ['malumot', "Ma'lumotlar"]] as const;
+type Tab = (typeof ALL_TABS)[number][0];
+const LEAVE_TONE: Record<LeaveStatus, string> = { pending: 'bg-warning-tint text-warning', approved: 'bg-success-tint text-success', rejected: 'bg-danger-tint text-danger', cancelled: 'bg-subtle text-muted' };
 const PAY: Record<string, string> = { monthly: 'oylik', hourly: 'soatbay', daily: 'kunbay' };
 
 export default async function EmployeeProfilePage({ params, searchParams }: PageProps<'/xodimlar/[id]'>) {
@@ -40,9 +39,15 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
   const tz = user.tenantTimezone;
   const cur = today(user).slice(0, 7);
   const month = typeof sp.oy === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.oy) && sp.oy <= cur ? sp.oy : cur;
+  // Ish haqi — faqat `payroll` ruxsati bilan (menejer ko'rmaydi: tab ham, so'rov ham yo'q)
+  const TABS = ALL_TABS.filter(([k]) => k !== 'ish-haqi' || can(user.role, 'payroll'));
   const tab: Tab = (TABS.map((t) => t[0]) as string[]).includes(String(sp.tab)) ? (String(sp.tab) as Tab) : 'tabel';
   const [p, options, journal] = await Promise.all([employeeProfile(user, id, month), employeeOptions(user.tenantId), employeeJournal(user, id, month)]);
   if (!p) notFound();
+  const [leaves, pay] = await Promise.all([
+    tab === 'sorovlar' ? withTenant(user.tenantId, (tx) => myLeaves(tx, id)) : null,
+    tab === 'ish-haqi' ? withTenant(user.tenantId, (tx) => employeePay(tx, id, month)) : null,
+  ]);
   const { e } = p;
   const tot = profileTotals(p.days, p.today);
   const todayRow = p.days.find((d) => d.date === p.today);
@@ -178,7 +183,41 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
               )}
             </section>
           )}
-          {LATER[tab] && <section className="card"><EmptyState text={LATER[tab]!} /></section>}
+          {tab === 'sorovlar' && (
+            <section className="card flex flex-col gap-2.5 p-5">
+              {!leaves?.length ? <EmptyState text="Ruxsat so'rovlari yo'q. Xodim botda «📝 So'rov» yoki Mini App'da so'raydi." /> : leaves.map((l) => (
+                <div key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-line px-4 py-3 text-sm">
+                  <span className="font-bold">{LEAVE_KIND_ICONS[l.kind]} {LEAVE_KIND_LABELS[l.kind]}</span>
+                  <span className="tnum font-semibold">{leavePeriod(l.dateFrom, l.dateTo)}</span>
+                  <span className="text-xs text-muted">{leaveDays(l.dateFrom, l.dateTo)} kun</span>
+                  {l.reason && <span className="min-w-0 flex-1 truncate text-[13px] text-ink-2">«{l.reason}»</span>}
+                  <span className={`badge ml-auto ${LEAVE_TONE[l.status]}`}><span className="badge-dot" />{LEAVE_STATUS_LABELS[l.status]}</span>
+                </div>
+              ))}
+              <Link href="/sorovlar" className="text-xs font-semibold text-primary">Barcha so&apos;rovlar →</Link>
+            </section>
+          )}
+          {tab === 'ish-haqi' && (
+            <section className="card flex flex-col gap-3 p-5">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="card-icon"><Icon name="payments" size={18} fill /></span>
+                <h2 className="m-0 flex-1 text-base font-bold">{MONTHS[m - 1]} {y}</h2>
+                {pay && <span className={`badge ${pay.status === 'closed' ? 'bg-success-tint text-success' : 'bg-subtle text-muted'}`}><span className="badge-dot" />{pay.status === 'closed' ? 'Yopilgan' : month === cur ? 'Hozirgacha' : 'Qoralama'}</span>}
+                <Link href={`/ish-haqi?oy=${month}`} className="btn-secondary btn-sm">Vedomost</Link>
+              </div>
+              {!pay ? <EmptyState text="Bu xodim uchun hisob yo'q (tasdiqlanmagan)." /> : (
+                <div className="flex max-w-[520px] flex-col gap-1 text-[13px]">
+                  <PayLine label={`Stavka: ${PAY_TYPE_LABELS[pay.payType]}`} value={formatSom(pay.rate)} muted />
+                  <PayLine label={`Asosiy (${pay.result.stats.workedDays}${pay.result.stats.plannedDays ? `/${pay.result.stats.plannedDays}` : ''} kun)`} value={formatSom(pay.result.base)} />
+                  {pay.result.penalties.map((x) => <PayLine key={x.kind} label={`${x.label}: ${x.count}`} value={`−${formatSom(x.amount)}`} tone="text-danger" />)}
+                  {pay.result.penaltyCapped > 0 && <PayLine label="Jarima cheklovi" value={`+${formatSom(pay.result.penaltyCapped)}`} muted />}
+                  {pay.result.bonuses.map((x) => <PayLine key={x.kind} label={`${x.label}: ${x.count}`} value={`+${formatSom(x.amount)}`} tone="text-success" />)}
+                  {pay.adjustment !== 0 && <PayLine label={`Tuzatish${pay.adjustmentReason ? ` — «${pay.adjustmentReason}»` : ''}`} value={`${pay.adjustment > 0 ? '+' : '−'}${formatSom(Math.abs(pay.adjustment))}`} />}
+                  <div className="mt-1 flex justify-between border-t border-line pt-2 text-base font-extrabold"><span>Jami</span><span className="tnum">{formatSom(pay.total)}</span></div>
+                </div>
+              )}
+            </section>
+          )}
         </div>
 
         <div className="flex flex-col gap-5">
@@ -249,4 +288,8 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
       </div>
     </>
   );
+}
+
+function PayLine({ label, value, tone = '', muted }: { label: string; value: string; tone?: string; muted?: boolean }) {
+  return <div className={`flex justify-between gap-4 ${muted ? 'text-muted' : ''}`}><span className={muted ? '' : 'text-ink-2'}>{label}</span><span className={`tnum ${tone}`}>{value}</span></div>;
 }

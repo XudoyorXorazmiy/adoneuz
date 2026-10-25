@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { db, pool } from './client';
 import { withAuth, withPlatform, withTenant } from './scoped';
-import { attendanceEvents, auditLog, botSessions, employees, faceTemplates, jobs, leaveRequests, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
+import { attendanceEvents, auditLog, botSessions, employees, faceTemplates, jobs, leaveRequests, payRules, payrollLines, payrollPeriods, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
 
 async function main() {
   // Kontekstsiz — hech narsa ko'rinmaydi
@@ -86,7 +86,18 @@ async function main() {
     assert.equal((await tx.select().from(tasks)).length, 0, 'Test do‘konda Mudom vazifalari ko‘rinmaydi');
     assert.equal((await tx.select().from(leaveRequests)).length, 0, 'begona ruxsat so‘rovlari ko‘rinmaydi');
     assert.equal((await tx.select().from(faceTemplates)).length, 0, 'begona yuz namunalari ko‘rinmaydi');
+    assert.equal((await tx.select().from(payRules)).length, 0, 'begona ish haqi qoidalari ko‘rinmaydi');
+    assert.equal((await tx.select().from(payrollPeriods)).length, 0, 'begona ish haqi davrlari ko‘rinmaydi');
+    assert.equal((await tx.select().from(payrollLines)).length, 0, 'begona ish haqi qatorlari ko‘rinmaydi');
   });
+  // 4-bosqich: davr o'chirilmaydi, begona tenant_id bilan yozilmaydi
+  await withTenant(mudom.id, async (tx) => {
+    const [p] = await tx.insert(payrollPeriods).values({ tenantId: mudom.id, month: '1999-01' }).returning();
+    await assert.rejects(tx.transaction((sp) => sp.delete(payrollPeriods)), 'ish haqi davri o‘chirilmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.insert(payrollPeriods).values({ tenantId: other.id, month: '1999-02' })), 'begona tenant_id bilan davr yo‘q');
+    assert.ok(p);
+    throw Object.assign(new Error('rollback'), { rollback: true });
+  }).catch((e) => { if (!e.rollback) throw e; });
   await withTenant(mudom.id, async (tx) => {
     const emp = (await tx.select().from(employees).limit(1))[0]!;
     await tx.insert(leaveRequests).values({ tenantId: mudom.id, employeeId: emp.id, kind: 'sick', dateFrom: '2026-10-01', dateTo: '2026-10-01' });

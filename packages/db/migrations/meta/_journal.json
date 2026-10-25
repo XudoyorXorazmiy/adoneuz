@@ -71,6 +71,20 @@
       "when": 1792889078873,
       "tag": "0009_rls_leave",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792889707694,
+      "tag": "0010_payroll",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792889708723,
+      "tag": "0011_rls_payroll",
+      "breakpoints": true
     }
   ]
 }
