@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#E4E7EC;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}a{color:#2443F5;text-decoration:none}a:hover{color:#1A34D6}</style>
+</helmet>
+<div style="padding:56px;display:flex;flex-direction:column;gap:72px;width:max-content">
+<sc-for list="{{ frames }}" as="f" hint-placeholder-count="5">
+<div data-screen-label="{{ f.name }}" style="display:flex;flex-direction:column;gap:14px">
+  <div style="font-size:16px;font-weight:700;color:#374151">{{ f.name }}</div>
+  <div style="position:relative;width:1440px;box-sizing:border-box;padding:16px;background:#EEF0F4;border-radius:32px;overflow:hidden">
+  <div style="display:flex;background:#fff;border-radius:24px;box-shadow:0 1px 3px rgba(16,24,40,.04),0 12px 40px rgba(16,24,40,.06);overflow:hidden">
+    <dc-import name="Sidebar" active="Hisobotlar" hint-size="248px,100%" style="width:248px;flex-shrink:0;display:flex"></dc-import>
+    <main style="flex:1;min-width:0;margin:8px 8px 8px 0;border-radius:20px;background:#F7F8FA;display:flex;flex-direction:column">
+      <header style="display:flex;align-items:center;justify-content:space-between;padding:22px 28px 20px;border-bottom:1px solid #ECEEF2">
+        <div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em">Hisobotlar</div><div style="font-size:14px;color:#6B7280;margin-top:2px">Davomat, vazifalar va reyting</div></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="height:44px;padding:0 18px 0 14px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:#16A34A">download</span>Excel</div>
+          <div style="width:44px;height:44px;border-radius:999px;border:1px solid #ECEEF2;background:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">more_horiz</span></div>
+        </div>
+      </header>
+      <div style="padding:20px 28px 28px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;align-items:center;gap:10px;position:relative">
+          <div style="height:40px;padding:0 6px 0 14px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid {{ f.dateBd }};display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">calendar_today</span>Oktabr 2026<span style="width:28px;height:28px;border-radius:999px;background:#F2F4F7;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">expand_more</span></span></div>
+          <div style="height:40px;padding:0 12px 0 14px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#2443F5">location_on</span>Barcha filiallar<span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">expand_more</span></div>
+          <div style="height:40px;padding:0 12px 0 14px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#2443F5">workspaces</span>Barcha bo'limlar<span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">expand_more</span></div>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#4B5563">O'tgan davr bilan solishtirish<span style="width:40px;height:24px;border-radius:999px;background:#2443F5;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:999px;background:#fff"></span></span></div>
+          <sc-if value="{{ f.pop }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:0;top:48px;z-index:6;width:260px;background:#fff;border-radius:16px;box-shadow:0 2px 6px rgba(16,24,40,.06),0 16px 40px rgba(16,24,40,.14);padding:6px">
+              <sc-for list="{{ presets }}" as="p" hint-placeholder-count="5"><div style="display:flex;align-items:center;justify-content:space-between;height:38px;padding:0 12px;border-radius:10px;font-size:13px;font-weight:600;background:{{ p.bg }};color:{{ p.c }}">{{ p.l }}<span style="font-size:12px;font-weight:500;color:#9CA3AF">{{ p.r }}</span></div></sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display:flex;gap:4px;border-bottom:1px solid #E6E8EC">
+          <sc-for list="{{ f.tabs }}" as="t" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 12px;font-size:14px;font-weight:{{ t.w }};color:{{ t.c }};border-bottom:2px solid {{ t.b }};margin-bottom:-1px"><span style="font-family:'Material Symbols Rounded';font-size:19px;line-height:1">{{ t.i }}</span>{{ t.l }}</div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ f.isDav }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+            <sc-for list="{{ kpiD }}" as="k" hint-placeholder-count="4">
+              <div style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:18px 20px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:{{ k.tint }};color:{{ k.c }};display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">{{ k.i }}</span></div><span style="flex:1;font-size:14px;font-weight:600;color:#4B5563">{{ k.l }}</span><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">arrow_outward</span></div>
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:30px;font-weight:800;letter-spacing:-0.03em">{{ k.v }}</span><span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;white-space:nowrap;background:{{ k.db }};color:{{ k.dc }}">{{ k.d }}</span></div>
+                <span style="font-size:12px;color:#6B7280">{{ k.cap }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px">
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">bar_chart</span></div>
+                <span style="flex:1;font-size:16px;font-weight:700">Kunlar bo'yicha</span>
+                <div style="display:flex;gap:4px;padding:4px;border-radius:999px;background:#F2F4F7;font-size:12px;font-weight:600"><span style="padding:5px 12px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08)">Kun</span><span style="padding:5px 12px;color:#6B7280">Hafta</span></div>
+              </div>
+              <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
+                <sc-for list="{{ legend }}" as="g" hint-placeholder-count="5"><span style="display:flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#F7F8FA;font-size:12px;font-weight:600;color:#4B5563"><span style="width:8px;height:8px;border-radius:999px;background:{{ g.c }}"></span>{{ g.l }}<b style="font-weight:700;color:#111827">{{ g.n }}</b></span></sc-for>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:20px">
+                <div style="display:flex;flex-direction:column;justify-content:space-between;height:230px;font-size:11px;color:#9CA3AF;text-align:right;width:20px"><span>48</span><span>36</span><span>24</span><span>12</span><span>0</span></div>
+                <div style="flex:1;min-width:0">
+                  <div style="position:relative;height:230px;background-image:linear-gradient(#F1F2F5 1px,transparent 1px);background-size:100% 57.5px">
+                    <div style="position:absolute;left:0;right:0;bottom:{{ avgPos }};border-top:1.5px dashed #0B1B4F;opacity:.5;z-index:1"></div>
+                    <div style="position:absolute;right:0;bottom:{{ avgPos }};transform:translateY(-4px);background:#0B1B4F;color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;z-index:2">O'rtacha {{ avgN }} kelgan</div>
+                    <div style="position:absolute;inset:0;display:flex;align-items:flex-end;gap:8px">
+                      <sc-for list="{{ days }}" as="d" hint-placeholder-count="25">
+                        <div style="flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative">
+                          <div style="width:100%;max-width:16px;height:100%;border-radius:999px;overflow:hidden;display:flex;flex-direction:column-reverse;box-shadow:{{ d.ring }}">
+                            <sc-for list="{{ d.segs }}" as="s" hint-placeholder-count="5"><div style="height:{{ s.h }};background:{{ s.c }};flex-shrink:0"></div></sc-for>
+                          </div>
+                          <sc-if value="{{ d.tip }}"><div style="position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);z-index:3;background:#0B1B4F;color:#fff;border-radius:12px;padding:10px 12px;font-size:12px;white-space:nowrap;box-shadow:0 8px 20px rgba(11,27,79,.25);display:flex;flex-direction:column;gap:4px"><b style="font-weight:700">14.10 · Chorshanba</b><span>Ishda 41 · Kechikdi 4 · Kelmadi 2</span><span style="color:#A5B4FC">Ruxsatda 1</span></div></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:8px"><sc-for list="{{ days }}" as="d" hint-placeholder-count="25"><span style="flex:1;text-align:center;font-size:10px;font-weight:{{ d.lw }};color:{{ d.lc }}">{{ d.n }}</span></sc-for></div>
+                </div>
+              </div>
+            </section>
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">workspaces</span></div><span style="font-size:16px;font-weight:700">Bo'limlar</span></div>
+                <sc-for list="{{ deptD }}" as="d" hint-placeholder-count="4">
+                  <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:600">{{ d.l }}</span><b style="font-weight:700;color:{{ d.tc }}">{{ d.v }}</b></div><div style="height:10px;border-radius:999px;background:#F1F2F5"><div style="width:{{ d.v }};height:100%;border-radius:999px;background:{{ d.c }}"></div></div></div>
+                </sc-for>
+              </section>
+              <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">schedule</span></div><span style="font-size:16px;font-weight:700">Kelish vaqti</span></div>
+                <div style="display:flex;align-items:flex-end;gap:5px;height:110px;position:relative">
+                  <sc-for list="{{ hist }}" as="h" hint-placeholder-count="10"><div style="flex:1;height:{{ h.h }};min-height:3px;border-radius:999px;background:{{ h.c }}"></div></sc-for>
+                </div>
+                <div style="display:flex;gap:5px"><sc-for list="{{ hist }}" as="h" hint-placeholder-count="10"><span style="flex:1;text-align:center;font-size:9px;color:#9CA3AF">{{ h.l }}</span></sc-for></div>
+                <div style="font-size:12px;color:#4B5563;padding-top:10px;border-top:1px solid #F1F2F5">O'rtacha: <b style="font-weight:700">smenadan 4 daqiqa oldin</b> · daqiqa, smena boshiga nisbatan</div>
+              </section>
+            </div>
+          </div>
+          <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px 8px">
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">group</span></div><span style="flex:1;font-size:16px;font-weight:700">Xodimlar bo'yicha</span><div style="height:36px;width:220px;padding:0 12px;box-sizing:border-box;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;color:#9CA3AF;font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">search</span>Xodimni qidirish…</div></div>
+            <div style="display:grid;grid-template-columns:minmax(0,2fr) 0.9fr 0.7fr 0.9fr 0.9fr 0.65fr 0.65fr 0.75fr 0.75fr 1.1fr;gap:10px;padding:14px 8px 10px;margin-top:14px;font-size:12px;color:#9CA3AF;font-weight:500;background:#FAFBFC;border-radius:10px">
+              <sc-for list="{{ colsD }}" as="c" hint-placeholder-count="10"><span style="display:flex;align-items:center;gap:2px;color:{{ c.c }};font-weight:{{ c.w }}">{{ c.l }}<span style="font-family:'Material Symbols Rounded';font-size:14px;line-height:1">{{ c.i }}</span></span></sc-for>
+            </div>
+            <sc-for list="{{ rowsD }}" as="r" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:minmax(0,2fr) 0.9fr 0.7fr 0.9fr 0.9fr 0.65fr 0.65fr 0.75fr 0.75fr 1.1fr;gap:10px;align-items:center;padding:11px 8px;font-size:13px;border-bottom:1px solid #F4F5F7;border-radius:10px" style-hover="background:#F7F8FA">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0"><div style="width:32px;height:32px;border-radius:999px;background:{{ r.ab }};color:{{ r.af }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">{{ r.ini }}</div><div style="min-width:0"><div style="font-weight:700;white-space:nowrap">{{ r.n }}</div><div style="font-size:12px;color:#6B7280">{{ r.pos }}</div></div></div>
+                <span style="color:#4B5563">{{ r.dept }}</span>
+                <span style="font-weight:600">{{ r.days }}</span>
+                <span style="font-weight:700;color:{{ r.lateC }}">{{ r.late }}</span>
+                <span style="color:{{ r.earlyC }};font-weight:600">{{ r.early }}</span>
+                <span style="font-weight:700;color:{{ r.absC }}">{{ r.abs }}</span>
+                <span style="color:#4B5563">{{ r.leave }}</span>
+                <span style="font-weight:600">{{ r.work }}</span>
+                <span style="font-weight:600;color:{{ r.otC }}">{{ r.ot }}</span>
+                <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;border-radius:999px;background:#F1F2F5"><div style="width:{{ r.dav }};height:100%;border-radius:999px;background:{{ r.davC }}"></div></div><b style="font-weight:700;width:36px;text-align:right">{{ r.dav }}</b></div>
+              </div>
+            </sc-for>
+            <div style="display:grid;grid-template-columns:minmax(0,2fr) 0.9fr 0.7fr 0.9fr 0.9fr 0.65fr 0.65fr 0.75fr 0.75fr 1.1fr;gap:10px;align-items:center;padding:14px 8px;font-size:13px;font-weight:700">
+              <span>Jami · {{ tot.n }} xodim</span><span></span><span>{{ tot.days }}</span><span style="color:#F07A1A">{{ tot.late }}</span><span>{{ tot.early }}</span><span style="color:#E5484D">{{ tot.abs }}</span><span>{{ tot.leave }}</span><span>{{ tot.work }}</span><span style="color:#16A34A">{{ tot.ot }}</span><span>{{ tot.dav }}</span>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ f.isVaz }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px">
+            <sc-for list="{{ kpiV }}" as="k" hint-placeholder-count="5">
+              <div style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:18px 20px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:13px;font-weight:600;color:#4B5563">{{ k.l }}</span>
+                <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:30px;font-weight:800;letter-spacing:-0.03em">{{ k.v }}</span><span style="font-size:14px;font-weight:700;color:{{ k.sc }}">{{ k.s }}</span></div>
+                <span style="align-self:flex-start;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;white-space:nowrap;background:{{ k.db }};color:{{ k.dc }}">{{ k.d }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px 300px;gap:20px">
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px">
+              <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">bar_chart</span></div><span style="font-size:16px;font-weight:700">Haftalar bo'yicha</span></div>
+              <div style="display:flex;gap:12px;margin-top:12px;font-size:12px;color:#4B5563;font-weight:600;flex-wrap:wrap">
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:999px;background:#DDE1E8"></span>Berilgan</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:999px;background:#2443F5"></span>O'z vaqtida</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:999px;background:#F07A1A"></span>Kechikib</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:2px;background:#0B1B4F"></span>O'rtacha baho</span>
+              </div>
+              <div style="position:relative;height:220px;margin-top:18px;background-image:linear-gradient(#F1F2F5 1px,transparent 1px);background-size:100% 55px">
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);align-items:end">
+                  <sc-for list="{{ weeks }}" as="w" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:flex-end;justify-content:center;gap:6px;height:100%">
+                      <div style="width:22px;height:{{ w.hb }};border-radius:999px;background:#DDE1E8;display:flex;justify-content:center"><span style="font-size:10px;font-weight:700;color:#4B5563;margin-top:-16px">{{ w.b }}</span></div>
+                      <div style="width:22px;height:{{ w.ho }};border-radius:999px;background:#2443F5;display:flex;justify-content:center"><span style="font-size:10px;font-weight:700;color:#2443F5;margin-top:-16px">{{ w.o }}</span></div>
+                      <div style="width:22px;height:{{ w.hl }};border-radius:999px;background:#F07A1A;display:flex;justify-content:center"><span style="font-size:10px;font-weight:700;color:#F07A1A;margin-top:-16px">{{ w.lt }}</span></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <svg viewBox="0 0 400 220" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible"><polyline points="{{ bahoPts }}" fill="none" stroke="#0B1B4F" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline></svg>
+                <sc-for list="{{ weeks }}" as="w" hint-placeholder-count="4"><div style="position:absolute;left:{{ w.x }};top:{{ w.y }};transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:10px;font-weight:800;color:#0B1B4F;background:#fff;padding:1px 5px;border-radius:6px;margin-top:-22px">{{ w.r }} ★</span><span style="width:10px;height:10px;border-radius:999px;background:#fff;border:2.5px solid #0B1B4F;box-sizing:border-box"></span></div></sc-for>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px"><sc-for list="{{ weeks }}" as="w" hint-placeholder-count="4"><div style="text-align:center"><div style="font-size:12px;font-weight:700">{{ w.n }}</div><div style="font-size:11px;color:#9CA3AF">{{ w.d }}</div></div></sc-for></div>
+            </section>
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">donut_large</span></div><span style="font-size:16px;font-weight:700">Manba</span></div>
+              <div style="align-self:center;width:170px;height:170px;border-radius:999px;background:conic-gradient(#2443F5 0 69%,#0B1B4F 69% 79%,#A5B4FC 79% 100%);display:flex;align-items:center;justify-content:center">
+                <div style="width:112px;height:112px;border-radius:999px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font-size:26px;font-weight:800;letter-spacing:-0.03em">310</span><span style="font-size:11px;color:#6B7280">jami ish</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:999px;background:#2443F5"></span><span style="flex:1">Berilgan</span><b style="font-weight:700">214</b></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:999px;background:#A5B4FC"></span><span style="flex:1">O'zi qo'shgan · bajarilgan</span><b style="font-weight:700">65</b></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:999px;background:#0B1B4F"></span><span style="flex:1">O'zi qo'shgan · rejalashtirilgan</span><b style="font-weight:700">31</b></div>
+              </div>
+            </section>
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">category</span></div><span style="font-size:16px;font-weight:700">Ish turlari</span></div>
+              <span style="font-size:12px;color:#6B7280;margin-top:-6px">O'zi qo'shgan ishlar · sarflangan vaqt</span>
+              <sc-for list="{{ cats }}" as="c" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:600">{{ c.l }}</span><b style="font-weight:700">{{ c.v }}</b></div><div style="height:10px;border-radius:999px;background:#F1F2F5"><div style="width:{{ c.p }};height:100%;border-radius:999px;background:{{ c.c }}"></div></div></div></sc-for>
+              <div style="margin-top:auto;padding-top:10px;border-top:1px solid #F1F2F5;font-size:12px;color:#4B5563">Jami <b style="font-weight:700">98 soat</b> · 65 ta bajarilgan ish</div>
+            </section>
+          </div>
+          <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px 8px">
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">group</span></div><span style="font-size:16px;font-weight:700">Xodimlar bo'yicha</span></div>
+            <div style="display:grid;grid-template-columns:minmax(0,2fr) 0.9fr 0.7fr 0.7fr 1.1fr 0.7fr 0.8fr 0.7fr 1.1fr;gap:10px;padding:14px 8px 10px;margin-top:14px;font-size:12px;color:#9CA3AF;font-weight:500;background:#FAFBFC;border-radius:10px">
+              <span>Xodim</span><span>Bo'lim</span><span>Berilgan</span><span>Bajarildi</span><span style="color:#111827;font-weight:700;display:flex;align-items:center;gap:2px">O'z vaqtida<span style="font-family:'Material Symbols Rounded';font-size:14px;line-height:1">arrow_downward</span></span><span>Kechikdi</span><span>Qaytarildi</span><span>Baho</span><span>O'zi qo'shgan</span>
+            </div>
+            <sc-for list="{{ rowsV }}" as="r" hint-placeholder-count="8">
+              <div style="border-bottom:1px solid #F4F5F7;background:{{ r.bg }};border-radius:12px">
+                <div style="display:grid;grid-template-columns:minmax(0,2fr) 0.9fr 0.7fr 0.7fr 1.1fr 0.7fr 0.8fr 0.7fr 1.1fr;gap:10px;align-items:center;padding:11px 8px;font-size:13px">
+                  <div style="display:flex;align-items:center;gap:8px;min-width:0"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">{{ r.caret }}</span><div style="width:32px;height:32px;border-radius:999px;background:{{ r.ab }};color:{{ r.af }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">{{ r.ini }}</div><b style="font-weight:700;white-space:nowrap">{{ r.n }}</b></div>
+                  <span style="color:#4B5563">{{ r.dept }}</span><span style="font-weight:600">{{ r.giv }}</span><span style="font-weight:600">{{ r.done }}</span>
+                  <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;border-radius:999px;background:#F1F2F5"><div style="width:{{ r.ot }};height:100%;border-radius:999px;background:{{ r.otC }}"></div></div><b style="font-weight:700;width:34px;text-align:right">{{ r.ot }}</b></div>
+                  <span style="font-weight:700;color:{{ r.lateC }}">{{ r.late }}</span><span style="font-weight:700;color:{{ r.retC }}">{{ r.ret }}</span>
+                  <span style="font-weight:700;display:flex;align-items:center;gap:3px">{{ r.baho }}<span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1;color:#F5B300;font-variation-settings:'FILL' 1">star</span></span>
+                  <span style="color:#4B5563">{{ r.self }}</span>
+                </div>
+                <sc-if value="{{ r.open }}">
+                  <div style="padding:2px 8px 14px 50px;display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ lastTasks }}" as="t" hint-placeholder-count="5">
+                      <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 110px 120px;gap:12px;align-items:center;padding:9px 12px;border-radius:12px;background:#fff;border:1px solid #ECEEF2;font-size:13px">
+                        <span style="font-weight:600">{{ t.t }}</span><span style="color:#6B7280">{{ t.d }}</span>
+                        <span style="display:flex;align-items:center;gap:3px;font-weight:700">{{ t.r }}<span style="font-family:'Material Symbols Rounded';font-size:14px;line-height:1;color:{{ t.sc }};font-variation-settings:'FILL' 1">star</span></span>
+                        <span style="justify-self:start;display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;white-space:nowrap;font-size:11px;font-weight:700;background:{{ t.bg }};color:{{ t.c }}">{{ t.s }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ f.isRey }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:#6B7280">
+            <span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">info</span>Ball =
+            <span style="height:26px;padding:0 10px;border-radius:999px;background:#E8F7EE;color:#16A34A;font-weight:700;display:flex;align-items:center">davomat 40%</span>+
+            <span style="height:26px;padding:0 10px;border-radius:999px;background:#EEF1FF;color:#2443F5;font-weight:700;display:flex;align-items:center">vazifalar o'z vaqtida 40%</span>+
+            <span style="height:26px;padding:0 10px;border-radius:999px;background:#FEF3C7;color:#92400E;font-weight:700;display:flex;align-items:center">o'rtacha baho 20%</span>
+            <span style="flex:1"></span>
+            <div style="display:flex;gap:4px;padding:4px;border-radius:999px;background:#fff;border:1px solid #ECEEF2;font-size:13px;font-weight:600"><span style="padding:6px 16px;border-radius:999px;background:#0B1B4F;color:#fff">Xodimlar</span><span style="padding:6px 16px;color:#4B5563">Bo'limlar</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start">
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:24px 24px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:end">
+                <sc-for list="{{ podium }}" as="p" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+                    <div style="position:relative"><div style="width:{{ p.sz }};height:{{ p.sz }};border-radius:999px;background:{{ p.ab }};color:{{ p.af }};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;border:3px solid {{ p.medal }}">{{ p.ini }}</div><span style="position:absolute;right:-2px;bottom:-2px;width:28px;height:28px;border-radius:999px;background:{{ p.medal }};color:{{ p.mc }};border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800">{{ p.place }}</span></div>
+                    <div style="text-align:center"><div style="font-size:15px;font-weight:700">{{ p.n }}</div><div style="font-size:12px;color:#6B7280">{{ p.dept }}</div></div>
+                    <div style="width:100%;height:{{ p.h }};border-radius:18px 18px 0 0;background:{{ p.tint }};display:flex;flex-direction:column;align-items:center;padding:14px 16px;box-sizing:border-box;gap:10px">
+                      <span style="font-size:34px;font-weight:800;letter-spacing:-0.03em">{{ p.score }}</span>
+                      <div style="width:100%;display:flex;flex-direction:column;gap:5px">
+                        <sc-for list="{{ p.comp }}" as="c" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#4B5563"><span style="width:58px">{{ c.l }}</span><div style="flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.8)"><div style="width:{{ c.p }};height:100%;border-radius:999px;background:{{ c.c }}"></div></div><b style="font-weight:700;width:28px;text-align:right">{{ c.v }}</b></div></sc-for>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </section>
+              <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:12px 24px">
+                <div style="display:grid;grid-template-columns:40px minmax(0,1.6fr) 70px 70px 1fr 1fr 1fr;gap:12px;padding:8px 0 10px;font-size:12px;color:#9CA3AF;font-weight:500;border-bottom:1px solid #F1F2F5"><span>#</span><span>Xodim</span><span>Ball</span><span>O'zgarish</span><span>Davomat</span><span>O'z vaqtida</span><span>Baho</span></div>
+                <sc-for list="{{ ranked }}" as="r" hint-placeholder-count="5">
+                  <div style="display:grid;grid-template-columns:40px minmax(0,1.6fr) 70px 70px 1fr 1fr 1fr;gap:12px;align-items:center;padding:11px 0;font-size:13px;border-bottom:1px solid #F4F5F7">
+                    <span style="font-weight:800;color:#6B7280">{{ r.place }}</span>
+                    <div style="display:flex;align-items:center;gap:10px;min-width:0"><div style="width:32px;height:32px;border-radius:999px;background:{{ r.ab }};color:{{ r.af }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">{{ r.ini }}</div><div><div style="font-weight:700;white-space:nowrap">{{ r.n }}</div><div style="font-size:12px;color:#6B7280">{{ r.dept }}</div></div></div>
+                    <span style="font-size:16px;font-weight:800">{{ r.score }}</span>
+                    <span style="font-size:12px;font-weight:700;color:{{ r.tc }}">{{ r.trend }}</span>
+                    <span style="font-weight:600">{{ r.dav }}</span><span style="font-weight:600">{{ r.ot }}</span><span style="font-weight:600">{{ r.baho }} ★</span>
+                  </div>
+                </sc-for>
+              </section>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:#FFF1E6;color:#F07A1A;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;font-variation-settings:'FILL' 1">priority_high</span></div><span style="font-size:16px;font-weight:700">E'tibor talab qiladi</span></div>
+                <sc-for list="{{ attention }}" as="a" hint-placeholder-count="3">
+                  <div style="padding:12px;border-radius:14px;border:1px solid #ECEEF2;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:999px;background:{{ a.ab }};color:{{ a.af }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{{ a.ini }}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700">{{ a.n }}</div><div style="font-size:12px;color:#6B7280">{{ a.dept }}</div></div><span style="font-size:18px;font-weight:800;color:#F07A1A">{{ a.score }}</span></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="height:24px;padding:0 10px;border-radius:999px;white-space:nowrap;background:#FFF1E6;color:#C25A0A;font-size:12px;font-weight:700;display:flex;align-items:center">{{ a.why }}</span><span style="font-size:12px;font-weight:700;color:#2443F5;display:flex;align-items:center;gap:2px;white-space:nowrap">Profilga o'tish<span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">arrow_outward</span></span></div>
+                  </div>
+                </sc-for>
+              </section>
+              <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;flex-direction:column;gap:12px;outline:2px dashed #C4CBD6;outline-offset:6px">
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:16px;font-weight:700">Bo'limlar reytingi</span><span style="font-size:11px;font-weight:700;color:#9CA3AF">VARIANT</span></div>
+                <sc-for list="{{ deptRank }}" as="d" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px"><span style="width:22px;font-size:13px;font-weight:800;color:#6B7280">{{ d.place }}</span><div style="flex:1;display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:600">{{ d.l }}</span><b style="font-weight:800">{{ d.s }}</b></div><div style="height:8px;border-radius:999px;background:#F1F2F5"><div style="width:{{ d.p }};height:100%;border-radius:999px;background:{{ d.c }}"></div></div></div></div>
+                </sc-for>
+              </section>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ f.isJur }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="height:40px;padding:0 12px 0 6px;border-radius:999px;white-space:nowrap;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600"><span style="width:28px;height:28px;border-radius:999px;background:#F2F4F7;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:17px;line-height:1">group</span></span>Barcha xodimlar<span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">expand_more</span></div>
+            <sc-for list="{{ jcats }}" as="c" hint-placeholder-count="6"><span style="height:34px;padding:0 14px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;font-size:13px;font-weight:600;background:{{ c.bg }};color:{{ c.c }};border:1px solid {{ c.bd }}">{{ c.l }}</span></sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start">
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <sc-for list="{{ journal }}" as="g" hint-placeholder-count="2">
+                <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:18px 24px 6px">
+                  <div style="display:flex;align-items:center;gap:10px;padding-bottom:6px"><span style="font-size:15px;font-weight:700">{{ g.h }}</span><span style="font-size:13px;color:#6B7280">{{ g.d }}</span><span style="flex:1"></span><span style="font-size:12px;color:#6B7280">{{ g.sum }}</span></div>
+                  <sc-for list="{{ g.items }}" as="e" hint-placeholder-count="3">
+                    <div style="display:grid;grid-template-columns:56px 20px minmax(0,1fr) auto;gap:12px;padding:14px 0;border-top:1px solid #F4F5F7">
+                      <span style="font-size:14px;font-weight:700;padding-top:6px">{{ e.t }}</span>
+                      <div style="display:flex;flex-direction:column;align-items:center;padding-top:10px"><span style="width:10px;height:10px;border-radius:999px;background:{{ e.dot }};box-shadow:0 0 0 4px {{ e.halo }}"></span><span style="flex:1;width:2px;background:#F1F2F5;margin-top:6px"></span></div>
+                      <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+                        <div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:999px;background:{{ e.ab }};color:{{ e.af }};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">{{ e.ini }}</div><span style="font-size:13px;font-weight:600;color:#4B5563">{{ e.n }}</span></div>
+                        <div style="font-size:15px;font-weight:700">{{ e.title }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                          <span style="height:24px;padding:0 10px;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;display:flex;align-items:center;background:{{ e.srcBg }};color:{{ e.srcC }}">{{ e.src }}</span>
+                          <span style="height:24px;padding:0 10px;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:600;display:flex;align-items:center;background:#F2F4F7;color:#4B5563">{{ e.cat }}</span>
+                          <span style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#4B5563"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">timer</span>{{ e.spent }}</span>
+                        </div>
+                        <div style="display:flex;gap:6px"><sc-for list="{{ e.photos }}" as="p" hint-placeholder-count="2"><div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(150deg,#E3E7EE,#CDD3DD);display:flex;align-items:center;justify-content:center;color:#A9B2C2"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">image</span></div></sc-for></div>
+                      </div>
+                      <span style="align-self:start;display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;background:{{ e.sb }};color:{{ e.sc }};margin-top:4px">{{ e.st }}</span>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-for>
+            </div>
+            <section style="position:sticky;top:20px;background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px;display:flex;flex-direction:column;gap:16px">
+              <span style="font-size:16px;font-weight:700">Jami · Oktabr 2026</span>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div style="padding:14px;border-radius:14px;background:#F7F8FA"><div style="font-size:26px;font-weight:800;letter-spacing:-0.03em">23</div><div style="font-size:12px;color:#6B7280">Ishlar</div></div>
+                <div style="padding:14px;border-radius:14px;background:#F7F8FA"><div style="font-size:26px;font-weight:800;letter-spacing:-0.03em">31 soat</div><div style="font-size:12px;color:#6B7280">Sarflangan vaqt</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:12px;font-weight:700;color:#9CA3AF;letter-spacing:0.04em">TOP TURLAR</span>
+                <sc-for list="{{ jtop }}" as="c" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:600">{{ c.l }}</span><b style="font-weight:700">{{ c.v }}</b></div><div style="height:8px;border-radius:999px;background:#F1F2F5"><div style="width:{{ c.p }};height:100%;border-radius:999px;background:{{ c.c }}"></div></div></div></sc-for>
+              </div>
+              <div style="font-size:12px;color:#6B7280;line-height:1.5;padding-top:12px;border-top:1px solid #F1F2F5">Filtr: Barcha xodimlar · barcha turlar. Bitta xodimni tanlasangiz — faqat uning ishlari.</div>
+            </section>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+  <sc-if value="{{ f.isExcel }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:10;background:rgba(11,27,79,.32)"></div>
+    <div style="position:absolute;z-index:11;left:50%;top:180px;transform:translateX(-50%);width:440px;background:#fff;border-radius:24px;box-shadow:0 24px 80px rgba(11,27,79,.3);padding:24px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:12px;background:#E8F7EE;color:#16A34A;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">table_view</span></span><div style="flex:1"><div style="font-size:18px;font-weight:700">Excel'ga yuklash</div><div style="font-size:13px;color:#6B7280">Har bo'lim alohida varaq bo'ladi</div></div><span style="width:36px;height:36px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">close</span></span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:#F7F8FA;font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#2443F5">calendar_today</span><b style="font-weight:700">01.10 – 25.10.2026</b><span style="color:#6B7280">· Barcha filiallar · Barcha bo'limlar</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <sc-for list="{{ sheets }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:12px;height:44px;padding:0 6px;border-radius:10px">
+            <span style="width:20px;height:20px;border-radius:6px;background:{{ s.bg }};border:1.5px solid {{ s.bd }};box-sizing:border-box;color:#fff;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">check</span></span>
+            <span style="flex:1;font-size:14px;font-weight:600">{{ s.l }}</span><span style="font-size:12px;color:#9CA3AF">{{ s.h }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><span style="height:44px;padding:0 20px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:14px;font-weight:700">Bekor qilish</span><span style="height:44px;padding:0 22px 0 18px;border-radius:999px;background:#2443F5;color:#fff;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">download</span>Yuklab olish</span></div>
+    </div>
+  </sc-if>
+  </div>
+</div>
+</sc-for>
+
+<div data-screen-label="Hisobotlar — holatlar" style="display:flex;flex-direction:column;gap:14px">
+  <div style="font-size:16px;font-weight:700;color:#374151">Hisobotlar — holatlar</div>
+  <div style="width:1440px;box-sizing:border-box;padding:32px;background:#F7F8FA;border-radius:32px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">YUKLANMOQDA</span>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"><sc-for list="{{ four }}" as="x" hint-placeholder-count="4"><div style="background:#fff;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px"><span style="width:60%;height:10px;border-radius:999px;background:#EEF0F3"></span><span style="width:45%;height:24px;border-radius:8px;background:#EEF0F3"></span><span style="width:70%;height:8px;border-radius:999px;background:#F2F4F7"></span></div></sc-for></div>
+      <div style="background:#fff;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px"><sc-for list="{{ skel }}" as="w" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:12px"><span style="width:32px;height:32px;border-radius:999px;background:#EEF0F3"></span><span style="height:10px;border-radius:999px;background:#EEF0F3;width:{{ w }}"></span><span style="flex:1"></span><span style="width:60px;height:10px;border-radius:999px;background:#F2F4F7"></span><span style="width:90px;height:6px;border-radius:999px;background:#F2F4F7"></span></div></sc-for></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">BO'SH DAVR</span>
+      <div style="flex:1;background:#fff;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center">
+        <span style="width:64px;height:64px;border-radius:999px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:30px;line-height:1">event_busy</span></span>
+        <div style="font-size:17px;font-weight:700">Oktabr 2026 uchun ma'lumot yo'q</div>
+        <div style="font-size:14px;color:#6B7280;max-width:360px;line-height:1.5">Davomat bot orqali yig'iladi. Xodimlar «Keldim» bosgach, hisobot shu yerda paydo bo'ladi.</div>
+        <div style="display:flex;gap:10px;margin-top:4px"><span style="height:40px;padding:0 18px;border-radius:999px;background:#2443F5;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:700">Xodimlarni taklif qilish</span><span style="height:40px;padding:0 18px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:13px;font-weight:700">Sentabr 2026</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div data-screen-label="Hisobotlar — mobil" style="display:flex;flex-direction:column;gap:14px">
+  <div style="font-size:16px;font-weight:700;color:#374151">Hisobotlar — mobil</div>
+  <div style="padding:10px;border-radius:56px;background:#14161C;box-shadow:0 30px 60px rgba(16,24,40,.18);align-self:flex-start">
+    <div style="width:390px;height:844px;border-radius:46px;overflow:hidden;background:#F7F8FA;display:flex;flex-direction:column">
+      <div style="height:47px;padding:0 30px 0 34px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700;background:#fff"><span>09:41</span><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">signal_cellular_alt</span></div>
+      <div style="height:56px;padding:0 16px;display:flex;align-items:center;gap:12px;background:#fff"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">menu</span><span style="flex:1;font-size:18px;font-weight:700">Hisobotlar</span><span style="width:40px;height:40px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:#16A34A">download</span></span></div>
+      <div style="background:#fff;padding:0 0 10px;border-bottom:1px solid #ECEEF2;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:8px;padding:0 16px;overflow:hidden">
+          <span style="height:36px;padding:0 12px;border-radius:999px;background:#0B1B4F;color:#fff;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">Oktabr 2026<span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">expand_more</span></span>
+          <span style="height:36px;padding:0 12px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0">Barcha filiallar<span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">expand_more</span></span>
+          <span style="height:36px;padding:0 12px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0">Barcha bo'limlar<span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">expand_more</span></span>
+        </div>
+        <div style="display:flex;gap:4px;padding:0 12px;font-size:14px;font-weight:600;color:#6B7280"><span style="padding:8px 12px;color:#111827;font-weight:700;border-bottom:2px solid #2443F5">Davomat</span><span style="padding:8px 12px">Vazifalar</span><span style="padding:8px 12px">Reyting</span><span style="padding:8px 12px;white-space:nowrap">Ish jurnali</span></div>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <sc-for list="{{ kpiD }}" as="k" hint-placeholder-count="4"><div style="background:#fff;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;font-weight:600;color:#6B7280">{{ k.l }}</span><span style="font-size:22px;font-weight:800;letter-spacing:-0.02em">{{ k.v }}</span><span style="align-self:flex-start;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;background:{{ k.db }};color:{{ k.dc }}">{{ k.d }}</span></div></sc-for>
+        </div>
+        <div style="background:#fff;border-radius:18px;padding:14px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">Kunlar bo'yicha</div>
+          <div style="height:100px;display:flex;align-items:flex-end;gap:4px">
+            <sc-for list="{{ days }}" as="d" hint-placeholder-count="25"><div style="flex:1;height:100%;border-radius:999px;overflow:hidden;display:flex;flex-direction:column-reverse"><sc-for list="{{ d.segs }}" as="s" hint-placeholder-count="5"><div style="height:{{ s.h }};background:{{ s.c }};flex-shrink:0"></div></sc-for></div></sc-for>
+          </div>
+        </div>
+        <sc-for list="{{ mcards }}" as="r" hint-placeholder-count="3">
+          <div style="background:#fff;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:999px;background:{{ r.ab }};color:{{ r.af }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{{ r.ini }}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700">{{ r.n }}</div><div style="font-size:12px;color:#6B7280">{{ r.pos }}</div></div><b style="font-size:16px;font-weight:800">{{ r.dav }}</b></div>
+            <div style="height:6px;border-radius:999px;background:#F1F2F5"><div style="width:{{ r.dav }};height:100%;border-radius:999px;background:{{ r.davC }}"></div></div>
+            <div style="display:flex;gap:6px"><span style="height:24px;padding:0 10px;border-radius:999px;background:#FFF1E6;color:#C25A0A;font-size:12px;font-weight:700;display:flex;align-items:center">Kechikish {{ r.lateN }}</span><span style="height:24px;padding:0 10px;border-radius:999px;background:#FDECEC;color:#E5484D;font-size:12px;font-weight:700;display:flex;align-items:center">Kelmagan {{ r.abs }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const G = '#16A34A', A = '#F07A1A', R = '#E5484D', B = '#2443F5', N = '#D5D9E0';
+    const tabsDef = [['Davomat','how_to_reg'],['Vazifalar','task_alt'],['Reyting','military_tech'],['Ish jurnali','history_edu']];
+    const tabs = a => tabsDef.map(([l,i]) => ({ l, i, w: l === a ? 700 : 500, c: l === a ? '#111827' : '#6B7280', b: l === a ? '#2443F5' : 'transparent' }));
+    const F = (name, tab, o = {}) => ({ name, tabs: tabs(tab), isDav: tab === 'Davomat', isVaz: tab === 'Vazifalar', isRey: tab === 'Reyting', isJur: tab === 'Ish jurnali', isExcel: !!o.excel, pop: !!o.pop, dateBd: o.pop ? '#2443F5' : '#ECEEF2' });
+    const frames = [F('Hisobotlar — Davomat','Davomat',{ pop:true }), F('Hisobotlar — Vazifalar','Vazifalar'), F('Hisobotlar — Reyting','Reyting'), F('Hisobotlar — Ish jurnali','Ish jurnali'), F('Hisobotlar — Excel','Davomat',{ excel:true })];
+    const presets = [['Bu hafta','19–25.10'],["O'tgan hafta",'12–18.10'],['Bu oy','Oktabr',1],["O'tgan oy",'Sentabr'],['Tanlash…','']].map(([l,r,on]) => ({ l, r, bg: on ? '#EEF1FF' : 'transparent', c: on ? '#2443F5' : '#111827' }));
+
+    // Davomat — kunlar (01–25.10)
+    const late = [2,1,2,1,3,1,2,1,2,1,1,2,1,4,1,2,1,2,1,1,2,1,1,0,1];
+    const abs = Array(25).fill(0); [3,8,12,17,20,22,23].forEach(d => abs[d-1] = 1); abs[13] = 2;
+    const leave = Array(25).fill(0); leave[4] = 1; leave[8] = 2; leave[13] = 1; leave[14] = 1; leave[20] = 2; leave[21] = 1;
+    const off = Array.from({ length:25 }, (_, i) => [4,11,18,25].includes(i + 1) ? 9 : 3); off[13] = 0;
+    const H = 230, px = n => (n / 48 * 100).toFixed(2) + '%';
+    let present = 0;
+    const days = late.map((lt, i) => {
+      const ok = 48 - lt - abs[i] - leave[i] - off[i]; present += ok + lt;
+      const sun = [4,11,18,25].includes(i + 1);
+      return { n: i + 1, tip: i === 13, ring: i === 13 ? '0 0 0 3px rgba(36,67,245,.25)' : 'none', lc: i === 13 ? '#2443F5' : sun ? '#C4C9D2' : '#9CA3AF', lw: i === 13 ? 800 : 500,
+        segs: [[ok,G],[lt,A],[abs[i],R],[leave[i],B],[off[i],N]].map(([v,c]) => ({ h: px(v), c })) };
+    });
+    const avgN = Math.round(present / 25), avgPos = (present / 25 / 48 * H).toFixed(1) + 'px';
+    const sum = a => a.reduce((x, y) => x + y, 0);
+    const legend = [['Ishda',G,''],['Kechikdi',A,sum(late)],['Kelmadi',R,sum(abs)],['Ruxsatda',B,sum(leave)],['Dam olish',N,'']].map(([l,c,n]) => ({ l, c, n }));
+    const kpiD = [
+      { l:'Davomat', v:'94%', i:'how_to_reg', c:G, tint:'#E8F7EE', d:'↗ 1.8%', db:'#E8F7EE', dc:G, cap:'Sentabr: 92.2%' },
+      { l:'Kechikishlar', v:String(sum(late)), i:'schedule', c:A, tint:'#FFF1E6', d:'↘ 11%', db:'#E8F7EE', dc:G, cap:'jami 6 soat 12 daq' },
+      { l:'Sababsiz kelmagan', v:sum(abs) + ' kun', i:'person_off', c:R, tint:'#FDECEC', d:'↘ 3', db:'#E8F7EE', dc:G, cap:'7 xodim' },
+      { l:'Ishlangan soat', v:'6 412', i:'timer', c:B, tint:'#EEF1FF', d:'↗ 4.6%', db:'#E8F7EE', dc:G, cap:"o'rtacha 10:41 / kun" }
+    ];
+    const deptD = [['Sotuv zali',96],['Kassa',93],['Ombor',88],['Ofis',97]].map(([l,v]) => ({ l, v: v + '%', c: v < 90 ? A : B, tc: v < 90 ? A : '#111827' }));
+    const hc = [38,96,214,388,22,9,4,1,1,0], hl = ['−15','−10','−5','0','+5','+10','+15','+20','+25','+30'];
+    const hist = hc.map((n, i) => ({ h: (n / 388 * 100).toFixed(1) + '%', c: i <= 3 ? G : A, l: hl[i] }));
+
+    const AV = { GS:['#EEF1FF','#2443F5'], DR:['#E8F7EE','#15803D'], ME:['#FCE7F3','#9D174D'], BT:['#FEF3C7','#92400E'], JK:['#E0F2FE','#0369A1'], US:['#EDE9FE','#6D28D9'], FQ:['#FFE4E6','#BE123C'], SA:['#ECFCCB','#4D7C0F'], DM:['#FEF9C3','#854D0E'], JI:['#CFFAFE','#0E7490'], OJ:['#F3E8FF','#7E22CE'] };
+    const pad = n => String(n).padStart(2, '0');
+    const hm = m => Math.floor(m / 60) + ':' + pad(m % 60);
+    const dur = m => m < 60 ? m + ' daq' : Math.floor(m / 60) + ' soat' + (m % 60 ? ' ' + (m % 60) + ' daq' : '');
+    const E = [
+      ['GS','Gulnora Saidova','Sotuvchi','Sotuv zali',19,[1,7],[0,0],1,1,207*60+45,130,95],
+      ['DR','Dilshod Rahimov','Kassir','Kassa',21,[0,0],[0,0],0,0,236*60+20,380,100],
+      ['ME','Madina Ergasheva','Sotuvchi','Sotuv zali',20,[3,24],[1,15],1,0,214*60+5,40,92],
+      ['BT','Bekzod Tursunov','Sotuvchi','Sotuv zali',19,[5,52],[0,0],2,0,201*60+30,0,86],
+      ['JK','Jasur Karimov','Omborchi','Ombor',21,[1,4],[0,0],0,0,229*60+10,180,99],
+      ['US',"Ulug'bek Sobirov",'Omborchi','Ombor',18,[7,98],[2,50],2,1,188*60+15,0,81],
+      ['FQ','Feruza Qodirova','Menejer','Ofis',21,[0,0],[1,175],0,0,225*60+40,75,97],
+      ['SA','Shahnoza Allayeva','Kassir','Kassa',19,[2,11],[0,0],0,2,210*60,30,93]
+    ];
+    const rowsD = E.slice().sort((a, b) => b[11] - a[11]).map(([ini,n,pos,dept,fact,lt,er,ab,lv,wk,ot,dv]) => ({ ini, n, pos, dept, ab:AV[ini][0], af:AV[ini][1],
+      days: fact + ' / 21', late: lt[0] ? lt[0] + ' · ' + dur(lt[1]) : '—', lateC: lt[0] ? A : '#C4C9D2', lateN: lt[0],
+      early: er[0] ? er[0] + ' · ' + dur(er[1]) : '—', earlyC: er[0] ? '#111827' : '#C4C9D2',
+      abs: ab || '—', absC: ab ? R : '#C4C9D2', leave: lv || '—', work: hm(wk), ot: ot ? '+' + hm(ot) : '—', otC: ot ? G : '#C4C9D2',
+      dav: dv + '%', davC: dv < 90 ? A : dv >= 97 ? G : B }));
+    const col = i => E.map(e => e[i]);
+    const tot = { n: E.length, days: sum(col(4)) + ' / ' + 21 * E.length, late: sum(col(5).map(x => x[0])) + ' · ' + dur(sum(col(5).map(x => x[1]))),
+      early: sum(col(6).map(x => x[0])) + ' · ' + dur(sum(col(6).map(x => x[1]))), abs: sum(col(7)), leave: sum(col(8)), work: hm(sum(col(9))), ot: '+' + hm(sum(col(10))),
+      dav: Math.round(sum(col(11)) / E.length) + '%' };
+    const colsD = ['Xodim',"Bo'lim",'Ish kuni','Kechikish','Erta ketish','Kelmagan','Ruxsatda','Ishladi',"Qo'shimcha",'Davomat'].map(l => ({ l, i: l === 'Davomat' ? 'arrow_downward' : '', c: l === 'Davomat' ? '#111827' : '#9CA3AF', w: l === 'Davomat' ? 700 : 500 }));
+    const mcards = rowsD.slice().reverse().slice(0, 3);
+
+    // Vazifalar
+    const kpiV = [
+      { l:'Berilgan', v:'214', s:'', sc:'#6B7280', d:'↗ 12', db:'#EEF1FF', dc:B },
+      { l:'Bajarildi', v:'188', s:'· 88%', sc:'#6B7280', d:'↗ 3%', db:'#E8F7EE', dc:G },
+      { l:"O'z vaqtida", v:'82%', s:'', sc:'#6B7280', d:'↗ 6%', db:'#E8F7EE', dc:G },
+      { l:"O'rtacha baho", v:'4.6', s:'★', sc:'#F5B300', d:'↗ 0.1', db:'#E8F7EE', dc:G },
+      { l:'Qaytarilgan', v:'12', s:'', sc:'#6B7280', d:'↘ 4', db:'#E8F7EE', dc:G }
+    ];
+    const W = [['1-hafta','01–04.10',52,43,3,4.5],['2-hafta','05–11.10',58,48,4,4.6],['3-hafta','12–18.10',61,51,3,4.7],['4-hafta','19–25.10',43,34,2,4.6]];
+    const wy = r => 200 - (r - 4) * 300;
+    const weeks = W.map(([n,d,b,o,lt,r],i) => ({ n, d, b, o, lt, r, hb: (b / 64 * 100) + '%', ho: (o / 64 * 100) + '%', hl: Math.max(lt / 64 * 100, 4) + '%', x: (12.5 + i * 25) + '%', y: (wy(r) / 220 * 100) + '%' }));
+    const bahoPts = W.map(([,,,,,r],i) => (50 + i * 100) + ',' + wy(r)).join(' ');
+    const cats = [['Savdo',42],['Ombor',31],['Vitrina',18],['Tozalash',7]].map(([l,v],i) => ({ l, v: v + ' soat', p: (v / 42 * 100) + '%', c: i === 0 ? B : '#A5B4FC' }));
+    const V = [
+      ['GS','Gulnora Saidova','Sotuv zali',28,27,93,1,1,4.8,'14 ish · 11 soat',true],
+      ['DR','Dilshod Rahimov','Kassa',31,31,97,0,0,4.9,'4 ish · 3 soat'],
+      ['FQ','Feruza Qodirova','Ofis',18,18,93,1,0,4.7,'9 ish · 8 soat'],
+      ['JK','Jasur Karimov','Ombor',22,21,92,1,0,4.8,'21 ish · 24 soat'],
+      ['ME','Madina Ergasheva','Sotuv zali',26,25,88,2,2,4.7,'18 ish · 16 soat'],
+      ['SA','Shahnoza Allayeva','Kassa',20,18,85,2,1,4.4,'7 ish · 5 soat'],
+      ['BT','Bekzod Tursunov','Sotuv zali',24,19,71,4,3,3.9,'6 ish · 4 soat'],
+      ['US',"Ulug'bek Sobirov",'Ombor',19,15,68,4,2,3.7,'5 ish · 6 soat']
+    ];
+    const rowsV = V.map(([ini,n,dept,giv,done,ot,lt,ret,baho,self,open]) => ({ ini, n, dept, giv, done, ot: ot + '%', otC: ot < 80 ? A : B, late: lt || '—', lateC: lt ? A : '#C4C9D2', ret: ret || '—', retC: ret ? R : '#C4C9D2',
+      baho: baho.toFixed(1), self, open: !!open, caret: open ? 'expand_more' : 'chevron_right', bg: open ? '#F7F8FA' : 'transparent', ab:AV[ini][0], af:AV[ini][1] }));
+    const ST = { ok:['Tasdiqlandi','#E8F7EE',G], tek:['Tekshiruvda','#FFF1E6',A], ret:['Qaytarildi','#FDECEC',R] };
+    const lastTasks = [['Yangi kolleksiyani vitrinaga terish','19.10 · 12:02',5,'ok'],['Kiyinish xonalarini tartibga keltirish','24.10 · 16:05',3,'ret'],['Narx yorliqlarini almashtirish','23.10 · 11:20',5,'ok'],['Kassa yonidagi vitrina','22.10 · 15:40',5,'ok'],['Yangi tovarlarni javonga terish','25.10 · 10:30',0,'tek']]
+      .map(([t,d,r,s]) => ({ t, d, r: r ? r + '.0' : '—', sc: r ? '#F5B300' : '#E5E7EB', s: ST[s][0], bg: ST[s][1], c: ST[s][2] }));
+
+    // Reyting
+    const RK = [
+      ['DR','Dilshod Rahimov','Kassa',100,97,4.9,'↑ 1'],['JK','Jasur Karimov','Ombor',99,92,4.8,'↑ 2'],['FQ','Feruza Qodirova','Ofis',97,93,4.7,'↓ 2'],
+      ['GS','Gulnora Saidova','Sotuv zali',95,93,4.8,'—'],['ME','Madina Ergasheva','Sotuv zali',92,88,4.7,'↑ 1'],['DM','Dilnoza Matyoqubova','Kassa',94,86,4.5,'↓ 1'],
+      ['SA','Shahnoza Allayeva','Kassa',93,85,4.4,'↑ 3'],['JI','Javlon Ismoilov','Ombor',91,84,4.4,'↓ 2']
+    ].map(([ini,n,dept,dv,ot,b,trend]) => ({ ini, n, dept, dv, ot, b, trend, score: Math.round(dv * 0.4 + ot * 0.4 + b / 5 * 100 * 0.2), ab:AV[ini][0], af:AV[ini][1] }))
+      .sort((a, b) => b.score - a.score);
+    const MED = [['#F6E7B0','#7A5A00','#FBF4DA'],['#E3E6EC','#4B5563','#F2F4F7'],['#EBCFB4','#7A4A1E','#F8EEE4']];
+    const comp = r => [['Davomat',r.dv,G],["O'z vaqtida",r.ot,B],['Baho',r.b / 5 * 100,'#F5B300']].map(([l,v,c]) => ({ l, p: v + '%', c, v: l === 'Baho' ? r.b.toFixed(1) : v + '%' }));
+    const podium = [1,0,2].map(i => { const r = RK[i]; return { ...r, place: i + 1, medal: MED[i][0], mc: MED[i][1], tint: MED[i][2], sz: i === 0 ? '84px' : '68px', h: i === 0 ? '190px' : i === 1 ? '160px' : '140px', comp: comp(r) }; });
+    const ranked = RK.slice(3).map((r, i) => ({ ...r, place: i + 4, dav: r.dv + '%', ot: r.ot + '%', baho: r.b.toFixed(1), tc: r.trend.startsWith('↑') ? G : r.trend.startsWith('↓') ? R : '#9CA3AF' }));
+    const attention = [
+      ['OJ','Otabek Jumaniyozov','Sotuvchi · Sotuv zali',80,70,3.1,'Past baho: 3.1'],
+      ['US',"Ulug'bek Sobirov",'Omborchi · Ombor',81,68,3.7,'Ko\'p kechikadi: 7 marta'],
+      ['BT','Bekzod Tursunov','Sotuvchi · Sotuv zali',86,71,3.9,'Vazifalar kechikmoqda: 4']
+    ].map(([ini,n,dept,dv,ot,b,why]) => ({ ini, n, dept, why, score: Math.round(dv * 0.4 + ot * 0.4 + b / 5 * 100 * 0.2), ab:AV[ini][0], af:AV[ini][1] }));
+    const deptRank = [['Ofis',95],['Kassa',92],['Sotuv zali',89],['Ombor',84]].map(([l,s],i) => ({ l, s, place: i + 1, p: s + '%', c: s < 85 ? A : B }));
+
+    // Ish jurnali
+    const jcats = ['Hammasi','Savdo','Ombor','Vitrina','Tozalash','Yetkazib berish','Boshqa'].map((l,i) => ({ l, bg: i === 0 ? '#0B1B4F' : '#fff', c: i === 0 ? '#fff' : '#4B5563', bd: i === 0 ? '#0B1B4F' : '#ECEEF2' }));
+    const SRC = { b:['Berilgan','#EEF1FF',B], o:["O'zi qo'shdi",'#F2F4F7','#374151'] };
+    const JS = { ok:['Tasdiqlandi','#E8F7EE',G,'#E8F7EE'], tek:['Tekshiruvda','#FFF1E6',A,'#FFF1E6'], ret:['Qaytarildi','#FDECEC',R,'#FDECEC'] };
+    const je = (t, ini, n, title, src, cat, spent, st, ph) => ({ t, ini, n, title, cat, spent, ab:AV[ini][0], af:AV[ini][1], src: SRC[src][0], srcBg: SRC[src][1], srcC: SRC[src][2],
+      st: JS[st][0], sb: JS[st][1], sc: JS[st][2], dot: JS[st][2], halo: JS[st][3], photos: Array(ph).fill(1) });
+    const journal = [
+      { h:'Bugun', d:'25.10.2026', sum:'4 ish · 5 soat 40 daq', items:[
+        je('12:05','ME','Madina Ergasheva','Yangi kolleksiyani vitrinaga terish','b','Vitrina','1 soat 50 daq','ok',3),
+        je('11:40','ME','Madina Ergasheva','Vitrinadagi narxlarni yangiladim','o','Savdo','1 soat 30 daq','tek',2),
+        je('10:15','JK','Jasur Karimov','Yangi kelgan 40 ta tovarni qabul qildim','o','Ombor','2 soat','ok',2),
+        je('09:30','DR','Dilshod Rahimov','Kassa hisobotini topshirish','b','Savdo','20 daq','ok',1) ] },
+      { h:'Kecha', d:'24.10.2026', sum:'3 ish · 3 soat 50 daq', items:[
+        je('18:20','US',"Ulug'bek Sobirov",'Yetkazib berish — Pitnak filialiga','b','Yetkazib berish','2 soat 10 daq','ok',1),
+        je('16:05','GS','Gulnora Saidova','Kiyinish xonalarini tartibga keltirish','b','Tozalash','40 daq','ret',2),
+        je('14:30','FQ','Feruza Qodirova',"Haftalik buyurtma ro'yxatini tuzdim",'o','Boshqa','1 soat','ok',0) ] }
+    ];
+    const jtop = [['Savdo',11],['Ombor',9],['Vitrina',6],['Boshqa',5]].map(([l,v],i) => ({ l, v: v + ' soat', p: (v / 11 * 100) + '%', c: i === 0 ? B : '#A5B4FC' }));
+    const sheets = [['Davomat',1,'xodimlar, kunlar'],['Vazifalar',1,'xodimlar, haftalar'],['Reyting',1,'ball va tarkibi'],['Ish jurnali',0,'23 yozuv']].map(([l,on,h]) => ({ l, h, bg: on ? B : '#fff', bd: on ? B : '#C4C9D2' }));
+    return { frames, presets, days, avgN, avgPos, legend, kpiD, deptD, hist, rowsD, tot, colsD, mcards, kpiV, weeks, bahoPts, cats, rowsV, lastTasks,
+      podium, ranked, attention, deptRank, jcats, journal, jtop, sheets, four:[1,2,3,4], skel:['38%','52%','30%','46%','40%'] };
+  }
+}
+</script>
+</body>
+</html>

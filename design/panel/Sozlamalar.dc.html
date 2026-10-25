@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#E4E7EC;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#111827;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}a{color:#2443F5;text-decoration:none}a:hover{color:#1A34D6}</style>
+</helmet>
+<div style="padding:56px;display:flex;flex-direction:column;gap:72px;width:max-content">
+<sc-for list="{{ frames }}" as="f" hint-placeholder-count="9">
+<div data-screen-label="{{ f.name }}" style="display:flex;flex-direction:column;gap:14px">
+  <div style="font-size:16px;font-weight:700;color:#374151">{{ f.name }}</div>
+  <div style="position:relative;width:1440px;box-sizing:border-box;padding:16px;background:#EEF0F4;border-radius:32px;overflow:hidden">
+  <div style="display:flex;background:#fff;border-radius:24px;box-shadow:0 1px 3px rgba(16,24,40,.04),0 12px 40px rgba(16,24,40,.06);overflow:hidden">
+    <dc-import name="Sidebar" active="Sozlamalar" hint-size="248px,100%" style="width:248px;flex-shrink:0;display:flex"></dc-import>
+    <main style="flex:1;min-width:0;margin:8px 8px 8px 0;border-radius:20px;background:#F7F8FA;display:flex;flex-direction:column">
+      <header style="display:flex;align-items:center;justify-content:space-between;padding:22px 28px 20px;border-bottom:1px solid #ECEEF2">
+        <div>
+          <div style="font-size:28px;font-weight:700;letter-spacing:-0.02em">Sozlamalar</div>
+          <div style="font-size:14px;color:#6B7280;margin-top:2px">Ishxona, jamoa va qoidalar</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="position:relative;width:40px;height:40px;border-radius:999px;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">notifications</span><span style="position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:999px;background:#E5484D;border:2px solid #fff"></span></div>
+          <div style="height:40px;padding:0 8px 0 12px;border-radius:999px;background:#fff;border:1px solid #ECEEF2;display:flex;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">search</span><span style="font-size:11px;font-weight:600;padding:3px 6px;border-radius:6px;background:#F2F4F7;color:#6B7280">⌘K</span></div>
+          <div style="height:48px;padding:0 6px 0 4px;display:flex;align-items:center;gap:10px">
+            <div style="width:40px;height:40px;border-radius:999px;background:#FDE7D3;color:#9A4B12;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">AK</div>
+            <div><div style="font-size:14px;font-weight:700">Aziz Karimov</div><div style="font-size:12px;color:#6B7280">Egasi</div></div>
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">expand_more</span>
+          </div>
+        </div>
+      </header>
+      <div style="padding:24px 28px 28px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;align-items:start;flex:1">
+        <nav style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:10px;display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ f.tabs }}" as="t" hint-placeholder-count="8">
+            <div style="display:flex;align-items:center;gap:12px;height:42px;padding:0 12px;border-radius:12px;background:{{ t.bg }};color:{{ t.c }};font-size:14px;font-weight:{{ t.w }}">
+              <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:{{ t.ic }}">{{ t.i }}</span>
+              <span style="flex:1">{{ t.l }}</span>
+              <span style="font-size:10px;font-weight:700;color:#9CA3AF">{{ t.tag }}</span>
+            </div>
+          </sc-for>
+          <div style="margin:8px 4px 4px;padding-top:10px;border-top:1px solid #F1F2F5;font-size:11px;line-height:1.5;color:#9CA3AF">Administrator Tarifni ko'rmaydi. Bo'lim boshlig'i bu sahifani ko'rmaydi.</div>
+        </nav>
+        <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+
+          <sc-if value="{{ f.isJamoa }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:8px">
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px 12px">
+              <div style="display:flex;align-items:center;gap:12px;padding-bottom:16px">
+                <div style="width:36px;height:36px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;font-variation-settings:'FILL' 1">group</span></div>
+                <div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:700">Jamoa a'zolari</span><span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF1FF;color:#2443F5">4</span></div><div style="font-size:13px;color:#6B7280">Panelga kiradigan rahbarlar — xodimlar emas</div></div>
+                <div style="height:44px;padding:0 22px 0 18px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;box-shadow:0 6px 16px rgba(36,67,245,.25)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">add</span>A'zo qo'shish</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-radius:14px;background:#F7F8FA">
+                <sc-for list="{{ roles }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#4B5563;padding-right:10px">
+                    <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;background:{{ r.bg }};color:{{ r.c }};border:1.5px solid {{ r.bd }}">{{ r.l }}</span>{{ r.d }}
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1.7fr) 1.1fr 1.1fr 1fr 0.9fr 0.7fr 40px;gap:12px;padding:16px 4px 10px;font-size:12px;color:#9CA3AF;font-weight:500;border-bottom:1px solid #F1F2F5">
+                <span>A'zo</span><span>Rol</span><span>Mas'ul</span><span>Telegram</span><span>Oxirgi kirish</span><span>Holat</span><span></span>
+              </div>
+              <sc-for list="{{ members }}" as="m" hint-placeholder-count="4">
+                <div style="position:relative;display:grid;grid-template-columns:minmax(0,1.7fr) 1.1fr 1.1fr 1fr 0.9fr 0.7fr 40px;gap:12px;align-items:center;padding:12px 4px;font-size:13px;border-bottom:1px solid {{ m.div }}">
+                  <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                    <div style="width:36px;height:36px;border-radius:999px;background:{{ m.ab }};color:{{ m.af }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ m.ini }}</div>
+                    <div style="min-width:0"><div style="font-weight:700;white-space:nowrap">{{ m.n }}</div><div style="font-size:12px;color:#6B7280">{{ m.ph }}</div></div>
+                  </div>
+                  <div><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;background:{{ m.rbg }};color:{{ m.rc }};border:1.5px solid {{ m.rbd }}">{{ m.role }}</span></div>
+                  <span style="color:#4B5563">{{ m.sc }}</span>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:{{ m.tc }};white-space:nowrap"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1;font-variation-settings:'FILL' 1">{{ m.ti }}</span>{{ m.tg }}</span>
+                    <sc-if value="{{ m.havola }}"><span style="font-size:12px;font-weight:700;color:#2443F5;text-decoration:underline">Havola</span></sc-if>
+                  </div>
+                  <span style="color:#4B5563">{{ m.last }}</span>
+                  <div><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;white-space:nowrap;background:#E8F7EE;color:#16A34A;font-size:12px;font-weight:700"><span style="width:6px;height:6px;border-radius:999px;background:#16A34A"></span>Faol</span></div>
+                  <div style="width:32px;height:32px;border-radius:999px;border:1px solid {{ m.mbd }};background:{{ m.mbg }};display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">more_horiz</span></div>
+                  <sc-if value="{{ m.menu }}">
+                    <div style="position:absolute;right:0;top:50px;z-index:5;width:220px;background:#fff;border-radius:16px;box-shadow:0 2px 6px rgba(16,24,40,.06),0 16px 40px rgba(16,24,40,.14);padding:6px">
+                      <div style="display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border-radius:10px;background:#F5F7FF;font-size:13px;font-weight:600;color:#2443F5"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">edit</span>Tahrirlash</div>
+                      <div style="display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;font-size:13px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#6B7280">lock_reset</span>Parolni tiklash</div>
+                      <div style="display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;font-size:13px;font-weight:600;color:#E5484D;border-top:1px solid #F1F2F5"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">person_remove</span>O'chirish</div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </section>
+            <div style="font-size:12px;color:#9CA3AF;padding-left:8px">Oxirgi o'zgarish: Aziz Karimov · 22.10.2026 11:05</div>
+            </div>
+          </sc-if>
+
+          <sc-for list="{{ f.cards }}" as="c" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);border:1.5px solid {{ c.bd }};padding:20px 24px 6px">
+                <div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid #F1F2F5">
+                  <div style="width:36px;height:36px;border-radius:10px;background:{{ c.tint }};color:{{ c.ic }};display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;font-variation-settings:'FILL' 1">{{ c.icon }}</span></div>
+                  <div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700">{{ c.t }}</div><div style="font-size:13px;color:#6B7280">{{ c.d }}</div></div>
+                  <sc-if value="{{ c.hasChip }}"><span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;background:{{ c.chBg }};color:{{ c.chC }}">{{ c.chipH }}</span></sc-if>
+                </div>
+                <sc-for list="{{ c.rows }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:24px;padding:14px 0;border-bottom:1px solid {{ r.div }}">
+                    <sc-if value="{{ r.hasLi }}"><div style="width:40px;height:40px;border-radius:12px;background:#F7F8FA;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:-10px"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:#4B5563">{{ r.li }}</span></div></sc-if>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:14px;font-weight:600">{{ r.l }}</div>
+                      <div style="font-size:12px;color:#6B7280;margin-top:2px;line-height:1.45;text-wrap:pretty">{{ r.h }}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+                      <sc-if value="{{ r.isChip }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px 0 10px;border-radius:999px;white-space:nowrap;background:{{ r.cbg }};color:{{ r.cc }};font-size:12px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1;font-variation-settings:'FILL' 1">{{ r.ci }}</span>{{ r.cl }}</span></sc-if>
+                      <sc-if value="{{ r.isVal }}"><span style="font-size:14px;font-weight:700;color:{{ r.valC }};white-space:nowrap">{{ r.val }}</span></sc-if>
+                      <sc-if value="{{ r.isAvatar }}"><div style="width:56px;height:56px;border-radius:{{ r.ar }};background:{{ r.abg }};color:{{ r.afg }};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800">{{ r.av }}</div></sc-if>
+                      <sc-if value="{{ r.isQr }}"><div style="width:112px;height:112px;padding:8px;box-sizing:border-box;border-radius:14px;border:1px solid #ECEEF2;display:grid;grid-template-columns:repeat(21,1fr)"><sc-for list="{{ r.cells }}" as="q" hint-placeholder-count="0"><span style="aspect-ratio:1;background:{{ q }}"></span></sc-for></div></sc-if>
+                      <sc-if value="{{ r.isInput }}"><div style="display:flex;align-items:center;gap:8px"><div style="width:{{ r.w }};height:44px;box-sizing:border-box;border-radius:12px;border:1px solid #ECEEF2;background:{{ r.ibg }};display:flex;align-items:center;gap:8px;padding:0 12px;font-size:14px;font-weight:500;color:{{ r.ic }}"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">{{ r.icon }}</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.v }}</span><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:#6B7280">{{ r.caret }}</span></div><span style="font-size:13px;color:#6B7280;white-space:nowrap">{{ r.suf }}</span></div></sc-if>
+                      <sc-if value="{{ r.isSeg }}"><div style="display:flex;gap:4px;padding:4px;border-radius:999px;background:#F2F4F7"><sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;white-space:nowrap;font-size:13px;font-weight:600;background:{{ o.bg }};color:{{ o.c }};box-shadow:{{ o.sh }}">{{ o.l }}<span style="font-size:10px;font-weight:700;color:#9CA3AF">{{ o.soon }}</span></span></sc-for></div></sc-if>
+                      <sc-if value="{{ r.isChips }}"><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:460px"><sc-for list="{{ r.items }}" as="o" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:13px;font-weight:600;background:{{ o.bg }};color:{{ o.c }};border:1.5px solid {{ o.bd }}"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ o.i }}</span>{{ o.l }}<span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1;color:#9CA3AF">{{ o.x }}</span></span></sc-for><sc-if value="{{ r.add }}"><span style="display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px 0 8px;box-sizing:border-box;border-radius:999px;border:1.5px dashed #C4CBD6;font-size:13px;font-weight:700;color:#2443F5"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">add</span>Qo'shish</span></sc-if></div></sc-if>
+                      <sc-if value="{{ r.isSlider }}"><div style="width:320px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:12px"><div style="position:relative;flex:1;height:6px;border-radius:999px;background:#E9EBF0"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.pct }};border-radius:999px;background:#2443F5"></div><div style="position:absolute;top:50%;left:{{ r.pct }};width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:999px;background:#fff;border:2px solid #2443F5;box-sizing:border-box;box-shadow:0 2px 6px rgba(36,67,245,.25)"></div></div><span style="min-width:48px;height:28px;padding:0 8px;box-sizing:border-box;border-radius:8px;background:#EEF1FF;color:#2443F5;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ r.sv }}</span></div><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:500;color:#9CA3AF;padding-right:60px"><span>{{ r.lo }}</span><span>{{ r.hi }}</span></div></div></sc-if>
+                      <sc-if value="{{ r.isStrength }}"><div style="width:280px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:4px"><sc-for list="{{ r.segs }}" as="s" hint-placeholder-count="4"><span style="flex:1;height:6px;border-radius:999px;background:{{ s }}"></span></sc-for></div><span style="font-size:12px;font-weight:700;color:#16A34A">{{ r.sl }}</span></div></sc-if>
+                      <sc-if value="{{ r.isLink }}"><span style="display:flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:#2443F5;white-space:nowrap">{{ r.lk }}<span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">arrow_outward</span></span></sc-if>
+                      <sc-if value="{{ r.isToggle }}"><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#9CA3AF">{{ r.lockI }}</span><span style="width:44px;height:26px;border-radius:999px;background:{{ r.tbg }};position:relative;flex-shrink:0"><span style="position:absolute;top:3px;left:{{ r.tx }};width:20px;height:20px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.2)"></span></span></div></sc-if>
+                      <sc-if value="{{ r.isBtn }}"><div style="height:40px;padding:0 18px;box-sizing:border-box;border-radius:999px;white-space:nowrap;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;background:{{ r.bbg }};color:{{ r.bc }};border:1px solid {{ r.bbd }}"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">{{ r.bi }}</span>{{ r.bl }}</div></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </section>
+              <div style="font-size:12px;color:#9CA3AF;padding-left:8px">Oxirgi o'zgarish: {{ c.audit }}</div>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ f.isIshxona }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+              <span style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">TASDIQLASH OYNASI</span>
+              <div style="width:440px;background:#fff;border-radius:24px;box-shadow:0 2px 6px rgba(16,24,40,.06),0 24px 60px rgba(16,24,40,.14);padding:24px;display:flex;flex-direction:column;gap:14px">
+                <span style="width:44px;height:44px;border-radius:999px;background:#FDECEC;color:#E5484D;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">delete_forever</span></span>
+                <div><div style="font-size:18px;font-weight:700">Ishxonani o'chirasizmi?</div><div style="font-size:14px;color:#6B7280;margin-top:4px;line-height:1.5">48 xodim, davomat, vazifalar va hisobotlar butunlay o'chiriladi. Buni qaytarib bo'lmaydi.</div></div>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Tasdiqlash uchun «Mudom bozor» deb yozing</span><div style="height:44px;border-radius:12px;border:1.5px solid #E5484D;box-shadow:0 0 0 4px #FDECEC;display:flex;align-items:center;padding:0 12px;font-size:14px">Mudom boz</div></label>
+                <div style="display:flex;gap:10px;justify-content:flex-end"><span style="height:44px;padding:0 20px;border-radius:999px;white-space:nowrap;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:14px;font-weight:700">Bekor qilish</span><span style="height:44px;padding:0 20px;border-radius:999px;white-space:nowrap;background:#F3B4B6;color:#fff;display:flex;align-items:center;font-size:14px;font-weight:700">O'chirish</span></div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f.isNotif }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:8px">
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px 8px">
+              <div style="display:flex;align-items:center;gap:12px;padding-bottom:14px">
+                <div style="width:36px;height:36px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;font-variation-settings:'FILL' 1">notifications</span></div>
+                <div style="flex:1"><div style="font-size:16px;font-weight:700">Bildirishnomalar</div><div style="font-size:13px;color:#6B7280">Qaysi hodisa haqida kimga xabar boradi</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#F5F7FF;color:#1F2A5C;font-size:13px">
+                <span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1;color:#229ED9">send</span>
+                <span>Xabarlar <b style="font-weight:700">@adoneuz_bot</b> orqali keladi. Telegram ulanmagan bo'lsa — <span style="color:#2443F5;font-weight:700">Profilim → Telegram</span>.</span>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 110px minmax(0,1.6fr);gap:16px;padding:16px 4px 10px;font-size:12px;color:#9CA3AF;font-weight:500;border-bottom:1px solid #F1F2F5"><span>Hodisa</span><span>Telegram</span><span>Kimga</span></div>
+              <sc-for list="{{ notif }}" as="n" hint-placeholder-count="8">
+                <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 110px minmax(0,1.6fr);gap:16px;align-items:center;padding:13px 4px;border-bottom:1px solid {{ n.div }}">
+                  <div style="min-width:0"><div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600">{{ n.l }}<sc-if value="{{ n.owner }}"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#0B1B4F;color:#fff">faqat egasi</span></sc-if></div><div style="font-size:12px;color:#6B7280;margin-top:2px">{{ n.h }}</div></div>
+                  <span style="width:44px;height:26px;border-radius:999px;background:{{ n.tbg }};position:relative"><span style="position:absolute;top:3px;left:{{ n.tx }};width:20px;height:20px;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.2)"></span></span>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;opacity:{{ n.op }}">
+                    <sc-for list="{{ n.to }}" as="t" hint-placeholder-count="2"><span style="height:28px;padding:0 10px;border-radius:999px;white-space:nowrap;background:#F2F4F7;font-size:12px;font-weight:600;display:flex;align-items:center">{{ t }}</span></sc-for>
+                    <span style="width:28px;height:28px;border-radius:999px;border:1.5px dashed #C4CBD6;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:#2443F5"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">add</span></span>
+                  </div>
+                </div>
+              </sc-for>
+            </section>
+            <div style="font-size:12px;color:#9CA3AF;padding-left:8px">Oxirgi o'zgarish: Aziz Karimov · 20.10.2026 09:30</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f.isTarif }}" hint-placeholder-val="{{ false }}">
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:24px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:32px;align-items:center">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:13px;color:#6B7280;font-weight:500">Joriy tarif</span>
+                <div style="display:flex;align-items:center;gap:12px"><span style="font-size:32px;font-weight:800;letter-spacing:-0.03em">Biznes</span><span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;white-space:nowrap;background:#FFF1E6;color:#F07A1A;font-size:12px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">hourglass_top</span>Sinov · 24.12.2026 gacha</span></div>
+                <span style="font-size:14px;color:#4B5563">60 xodim · 3 filial · yuz tekshiruvi</span>
+                <div style="margin-top:4px;height:44px;align-self:flex-start;padding:0 22px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;font-size:14px;font-weight:700;box-shadow:0 6px 16px rgba(36,67,245,.25)">Tarifni tanlash</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;padding:18px;border-radius:16px;background:#F7F8FA">
+                <sc-for list="{{ usage }}" as="u" hint-placeholder-count="2">
+                  <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#6B7280">{{ u.l }}</span><b style="font-weight:700">{{ u.v }}</b></div><div style="height:6px;border-radius:999px;background:#DDE3FF"><div style="width:{{ u.p }};height:100%;border-radius:999px;background:#2443F5"></div></div></div>
+                </sc-for>
+              </div>
+            </section>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+              <sc-for list="{{ plans }}" as="p" hint-placeholder-count="4">
+                <div style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);border:2px solid {{ p.bd }};padding:20px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:16px;font-weight:700">{{ p.n }}</span><sc-if value="{{ p.cur }}"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#2443F5;color:#fff">Joriy</span></sc-if></div>
+                  <div><span style="font-size:26px;font-weight:800;letter-spacing:-0.03em">{{ p.price }}</span><span style="font-size:13px;color:#6B7280"> {{ p.per }}</span></div>
+                  <span style="font-size:13px;font-weight:600;color:#4B5563">{{ p.lim }}</span>
+                  <div style="display:flex;flex-direction:column;gap:6px;padding-top:12px;border-top:1px solid #F1F2F5">
+                    <sc-for list="{{ p.feat }}" as="x" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:6px;font-size:13px;color:#4B5563"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1;color:#16A34A">check</span>{{ x }}</span></sc-for>
+                  </div>
+                  <div style="margin-top:auto;height:40px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:{{ p.bbg }};color:{{ p.bc }};border:1px solid {{ p.bbd }}">{{ p.btn }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px;display:flex;align-items:center;gap:24px">
+              <div style="flex:1"><div style="font-size:16px;font-weight:700">To'lov usuli</div><div style="font-size:13px;color:#6B7280">Hozircha bank o'tkazmasi orqali — hisob-faktura so'rang</div></div>
+              <sc-for list="{{ pay }}" as="p" hint-placeholder-count="2"><div style="height:48px;padding:0 18px;border-radius:14px;border:1px solid #ECEEF2;background:#F7F8FA;display:flex;align-items:center;gap:10px;opacity:.6"><span style="font-size:16px;font-weight:800;color:{{ p.c }}">{{ p.n }}</span><span style="font-size:11px;font-weight:700;color:#9CA3AF">tez orada</span></div></sc-for>
+            </section>
+            <section style="background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.04);padding:20px 24px 24px">
+              <div style="font-size:16px;font-weight:700">To'lovlar tarixi</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 80px;gap:12px;padding:14px 4px 10px;font-size:12px;color:#9CA3AF;font-weight:500;border-bottom:1px solid #F1F2F5"><span>Sana</span><span>Tarif</span><span>Davr</span><span>Summa</span><span>Chek</span></div>
+              <div style="padding:36px 0 12px;display:flex;flex-direction:column;align-items:center;gap:10px">
+                <span style="width:48px;height:48px;border-radius:999px;background:#F2F4F7;color:#9CA3AF;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">receipt_long</span></span>
+                <span style="font-size:14px;font-weight:600;color:#4B5563">Hali to'lov yo'q</span>
+                <span style="font-size:12px;color:#9CA3AF">Sinov muddati tugagach birinchi to'lov shu yerda ko'rinadi</span>
+              </div>
+            </section>
+          </sc-if>
+        </div>
+      </div>
+      <sc-if value="{{ f.dirty }}" hint-placeholder-val="{{ false }}">
+        <div style="position:sticky;bottom:16px;margin:0 28px 20px 288px;display:flex;align-items:center;gap:12px;padding:12px 12px 12px 20px;border-radius:18px;background:#fff;border:1px solid #ECEEF2;box-shadow:0 12px 40px rgba(16,24,40,.14)">
+          <span style="width:8px;height:8px;border-radius:999px;background:#F07A1A"></span>
+          <span style="flex:1;font-size:14px;font-weight:600">O'zgarishlar saqlanmagan</span>
+          <span style="height:40px;padding:0 18px;border-radius:999px;white-space:nowrap;display:flex;align-items:center;font-size:13px;font-weight:700;color:#4B5563">Bekor qilish</span>
+          <span style="height:40px;padding:0 22px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;font-size:13px;font-weight:700">Saqlash</span>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <sc-if value="{{ f.isAzo }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:rgba(11,27,79,.32)"></div>
+    <div style="position:absolute;left:300px;top:200px;width:440px;background:#fff;border-radius:24px;box-shadow:0 24px 80px rgba(11,27,79,.3);padding:24px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:#9CA3AF">MUVAFFAQIYAT HOLATI</span>
+      <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:999px;background:#E8F7EE;color:#16A34A;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">check</span></span><div><div style="font-size:18px;font-weight:700">A'zo qo'shildi</div><div style="font-size:13px;color:#6B7280">Gulnora Saidova · Bo'lim boshlig'i</div></div></div>
+      <div style="padding:12px 14px;border-radius:12px;background:#F7F8FA;font-size:14px;font-weight:600;font-family:ui-monospace,Menlo,monospace;color:#1F2A5C">app.adone.uz · +998 91 274 18 05 · parol: k7m-29qx</div>
+      <div style="font-size:12px;color:#6B7280">Birinchi kirishda parolni o'zgartirish so'raladi.</div>
+      <div style="display:flex;gap:10px"><span style="height:40px;padding:0 18px 0 14px;border-radius:999px;white-space:nowrap;background:#2443F5;color:#fff;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">content_copy</span>Nusxa olish</span><span style="height:40px;padding:0 18px;border-radius:999px;white-space:nowrap;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:13px;font-weight:700">Yopish</span></div>
+    </div>
+    <aside style="position:absolute;top:16px;right:16px;bottom:16px;width:520px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 24px 80px rgba(11,27,79,.3);display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;padding:22px 24px;border-bottom:1px solid #F1F2F5">
+        <div style="flex:1"><div style="font-size:20px;font-weight:700">A'zo qo'shish</div><div style="font-size:13px;color:#6B7280">Panelga kirish huquqi beriladi</div></div>
+        <div style="width:40px;height:40px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">close</span></div>
+      </div>
+      <div style="flex:1;padding:18px 24px;display:flex;flex-direction:column;gap:16px">
+        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Ism-familiya</span><div style="height:44px;border-radius:12px;border:1px solid #ECEEF2;display:flex;align-items:center;padding:0 12px;font-size:14px">Gulnora Saidova</div></label>
+        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Telefon</span><div style="height:44px;border-radius:12px;border:1.5px solid #2443F5;box-shadow:0 0 0 4px #EEF1FF;display:flex;align-items:center;overflow:hidden"><span style="height:100%;padding:0 12px;display:flex;align-items:center;border-right:1px solid #ECEEF2;font-size:14px;font-weight:600;background:#F7F8FA">+998</span><span style="padding:0 12px;font-size:14px">91 274 18 05</span></div>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#2443F5;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">info</span>Bu raqam xodimlar ro'yxatida ham bor — Gulnora Saidova</span></label>
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">Rol</span>
+          <div style="display:flex;gap:4px;padding:4px;border-radius:999px;background:#F2F4F7;font-size:13px;font-weight:600"><span style="flex:1;text-align:center;padding:8px 0;color:#6B7280">Administrator</span><span style="flex:1;text-align:center;padding:8px 0;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08)">Bo'lim boshlig'i</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Bo'limlar</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ depts }}" as="d" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;box-sizing:border-box;border-radius:999px;font-size:13px;font-weight:600;background:{{ d.bg }};color:{{ d.c }};border:1.5px solid {{ d.bd }}"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ d.i }}</span>{{ d.l }}</span></sc-for></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Filiallar <span style="color:#9CA3AF;font-weight:500">· ixtiyoriy</span></span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ branches }}" as="d" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;box-sizing:border-box;border-radius:999px;font-size:13px;font-weight:600;background:{{ d.bg }};color:{{ d.c }};border:1.5px solid {{ d.bd }}"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ d.i }}</span>{{ d.l }}</span></sc-for></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Kirish usuli</span>
+          <div style="border-radius:14px;border:1.5px solid #2443F5;background:#F5F7FF;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><span style="width:18px;height:18px;border-radius:999px;border:5px solid #2443F5;box-sizing:border-box;background:#fff"></span>Vaqtinchalik parol</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-left:28px"><span style="height:36px;padding:0 12px;border-radius:10px;background:#fff;border:1px solid #DDE3FF;display:flex;align-items:center;font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:700;letter-spacing:0.04em">k7m-29qx</span><span style="width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid #DDE3FF;display:flex;align-items:center;justify-content:center;color:#2443F5"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">content_copy</span></span><span style="width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid #DDE3FF;display:flex;align-items:center;justify-content:center;color:#6B7280"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">refresh</span></span></div>
+            <span style="margin-left:28px;font-size:12px;color:#6B7280">Birinchi kirishda o'zgartirishi so'raladi</span>
+          </div>
+          <div style="border-radius:14px;border:1px solid #ECEEF2;padding:12px 14px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600"><span style="width:18px;height:18px;border-radius:999px;border:1.5px solid #C4C9D2;box-sizing:border-box"></span>Telegram orqali taklif<span style="flex:1"></span><span style="font-size:12px;color:#6B7280;font-weight:500">havola + QR</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:14px;background:#F7F8FA">
+          <span style="font-size:12px;font-weight:700;color:#6B7280">Bo'lim boshlig'i nimalarni qila oladi</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
+            <sc-for list="{{ perms }}" as="p" hint-placeholder-count="4"><span style="display:flex;align-items:center;gap:6px;font-size:13px;color:{{ p.tc }}"><span style="font-family:'Material Symbols Rounded';font-size:17px;line-height:1;color:{{ p.c }}">{{ p.i }}</span>{{ p.l }}</span></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;padding:16px 24px 22px;border-top:1px solid #F1F2F5;justify-content:flex-end">
+        <div style="height:44px;padding:0 20px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;font-size:14px;font-weight:700">Bekor qilish</div>
+        <div style="height:44px;padding:0 24px;border-radius:999px;background:#2443F5;color:#fff;display:flex;align-items:center;font-size:14px;font-weight:700">Qo'shish</div>
+      </div>
+    </aside>
+  </sc-if>
+  </div>
+</div>
+</sc-for>
+
+<div data-screen-label="Sozlamalar — mobil" style="display:flex;flex-direction:column;gap:14px">
+  <div style="font-size:16px;font-weight:700;color:#374151">Sozlamalar — mobil</div>
+  <div style="display:flex;gap:48px">
+    <div style="padding:10px;border-radius:56px;background:#14161C;box-shadow:0 30px 60px rgba(16,24,40,.18)">
+      <div style="width:390px;height:844px;border-radius:46px;overflow:hidden;background:#F7F8FA;display:flex;flex-direction:column">
+        <div style="height:47px;padding:0 30px 0 34px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700;background:#fff"><span>09:41</span><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">signal_cellular_alt</span></div>
+        <div style="height:56px;padding:0 16px;display:flex;align-items:center;gap:12px;background:#fff;border-bottom:1px solid #ECEEF2"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">menu</span><span style="flex:1;font-size:18px;font-weight:700">Sozlamalar</span><span style="width:34px;height:34px;border-radius:999px;background:#FDE7D3;color:#9A4B12;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">AK</span></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="background:#fff;border-radius:20px;padding:16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(16,24,40,.04)">
+            <div style="width:48px;height:48px;border-radius:14px;background:#0B1B4F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800">M</div>
+            <div style="flex:1"><div style="font-size:16px;font-weight:700">Mudom bozor</div><div style="font-size:13px;color:#6B7280">Biznes · sinov 24.12.2026 gacha</div></div>
+          </div>
+          <div style="background:#fff;border-radius:20px;padding:4px 0;box-shadow:0 1px 2px rgba(16,24,40,.04)">
+            <sc-for list="{{ mtabs }}" as="t" hint-placeholder-count="8">
+              <div style="height:56px;margin:0 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid {{ t.div }}">
+                <span style="width:34px;height:34px;border-radius:10px;background:#EEF1FF;color:#2443F5;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:19px;line-height:1">{{ t.i }}</span></span>
+                <span style="flex:1;font-size:15px;font-weight:600">{{ t.l }}</span>
+                <span style="font-size:13px;color:#9CA3AF">{{ t.v }}</span>
+                <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:#9CA3AF">chevron_right</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px;border-radius:56px;background:#14161C;box-shadow:0 30px 60px rgba(16,24,40,.18)">
+      <div style="width:390px;height:844px;border-radius:46px;overflow:hidden;background:#F7F8FA;display:flex;flex-direction:column">
+        <div style="height:47px;padding:0 30px 0 34px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700;background:#fff"><span>09:41</span><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">signal_cellular_alt</span></div>
+        <div style="height:56px;padding:0 12px;display:flex;align-items:center;gap:8px;background:#fff;border-bottom:1px solid #ECEEF2"><span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:24px;line-height:1">arrow_back</span><span style="flex:1;font-size:18px;font-weight:700">Jamoa</span><span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF1FF;color:#2443F5;margin-right:8px">4</span></div>
+        <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ members }}" as="m" hint-placeholder-count="4">
+            <div style="background:#fff;border-radius:20px;padding:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:40px;height:40px;border-radius:999px;background:{{ m.ab }};color:{{ m.af }};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">{{ m.ini }}</div>
+                <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:700">{{ m.n }}</div><div style="font-size:12px;color:#6B7280">{{ m.ph }}</div></div>
+                <span style="width:36px;height:36px;border-radius:999px;border:1px solid #ECEEF2;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">more_horiz</span></span>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;box-sizing:border-box;border-radius:999px;white-space:nowrap;font-size:12px;font-weight:700;background:{{ m.rbg }};color:{{ m.rc }};border:1.5px solid {{ m.rbd }}">{{ m.role }}</span>
+                <span style="height:24px;padding:0 10px;border-radius:999px;background:#F2F4F7;font-size:12px;font-weight:600;color:#4B5563;display:flex;align-items:center">{{ m.sc }}</span>
+                <span style="display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;color:{{ m.tc }}"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1;font-variation-settings:'FILL' 1">{{ m.ti }}</span>{{ m.tg }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:12px 16px 30px;background:#fff;border-top:1px solid #ECEEF2"><div style="height:52px;border-radius:999px;background:#2443F5;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">add</span>A'zo qo'shish</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const TONE = { g:['#E8F7EE','#16A34A'], a:['#FFF1E6','#F07A1A'], b:['#EEF1FF','#2443F5'], n:['#F2F4F7','#6B7280'], r:['#FDECEC','#E5484D'] };
+    const BV = { primary:['#2443F5','#fff','#2443F5'], sec:['#fff','#111827','#ECEEF2'], danger:['#fff','#E5484D','#F5B5B7'] };
+    const tog = (on, lock) => ({ isToggle:true, tbg: lock ? '#93A3F9' : on ? '#2443F5' : '#E5E7EB', tx: on ? '21px' : '3px', lockI: lock ? 'lock' : '' });
+    const inp = (v, o = {}) => ({ isInput:true, v, w:o.w || '280px', ibg:o.ro ? '#F7F8FA' : '#fff', ic:o.ro ? '#6B7280' : '#111827', icon:o.icon || (o.ro ? 'lock' : ''), caret:o.sel ? 'expand_more' : '', suf:o.suf || '' });
+    const seg = opts => ({ isSeg:true, opts: opts.map(([l,on,soon]) => ({ l, soon: soon || '', bg: on ? '#fff' : 'transparent', c: soon ? '#B0B5BF' : on ? '#111827' : '#6B7280', sh: on ? '0 1px 2px rgba(16,24,40,.08)' : 'none' })) });
+    const chips = (items, o = {}) => ({ isChips:true, add:!!o.add, items: items.map(([l,on]) => o.edit
+      ? { l, i:'', x:'close', bg:'#F2F4F7', c:'#111827', bd:'#F2F4F7' }
+      : { l, i: on ? 'check' : '', x:'', bg: on ? '#EEF1FF' : '#fff', c: on ? '#2443F5' : '#4B5563', bd: on ? '#2443F5' : '#ECEEF2' }) });
+    const slider = (pct, sv, lo, hi) => ({ isSlider:true, pct, sv, lo, hi });
+    const btn = (bl, v = 'sec', bi = '') => ({ isBtn:true, bl, bi, bbg:BV[v][0], bc:BV[v][1], bbd:BV[v][2] });
+    const chip = (cl, t, ci = '') => ({ isChip:true, cl, ci, cbg:TONE[t][0], cc:TONE[t][1] });
+    const val = (v, c = '#111827') => ({ isVal:true, val:v, valC:c });
+    const link = lk => ({ isLink:true, lk });
+    const av = (a, ar, abg, afg) => ({ isAvatar:true, av:a, ar, abg, afg });
+    const li = i => ({ hasLi:true, li:i });
+    const row = (l, h, ...parts) => Object.assign({ l, h, li:'', hasLi:false }, ...parts);
+    const card = (t, d, icon, rows, o = {}) => ({ t, d, icon, tint:o.tint || '#EEF1FF', ic:o.ic || '#2443F5', bd:o.bd || 'transparent',
+      hasChip:!!o.chip, chipH:o.chip || '', chBg:o.chBg || '#F2F4F7', chC:o.chC || '#4B5563', audit:o.audit || 'Nilufar Yusupova · 24.10.2026 18:40',
+      rows: rows.map((r, i) => ({ ...r, div: i === rows.length - 1 ? 'transparent' : '#F1F2F5' })) });
+
+    const cells = [];
+    for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+      const fin = [[0,0],[14,0],[0,14]].find(([cx,cy]) => x >= cx && x < cx + 7 && y >= cy && y < cy + 7);
+      let on;
+      if (fin) { const dx = x - fin[0], dy = y - fin[1]; on = dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4); }
+      else if ((x === 7 || y === 7) && (x < 8 && y < 8) || (x === 13 && y < 8) || (y === 13 && x < 8)) on = false;
+      else on = ((x * 7 + y * 13 + x * y * 3) % 5) < 2;
+      cells.push(on ? '#111827' : 'transparent');
+    }
+
+    const tabsDef = [['Profilim','person'],['Ishxona','storefront'],['Jamoa','group'],['Davomat','how_to_reg'],['Vazifalar','task_alt'],['Ish haqi','payments'],['Bildirishnomalar','notifications'],['Tarif','workspace_premium']];
+    const tabs = a => tabsDef.map(([l,i]) => ({ l, i, bg: l === a ? '#EEF1FF' : 'transparent', c: l === a ? '#2443F5' : '#374151', w: l === a ? 700 : 500, ic: l === a ? '#2443F5' : '#6B7280', tag: l === 'Tarif' ? 'egasi' : '' }));
+    const F = (name, tab, cards, o = {}) => ({ name, tabs: tabs(tab), cards, isJamoa: tab === 'Jamoa', isAzo: !!o.azo, isNotif: tab === 'Bildirishnomalar', isTarif: tab === 'Tarif', isIshxona: tab === 'Ishxona', dirty: !!o.dirty });
+
+    const profil = [
+      card("Shaxsiy ma'lumotlar", "Panelda va Telegram xabarlarda ko'rinadi", 'person', [
+        row('Rasm', 'Kvadrat, 400×400 dan katta', av('AK','999px','#FDE7D3','#9A4B12'), btn('Rasm yuklash','sec','upload')),
+        row('Ism', '', inp('Aziz Karimov', { w:'320px' })),
+        row('Telefon', "Raqamni administrator o'zgartiradi", inp('+998 90 123 45 67', { ro:true, w:'320px' }))
+      ], { audit:'Aziz Karimov · 02.10.2026 10:14' }),
+      card("Parolni o'zgartirish", 'Kamida 8 belgi: harf va raqam', 'key', [
+        row('Joriy parol', '', inp('••••••••', { w:'320px', icon:'lock' })),
+        row('Yangi parol', '', inp('••••••••••', { w:'320px', icon:'visibility' })),
+        row('Yangi parolni takrorlang', '', inp('••••••••••', { w:'320px', icon:'visibility' })),
+        row('Parol kuchi', '', { isStrength:true, segs:['#16A34A','#16A34A','#16A34A','#E9EBF0'], sl:'Yaxshi' }),
+        row('', '', btn('Parolni yangilash','primary'))
+      ], { audit:'Aziz Karimov · 02.10.2026 10:16' }),
+      card('Telegram', "Bot sizga kechikishlar, so'rovlar va vazifa hisobotlarini yuboradi", 'send', [
+        row('@adoneuz_bot', 'Ulangan: 02.10.2026', chip('Ulangan · @aziz_karimov','g','check_circle'), btn('Uzish','danger'))
+      ], { tint:'#E3F2FB', ic:'#229ED9', audit:'Aziz Karimov · 02.10.2026 10:20' }),
+      card('Telegram — ulanmagan holat', "Bot sizga kechikishlar, so'rovlar va vazifa hisobotlarini yuboradi", 'send', [
+        row('Telefoningiz kamerasi bilan QR ni skanerlang', "Yoki tugmani bosing — Telegram ochiladi va «Start» bosasiz", { isQr:true, cells }, btn('Telegramda ulash ↗','primary'))
+      ], { tint:'#F2F4F7', ic:'#6B7280', chip:'Variant', audit:'—' }),
+      card('Kirishlar', "Panelga oxirgi kirgan qurilmalar", 'devices', [
+        row('MacBook · Chrome', 'Hazorasp · bugun 09:12', li('laptop_mac'), chip('Joriy','b')),
+        row('iPhone 13 · Safari', 'Hazorasp · kecha 21:40', li('phone_iphone'), val('kecha', '#6B7280')),
+        row('Windows · Edge', 'Urganch · 22.10.2026 14:05', li('desktop_windows'), val('22.10.2026', '#6B7280')),
+        row('', '', btn('Boshqa qurilmalardan chiqish','sec','logout'))
+      ], { audit:'tizim · bugun 09:12' })
+    ];
+    const ishxona = [
+      card("Ishxona ma'lumotlari", 'Xodimlar botda shu nomni ko\'radi', 'storefront', [
+        row('Nomi', '', inp('Mudom bozor', { w:'320px' })),
+        row('Logotip', 'PNG yoki SVG, 512×512 gacha', av('M','16px','#0B1B4F','#fff'), btn('Logotip yuklash','sec','upload'))
+      ]),
+      card('Mintaqa va til', 'Vaqt hisobi va interfeys tili', 'language', [
+        row('Vaqt mintaqasi', 'Barcha kechikishlar shu vaqtda hisoblanadi', inp('Asia/Tashkent (UTC+5)', { w:'320px', sel:true, icon:'schedule' })),
+        row('Til', '', seg([["O'zbekcha",true],['Ўзбекча',false,'tez orada'],['Русский',false,'tez orada']])),
+        row('Sana formati', '', inp('25.10.2026', { ro:true, w:'200px' })),
+        row('Ish haftasi boshlanishi', 'Tabel va haftalik hisobotlar uchun', inp('Dushanba', { sel:true, w:'200px' }))
+      ]),
+      card('Xavfli hudud', "Bu amallarni qaytarib bo'lmaydi", 'warning', [
+        row("Ishxonani o'chirish", "Barcha xodimlar, davomat, vazifalar va hisobotlar butunlay o'chiriladi. Avval Excel'ga yuklab oling.", btn("Ishxonani o'chirish",'danger','delete'))
+      ], { tint:'#FDECEC', ic:'#E5484D', bd:'#F5B5B7', chip:'Faqat egasi', chBg:'#0B1B4F', chC:'#fff', audit:'—' })
+    ];
+    const davomat = [
+      card('Yangi xodimlar', "Botda ro'yxatdan o'tganlar", 'person_add', [
+        row('Avtomatik tasdiqlash', "O'chiq bo'lsa, botda ro'yxatdan o'tgan xodim «Tasdiq kutmoqda» bo'ladi", tog(false))
+      ]),
+      card('Kunlik xabar', 'Har kuni ertalab rahbarlarga', 'mark_email_unread', [
+        row('«Kelmaganlar va kechikkanlar» xabari', 'Belgilangan vaqtda Telegram orqali yuboriladi', inp('10:00', { w:'110px', icon:'schedule' }), tog(true)),
+        row('Kimga', '', chips([['Egasi',true],['Administrator',true],["Bo'lim boshliqlari",true]]))
+      ], { audit:'Aziz Karimov · bugun 09:58' }),
+      card('Avtomatik yopish', "«Ketdim» unutilganda", 'timer_off', [
+        row("«Ketdim» bosilmasa", 'Smena tugaganidan keyin. Xodim va rahbarga xabar boradi.', inp('3', { w:'80px', suf:'soat' })),
+        row('Erkin grafikda', "«Keldim»dan keyin", inp('16', { w:'80px', suf:'soat' }))
+      ]),
+      card('Joylashuv', 'GPS tekshiruvi', 'location_on', [
+        row('GPS aniqligi talabi', 'Bundan yomon aniqlikdagi lokatsiya qabul qilinmaydi', inp('≤ 100 m', { ro:true, w:'140px' })),
+        row('Botda faqat jonli lokatsiya', "Firibgarlikka qarshi — o'chirib bo'lmaydi", tog(true, true))
+      ]),
+      card('Yuz tekshiruvi', "Selfi yuz namunasi bilan solishtiriladi", 'face', [
+        row("O'xshashlik chegarasi", "Chegaradan past — «Shubhali», rahbar ko'radi", slider('30%', '45%', 'Yumshoq · 30%', '80% · Qattiq')),
+        row('Bosh burilishi (jonlilik)', 'Selfi paytida boshni burish burchagi', slider('25%', '15°', '5°', '45°')),
+        row("Qurilmani bog'lash", "Boshqa telefondan «Keldim» — shubhali", tog(true))
+      ], { audit:'Aziz Karimov · bugun 10:02' }),
+      card('Kechikish', '', 'schedule', [
+        row('Kechikish chegarasi har jadvalda alohida', 'Masalan, «Asosiy smena» — 10 daqiqa', link('Jadvallar'))
+      ])
+    ];
+    const vazifalar = [
+      card("O'zi qo'shgan ishlar", "Xodim «Ish qo'shish» orqali yozgan ishlar", 'edit_note', [
+        row("Rahbar tasdig'ini talab qiladi", 'Tasdiqlanmaguncha hisobotga kirmaydi', tog(true)),
+        row("Ish haqiga ta'sir qiladi", "Qoidalar — Ish haqi bo'limida", tog(false))
+      ]),
+      card('Ish turlari', "«Ish qo'shish» oynasida tanlanadi", 'category', [
+        row("Turlar ro'yxati", "O'chirilgan tur eski yozuvlarda qoladi", chips([['Savdo'],['Ombor'],['Tozalash'],['Vitrina'],['Yetkazib berish'],['Boshqa']], { edit:true, add:true }))
+      ]),
+      card('Eslatmalar', 'Telegram orqali avtomatik', 'notifications_active', [
+        row('Qabul qilinmasa', 'Xodimga qayta eslatma', inp('30 daqiqadan keyin', { w:'200px', sel:true }), tog(true)),
+        row('Muddatga 1 soat qolganda', 'Xodimga', tog(true)),
+        row("Muddat o'tganda", 'Xodimga va vazifa bergan rahbarga', tog(true)),
+        row('Hisobot 24 soat tekshirilmasa', 'Rahbarga', tog(true)),
+        row('Tinch vaqt', "Bu vaqtda xabar yuborilmaydi, ertalabga suriladi", inp('22:00 – 08:00', { w:'170px', icon:'bedtime' }))
+      ])
+    ];
+    const ishhaqi = [
+      card("Xodimga ko'rinish", 'Mini App ichida', 'visibility', [
+        row("Xodim o'z ish haqini Mini App'da ko'radi", "O'chiq bo'lsa, faqat ish kunlari va kechikishlar ko'rinadi", tog(false))
+      ]),
+      card('Hisob qoidalari', "Ish haqi sahifasida tahrirlanadi", 'rule', [
+        row('Kechikish', '', val("har daqiqa 1 000 so'm")),
+        row('Sababsiz kelmagan kun', '', val("100 000 so'm", '#E5484D')),
+        row("Qo'shimcha soat", '', val("soatiga 25 000 so'm", '#16A34A')),
+        row("Vazifa o'z vaqtida", '', val("+20 000 so'm", '#16A34A')),
+        row('Jarima chegarasi', "Jarimalar bundan oshmaydi", val("asosiyning 30%")),
+        row('', '', btn('Qoidalarni tahrirlash ↗','sec'))
+      ], { audit:'Aziz Karimov · 01.10.2026 12:30' }),
+      card('Oyni yopish', "Yopilgan oyda hisob o'zgarmaydi", 'lock', [
+        row('Qayta ochish', '', val('Faqat egasi qayta ochadi', '#6B7280')),
+        row('Oxirgi yopilgan oy', '', val('Sentabr 2026 · 01.10.2026'))
+      ], { audit:'Aziz Karimov · 01.10.2026 12:41' })
+    ];
+    const frames = [
+      F('Sozlamalar — Profilim','Profilim', profil),
+      F('Sozlamalar — Ishxona','Ishxona', ishxona),
+      F('Sozlamalar — Jamoa','Jamoa', []),
+      F("A'zo qo'shish",'Jamoa', [], { azo:true }),
+      F('Sozlamalar — Davomat','Davomat', davomat, { dirty:true }),
+      F('Sozlamalar — Vazifalar','Vazifalar', vazifalar),
+      F('Sozlamalar — Ish haqi','Ish haqi', ishhaqi),
+      F('Sozlamalar — Bildirishnomalar','Bildirishnomalar', []),
+      F('Sozlamalar — Tarif','Tarif', [])
+    ];
+    const RS = { Egasi:['#0B1B4F','#fff','#0B1B4F'], Administrator:['#EEF1FF','#2443F5','#EEF1FF'], "Bo'lim boshlig'i":['#fff','#2443F5','#2443F5'] };
+    const roles = [['Egasi','hammasi, tarif va to\'lov'],['Administrator','tarifdan tashqari hammasi'],["Bo'lim boshlig'i","faqat o'z bo'limi: davomat, so'rovlar, vazifalar"]].map(([l,d]) => ({ l, d:'— ' + d, bg:RS[l][0], c:RS[l][1], bd:RS[l][2] }));
+    const M = [
+      ['AK','Aziz Karimov','+998 90 123 45 67','Egasi','Barcha bo\'limlar',true,'bugun 09:12','#FDE7D3','#9A4B12'],
+      ['NY','Nilufar Yusupova','+998 93 410 22 08','Administrator','Barcha bo\'limlar',true,'bugun 08:47','#FCE7F3','#9D174D'],
+      ['SR','Sardor Rahimov','+998 97 615 33 90',"Bo'lim boshlig'i",'Sotuv zali',true,'kecha 19:20','#E0F2FE','#0369A1'],
+      ['JK','Jasur Karimov','+998 91 208 77 41',"Bo'lim boshlig'i",'Mudom — Ombor',false,'22.10.2026','#E8F7EE','#15803D']
+    ];
+    const members = M.map(([ini,n,ph,role,sc,tg,last,ab,af],i) => ({ ini, n, ph, role, sc, last, ab, af, rbg:RS[role][0], rc:RS[role][1], rbd:RS[role][2],
+      tg: tg ? 'Ulangan' : 'Ulanmagan', ti: tg ? 'check_circle' : 'link_off', tc: tg ? '#16A34A' : '#9CA3AF', havola: !tg,
+      menu: i === 2, mbg: i === 2 ? '#F2F4F7' : '#fff', mbd: i === 2 ? '#E2E5EA' : '#ECEEF2', div: i === M.length - 1 ? 'transparent' : '#F4F5F7' }));
+    const pick = (l, on) => ({ l, i: on ? 'check' : '', bg: on ? '#EEF1FF' : '#fff', c: on ? '#2443F5' : '#4B5563', bd: on ? '#2443F5' : '#ECEEF2' });
+    const depts = [['Sotuv zali',1],['Kassa',1],['Ombor',0],['Ofis',0]].map(([l,on]) => pick(l, on));
+    const branches = [['Mudom — Markaz',1],['Mudom — Ombor',0],['Pitnak',0]].map(([l,on]) => pick(l, on));
+    const perms = [['Davomatni ko\'rish',1],['Vazifa berish',1],["So'rovlarni tasdiqlash",1],['Ish haqini ko\'rish',0],['Sozlamalar',0],['Tarif va to\'lov',0]].map(([l,ok]) => ({ l, i: ok ? 'check_circle' : 'cancel', c: ok ? '#16A34A' : '#C4C9D2', tc: ok ? '#111827' : '#9CA3AF' }));
+    const N = [
+      ['Xodim kechikdi','Chegaradan oshganda darhol',1,["Bo'lim boshlig'i",'Administrator']],
+      ["Kelmaganlar ro'yxati",'Har kuni 10:00 da',1,['Egasi','Administrator',"Bo'lim boshlig'i"]],
+      ['Shubhali keldi-ketdi','Zona, yuz yoki qurilma mos kelmasa',1,['Administrator',"Bo'lim boshlig'i"]],
+      ["Yangi so'rov",'Ruxsat, kasal, ta\'til',1,["Bo'lim boshlig'i"]],
+      ['Vazifa topshirildi','Hisobot tekshiruvga kelganda',1,['Vazifa bergan rahbar']],
+      ["Vazifa muddati o'tdi",'',1,['Vazifa bergan rahbar','Administrator']],
+      ["Yangi xodim ro'yxatdan o'tdi",'Avtomatik tasdiqlash o\'chiq bo\'lsa',0,['Administrator']],
+      ['Saytdan ariza','adone.uz dagi forma',1,['Egasi'],true]
+    ];
+    const notif = N.map(([l,h,on,to,owner],i) => ({ l, h, to, owner:!!owner, tbg: on ? '#2443F5' : '#E5E7EB', tx: on ? '21px' : '3px', op: on ? 1 : 0.45, div: i === N.length - 1 ? 'transparent' : '#F4F5F7' }));
+    const usage = [['Xodimlar','48 / 60 xodim','80%'],['Filiallar','2 / 3 filial','67%']].map(([l,v,p]) => ({ l, v, p }));
+    const P = [
+      ['Sinov',"0 so'm",'· 14 kun','Biznes imkoniyatlari',['Hamma imkoniyatlar','Karta kerak emas'],false],
+      ['Start',"199 000 so'm",'/ oy','20 xodim · 1 filial',['Davomat (GPS + selfi)','Vazifalar','Oylik tabel, Excel'],false],
+      ['Biznes',"449 000 so'm",'/ oy','60 xodim · 3 filial',['Yuz va qurilma tekshiruvi','Ish haqi va qoidalar',"Ruxsat so'rovlari"],true],
+      ['Pro',"899 000 so'm",'/ oy','200 xodim · 10 filial',["Biznes'dagi hammasi","O'z Telegram botingiz",'Ustuvor yordam'],false]
+    ];
+    const plans = P.map(([n,price,per,lim,feat,cur]) => ({ n, price, per, lim, feat, cur, bd: cur ? '#2443F5' : 'transparent',
+      btn: cur ? 'Joriy tarif' : n === 'Sinov' ? 'Faol' : 'Tanlash', bbg: cur ? '#EEF1FF' : '#fff', bc: cur ? '#2443F5' : n === 'Sinov' ? '#9CA3AF' : '#111827', bbd: cur ? '#EEF1FF' : '#ECEEF2' }));
+    const mt = [['Profilim','person',''],['Ishxona','storefront','Mudom bozor'],['Jamoa','group','4'],['Davomat','how_to_reg',''],['Vazifalar','task_alt',''],['Ish haqi','payments',''],['Bildirishnomalar','notifications',''],['Tarif','workspace_premium','Biznes']];
+    const mtabs = mt.map(([l,i,v],k) => ({ l, i, v, div: k === mt.length - 1 ? 'transparent' : '#F1F2F5' }));
+    return { frames, roles, members, depts, branches, perms, notif, usage, plans, pay:[{ n:'Click', c:'#0A6CF5' },{ n:'Payme', c:'#00A3A3' }], mtabs };
+  }
+}
+</script>
+</body>
+</html>
