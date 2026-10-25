@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..500&family=Inter+Tight:wght@400;500;600&family=Martian+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E9E6;color:#0B0B0D;-webkit-font-smoothing:antialiased}a{color:#0B0B0D;text-decoration:none}a:hover{color:#2443F5}</style>
+</helmet>
+<div data-screen-label="Landing stil" style="width:1440px;box-sizing:border-box;background:#fff;font-family:'Inter Tight',sans-serif;padding:80px 107px;display:flex;flex-direction:column;gap:64px">
+  <div>
+    <div style="font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">ADONE.UZ · LANDING TOKENLARI (PANELDAN ALOHIDA)</div>
+    <h1 style="margin:16px 0 0;font-family:'Fraunces',serif;font-weight:360;font-size:66px;line-height:66px;letter-spacing:-0.03em">Stil varag'i. <span style="color:#8D8D95">Tessel tizimi, adone rangi.</span></h1>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(11,11,13,.086);border-left:1px solid rgba(11,11,13,.086)">
+    <sc-for list="{{ colors }}" as="c" hint-placeholder-count="15">
+      <div style="border-right:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div style="height:64px;background:{{ c.v }};border:1px solid rgba(11,11,13,.086)"></div>
+        <div style="font-size:14px;font-weight:500">{{ c.n }}</div>
+        <div style="font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95">{{ c.v }}</div>
+        <div style="font-size:12px;color:#47474E">{{ c.u }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;border-top:1px solid rgba(11,11,13,.086)">
+    <sc-for list="{{ type }}" as="t" hint-placeholder-count="10">
+      <div style="display:grid;grid-template-columns:260px 1fr;align-items:baseline;gap:24px;padding:16px 0;border-bottom:1px solid rgba(11,11,13,.086)">
+        <span style="font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95">{{ t.spec }}</span>
+        <span style="font-family:{{ t.f }};font-size:{{ t.s }};line-height:{{ t.lh }};font-weight:{{ t.w }};letter-spacing:{{ t.ls }};text-transform:{{ t.tt }}">{{ t.ex }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px">
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div style="font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">TUGMALAR · ODDIY / BOSILGAN (HOVER)</div>
+      <div style="display:flex;gap:40px;align-items:center">
+        <span style="position:relative;display:inline-flex;height:44px"><span style="position:absolute;left:100%;top:0;width:7px;height:100%;background:#1322C4;transform-origin:0 0;transform:skewY(45deg)"></span><span style="position:absolute;top:100%;left:0;width:100%;height:7px;background:#2443F5;transform-origin:0 0;transform:skewX(45deg)"></span><span style="position:relative;height:44px;box-sizing:border-box;padding:0 18px;background:#0B0B0D;color:#fff;border:1px solid #0B0B0D;display:flex;align-items:center;font-size:15px;font-weight:500;white-space:nowrap">Bepul sinash ↗</span></span>
+        <span style="position:relative;display:inline-flex;height:44px"><span style="position:absolute;left:100%;top:0;width:7px;height:100%;background:#1322C4;transform-origin:0 0;transform:skewY(45deg)"></span><span style="position:absolute;top:100%;left:0;width:100%;height:7px;background:#2443F5;transform-origin:0 0;transform:skewX(45deg)"></span><span style="position:relative;height:44px;box-sizing:border-box;padding:0 18px;background:#0B0B0D;color:#fff;border:1px solid #0B0B0D;display:flex;align-items:center;font-size:15px;font-weight:500;white-space:nowrap;transform:translate(5px,5px)">Bepul sinash <span style="margin-left:6px;transform:translate(2px,-2px)">↗</span></span></span>
+      </div>
+      <div style="display:flex;gap:40px;align-items:center">
+        <span style="position:relative;display:inline-flex;height:44px"><span style="position:absolute;left:100%;top:0;width:7px;height:100%;background:#DFDFDB;transform-origin:0 0;transform:skewY(45deg)"></span><span style="position:absolute;top:100%;left:0;width:100%;height:7px;background:#F0F0EE;transform-origin:0 0;transform:skewX(45deg)"></span><span style="position:relative;height:44px;box-sizing:border-box;padding:0 18px;background:#fff;border:1px solid #0B0B0D;display:flex;align-items:center;font-size:15px;font-weight:500;white-space:nowrap">Demo so'rash</span></span>
+        <span style="position:relative;display:inline-flex;height:44px"><span style="position:absolute;left:100%;top:0;width:7px;height:100%;background:#1322C4;transform-origin:0 0;transform:skewY(45deg)"></span><span style="position:absolute;top:100%;left:0;width:100%;height:7px;background:#2443F5;transform-origin:0 0;transform:skewX(45deg)"></span><span style="position:relative;height:44px;box-sizing:border-box;padding:0 18px;background:#fff;border:1px solid #0B0B0D;display:flex;align-items:center;font-size:15px;font-weight:500;white-space:nowrap;transform:translate(5px,5px)">Demo so'rash</span></span>
+      </div>
+      <div style="font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95">44PX · 0 18PX · YON 7PX (O'NG SKEWY 45° #1322C4, PAST SKEWX 45° #2443F5) · HOVER: YUZ 5PX SURILADI, YON ~2PX QOLADI · 0.3S CUBIC-BEZIER(.2,.7,.1,1)</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div style="font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">CHIP · EYEBROW · TEG · MARKER</div>
+      <div style="display:flex;gap:8px"><span style="height:26px;padding:0 8px;border:1px solid rgba(11,11,13,.086);display:flex;align-items:center;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">RADIUS 100 M</span><span style="height:26px;padding:0 8px;border:1px solid rgba(11,11,13,.086);display:flex;align-items:center;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">JONLI JOYLASHUV</span></div>
+      <div style="display:flex;align-items:center;gap:10px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E"><svg width="12" height="13" viewBox="0 0 12 13"><path d="M6 .5 11.5 3.5 6 6.5 .5 3.5Z" fill="#fff" stroke="#0B0B0D"></path><path d="M.5 3.5V9.5L6 12.5V6.5ZM11.5 3.5V9.5L6 12.5V6.5Z" fill="#DFDFDB" stroke="#0B0B0D"></path></svg>TEKSHIRUV</div>
+      <div style="position:relative;height:60px;border-top:1px solid rgba(11,11,13,.086)">
+        <div style="position:absolute;top:0;bottom:-20px;left:40px;width:1px;background:rgba(11,11,13,.086)"></div>
+        <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:35px;top:-4px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+        <div style="position:absolute;left:41px;top:20px;width:8px;height:1px;background:rgba(11,11,13,.22)"></div>
+        <div style="position:absolute;top:0;right:0;display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#47474E"><span style="width:6px;height:6px;background:#2443F5"></span>02 TEKSHIRUV</div>
+        <span style="position:absolute;left:60px;top:24px;font-family:'Martian Mono',monospace;font-size:10px;color:#8D8D95">DIVIDER × RAMKA = ROMB 12×7 · TICK 8PX / 120PX</span>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 20px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em">
+        <span style="color:#8D8D95">RAMKA</span><span>1312 PX · CHIZIQLAR X=64 / X=1376</span>
+        <span style="color:#8D8D95">KONTENT</span><span>1226 PX · X=107–1333</span>
+        <span style="color:#8D8D95">USTUNLAR</span><span>X=107 EYEBROW · X=462 STATEMENT · X=618 H2 (715)</span>
+        <span style="color:#8D8D95">SEKSIYA</span><span>128–140 PX VERTIKAL PADDING</span>
+        <span style="color:#8D8D95">RADIUS</span><span>0 · FAQAT AVATAR DUMALOQ</span>
+        <span style="color:#8D8D95">MOBIL</span><span>CHIZIQLAR X=16 / X=374 · GUTTER 32</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const colors = [['ink','#0B0B0D','Sarlavha, primary, qora band'],['body','#47474E','Matn, nav, eyebrow'],['muted','#8D8D95','Sarlavha 2-qismi, mono'],['page','#FFFFFF','Sahifa'],['panel','#F5F5F3','Illyustratsiya panellari'],
+      ['on-dark','#F3F3F1','Qorada matn'],['side','#F0F0EE','Blok yoni'],['side-2','#DFDFDB','Blok yoni (soya)'],['accent','#2443F5','Yagona aksent'],['accent-side','#1322C4',"Tugma o'ng yoni"],
+      ['accent-light','#4353FF','Aksent yuqori yuz'],['accent-tint','rgba(36,67,245,0.08)','Nav hover'],['line','rgba(11,11,13,0.086)','Barcha chiziqlar'],['line-strong','rgba(11,11,13,0.22)','Ikkinchi darajali'],['line-dark','rgba(255,255,255,0.10)','Qorada chiziq']].map(([n,v,u]) => ({ n, v, u }));
+    const S = "'Fraunces',serif", T = "'Inter Tight',sans-serif", M = "'Martian Mono',monospace";
+    const type = [
+      ['H1 · FRAUNCES 72/69 · 360 · −0.035EM',S,'72px','69px',360,'-0.035em','none','Kim ishda, kim kechikdi'],
+      ['H2 · FRAUNCES 66/66 · 360 · −0.03EM',S,'66px','66px',360,'-0.03em','none',"To'rt qatlam."],
+      ['STATEMENT · 52/60 · −1.3PX',S,'52px','60px',360,'-1.3px','none','Jurnalga istalgan vaqtni yozish mumkin.'],
+      ['RAQAM / NARX · 56 · 360/400',S,'56px','56px',400,'-1.7px','none','249 000'],
+      ['H3 · 24/29 · −0.48PX',S,'24px','29px',380,'-0.48px','none','Faqat jonli kamera'],
+      ['HERO P · INTER TIGHT 19/28.5',T,'19px','28.5px',400,'0','none',"Xodim Telegram'da «Keldim» bosadi."],
+      ['BODY · 16/24',T,'16px','24px',400,'0','none',"Galereyadan rasm yuklab bo'lmaydi."],
+      ['FAQ · 18/25 · 500',T,'18px','25px',500,'-0.18px','none','GPS ishlamasa-chi?'],
+      ['TUGMA 15 · NAV 14 · 500',T,'15px','20px',500,'-0.15px','none','Bepul sinash ↗'],
+      ['LABEL · MARTIAN MONO 11 · +0.04EM',M,'11px','15.4px',400,'0.04em','uppercase','02 TEKSHIRUV · QATLAM 01 · GPS']
+    ].map(([spec,f,s,lh,w,ls,tt,ex]) => ({ spec, f, s, lh, w, ls, tt, ex }));
+    return { colors, type };
+  }
+}
+</script>
+</body>
+</html>

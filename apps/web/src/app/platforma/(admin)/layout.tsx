@@ -17,6 +17,7 @@ export default async function PlatformLayout({ children }: LayoutProps<'/platfor
             <div className="px-3 pb-1.5 text-[11px] font-bold tracking-[0.08em] text-placeholder">PLATFORMA</div>
             {/* Platforma hostida yo'llar /platforma prefiksisiz (proxy qayta yozadi) */}
             <NavLink href="/" icon="storefront">Ishxonalar</NavLink>
+            <NavLink href="/arizalar" icon="inbox">Arizalar</NavLink>
             <NavLink href="/navbat" icon="checklist">Navbat</NavLink>
           </nav>
           <UserBox name={user.name} phone={user.phone} />

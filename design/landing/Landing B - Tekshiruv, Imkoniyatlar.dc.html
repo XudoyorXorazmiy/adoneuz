@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..500&family=Inter+Tight:wght@400;500;600&family=Martian+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="iso.js"></script>
+<style>body{margin:0;background:#E9E9E6;color:#0B0B0D;-webkit-font-smoothing:antialiased}a{color:#0B0B0D;text-decoration:none}a:hover{color:#2443F5}</style>
+</helmet>
+<div data-screen-label="B — 02, 03" style="position:relative;width:1440px;background:#FFFFFF;font-family:'Inter Tight',sans-serif;overflow:hidden">
+  <div style="position:absolute;top:0;bottom:0;left:64px;width:1px;background:rgba(11,11,13,.086)"></div>
+  <div style="position:absolute;top:0;bottom:0;left:1376px;width:1px;background:rgba(11,11,13,.086)"></div>
+  <div style="position:absolute;top:0;bottom:0;left:65px;width:8px;background:repeating-linear-gradient(180deg,rgba(11,11,13,.22) 0 1px,transparent 1px 120px)"></div>
+  <div style="position:absolute;top:0;bottom:0;left:1368px;width:8px;background:repeating-linear-gradient(180deg,rgba(11,11,13,.22) 0 1px,transparent 1px 120px)"></div>
+
+  <div style="position:relative;height:1px;background:rgba(11,11,13,.086)">
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:59px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:1371px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+  </div>
+  <section id="tekshiruv" style="position:relative;padding:136px 107px 136px">
+    <div style="position:absolute;top:0;right:64px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#47474E"><span style="width:6px;height:6px;background:#2443F5"></span>02 TEKSHIRUV</div>
+    <div style="display:grid;grid-template-columns:511px 715px">
+      <div style="display:flex;align-items:center;gap:10px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E;align-self:start;padding-top:14px">
+        <svg width="12" height="13" viewBox="0 0 12 13"><path d="M6 .5 11.5 3.5 6 6.5 .5 3.5Z" fill="#fff" stroke="#0B0B0D"></path><path d="M.5 3.5V9.5L6 12.5V6.5ZM11.5 3.5V9.5L6 12.5V6.5Z" fill="#DFDFDB" stroke="#0B0B0D"></path></svg>TEKSHIRUV
+      </div>
+      <h2 style="margin:0;font-family:'Fraunces',serif;font-weight:360;font-size:66px;line-height:66px;letter-spacing:-0.03em">To'rt qatlam. <span style="color:#8D8D95">Bitta «Keldim» ortida.</span></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:553px 1fr;gap:80px;margin-top:96px">
+      <div>
+        <sc-for list="{{ layers }}" as="l" hint-placeholder-count="4">
+          <div style="border-top:1px solid rgba(11,11,13,.086);padding:36px 0 44px;opacity:{{ l.op }}">
+            <div style="font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:{{ l.lc }}">{{ l.k }}</div>
+            <h3 style="margin:16px 0 0;font-family:'Fraunces',serif;font-weight:380;font-size:24px;line-height:29px;letter-spacing:-0.48px">{{ l.h }}</h3>
+            <p style="margin:12px 0 0;font-size:16px;line-height:24px;color:#47474E;max-width:480px">{{ l.p }}</p>
+            <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap">
+              <sc-for list="{{ l.chips }}" as="c" hint-placeholder-count="3"><span style="height:26px;padding:0 8px;box-sizing:border-box;border:1px solid rgba(11,11,13,.086);display:flex;align-items:center;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E;white-space:nowrap">{{ c }}</span></sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:relative">
+        <div style="position:sticky;top:96px;border:1px solid rgba(11,11,13,.086);background:#F5F5F3;background-image:repeating-linear-gradient(30deg,rgba(11,11,13,.045) 0 1px,transparent 1px 26px),repeating-linear-gradient(150deg,rgba(11,11,13,.045) 0 1px,transparent 1px 26px);padding:28px;display:flex;flex-direction:column;align-items:center;gap:20px">
+          <div style="align-self:stretch;display:flex;justify-content:space-between;font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95"><span>QATLAMLAR · AJRATILGAN</span><span style="color:#2443F5">02 / 04 FAOL</span></div>
+          <div>{{ stackArt }}</div>
+          <div style="align-self:stretch;background:#fff;border:1px solid #0B0B0D;display:flex;align-items:center;gap:14px;padding:14px 16px">
+            <span style="width:28px;height:28px;border-radius:999px;background:#16A34A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600">✓</span>
+            <span style="font-size:16px;font-weight:500">Keldingiz 08:57</span>
+            <span style="font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">· 35 M · YUZ MOS 94%</span>
+          </div>
+          <div style="align-self:stretch;font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95">IZOH: O'NG USTUN STICKY. SKROLLDA FAOL QATLAM ALMASHADI, NOFAOL MATN 30% GACHA SO'NADI.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div style="position:relative;height:1px;background:rgba(11,11,13,.086)">
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:59px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:1371px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+  </div>
+  <section id="imkoniyatlar" style="position:relative;padding:136px 107px 136px">
+    <div style="position:absolute;top:0;right:64px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#47474E"><span style="width:6px;height:6px;background:#2443F5"></span>03 IMKONIYATLAR</div>
+    <div style="display:grid;grid-template-columns:511px 715px">
+      <div style="display:flex;align-items:center;gap:10px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E;align-self:start;padding-top:14px">
+        <svg width="12" height="13" viewBox="0 0 12 13"><path d="M6 .5 11.5 3.5 6 6.5 .5 3.5Z" fill="#fff" stroke="#0B0B0D"></path><path d="M.5 3.5V9.5L6 12.5V6.5ZM11.5 3.5V9.5L6 12.5V6.5Z" fill="#DFDFDB" stroke="#0B0B0D"></path></svg>IMKONIYATLAR
+      </div>
+      <div>
+        <h2 style="margin:0;font-family:'Fraunces',serif;font-weight:360;font-size:66px;line-height:66px;letter-spacing:-0.03em">Davomatdan ish haqigacha. <span style="color:#8D8D95">Bitta tizimda.</span></h2>
+        <p style="margin:28px 0 0;font-size:19px;line-height:28.5px;color:#47474E;max-width:600px">Telegram guruhdagi «keldim» xabarlari va qo'lda yuritiladigan jurnal o'rniga — tekshiriladigan, hisoblanadigan, Excel'ga chiqadigan tizim.</p>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,409px);margin-top:88px;border-top:1px solid rgba(11,11,13,.086);border-left:1px solid rgba(11,11,13,.086);width:1228px;margin-left:-1px">
+      <sc-for list="{{ cells }}" as="c" hint-placeholder-count="6">
+        <div style="height:489px;box-sizing:border-box;border-right:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);display:flex;flex-direction:column">
+          <div style="height:280px;background:#F5F5F3;background-image:repeating-linear-gradient(30deg,rgba(11,11,13,.045) 0 1px,transparent 1px 22px),repeating-linear-gradient(150deg,rgba(11,11,13,.045) 0 1px,transparent 1px 22px);display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(11,11,13,.086);position:relative">
+            <span style="position:absolute;top:12px;left:14px;font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95">{{ c.n }}</span>
+            {{ c.art }}
+          </div>
+          <div style="padding:28px 28px 24px;display:flex;flex-direction:column;flex:1">
+            <h3 style="margin:0;font-family:'Fraunces',serif;font-weight:380;font-size:24px;line-height:29px;letter-spacing:-0.48px">{{ c.t }}</h3>
+            <p style="margin:10px 0 0;font-size:16px;line-height:24px;color:#47474E">{{ c.p }}</p>
+            <div style="margin-top:auto;font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95">{{ c.m }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() { this.t = setInterval(() => { if (window.ISO) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const active = 1;
+    const L = [
+      ['QATLAM 01 · GPS','Filial hududida',"Joylashuv filial radiusi ichida bo'lishi shart. Xaritadan tanlangan yoki forward qilingan joylashuv qabul qilinmaydi.",['RADIUS 100 M','ANIQLIK ≤ 100 M','JONLI JOYLASHUV']],
+      ['QATLAM 02 · SELFI','Faqat jonli kamera',"Galereyadan rasm yuklab bo'lmaydi. Mini App old kamerani o'zi ochadi, botda — dumaloq video.",["GALEREYA YO'Q",'3 KADR','VIDEO_NOTE']],
+      ['QATLAM 03 · YUZ',"Xodimning o'zi","Selfi ro'yxatdan o'tishda olingan yuz namunasi bilan solishtiriladi. Bosh burilishi ham tekshiriladi.",["O'XSHASHLIK %",'BOSH BURILISHI','ROZILIK BILAN']],
+      ['QATLAM 04 · QURILMA',"O'z telefonidan","Birinchi «Keldim» telefonni bog'laydi. Boshqa telefondan kelsa — rahbarga «Shubhali».",['1 XODIM · 1 QURILMA','SHUBHALI → RAHBAR']]
+    ];
+    const layers = L.map(([k,h,p,chips],i) => ({ k, h, p, chips, op: i === active ? 1 : 0.3, lc: i === active ? '#2443F5' : '#47474E' }));
+    const I = window.ISO;
+    const cellsBase = [
+      ['01','Davomat',"Keldi, ketdi, tanaffus, tungi smena. «Ketdim» unutilsa — avtomatik yopiladi.",'ISHDA · KECHIKDI · KELMADI · RUXSATDA'],
+      ['02','Vazifalar',"Bir yoki o'nta xodimga, muddat va isbot bilan: rasm, video, joylashuv. Tasdiq yoki qaytarish, baho 1–5.",'ISBOT · MUDDAT · BAHO'],
+      ['03',"O'zi qo'shgan ishlar","Xodim qilgan ishini o'zi yozadi. Rahbar kun bo'yicha ish jurnalini ko'radi.",'ISH JURNALI · VAQT'],
+      ['04',"Ruxsat so'rovlari","Kasal, ta'til, shaxsiy ish — botda so'raladi, bir tugma bilan tasdiqlanadi.","KASAL · TA'TIL · SHAXSIY"],
+      ['05','Oylik tabel',"Har kun — rangli katak: ishlagan soat va kechikish daqiqasi. Excel'ga bir bosishda.",'EXCEL · 31 KUN'],
+      ['06','Ish haqi',"Kechikish jarimasi, qo'shimcha soat, vazifa bonusi — qoidani o'zingiz yozasiz. Oyni yopasiz — hisob o'zgarmaydi.",'JARIMA · BONUS · YOPILGAN OY']
+    ];
+    let arts = [null,null,null,null,null,null], stackArt = null;
+    if (I) {
+      const names = ['01 GPS','02 SELFI','03 YUZ','04 QURILMA'];
+      stackArt = I.svg(React, { w:420, h:470, s:24, ox:200, oy:300,
+        rings:[{ cx:3, cy:3, z:0, r:5, color:'rgba(11,11,13,.35)' }],
+        boxes:[0,1,2,3].map(i => ({ x:0, y:0, z:i*2.3, w:6, d:6, h:0.6, c: i === active ? 'accent' : 'white' })),
+        labels:[0,1,2,3].map(i => ({ x:6, y:0, z:i*2.3 + 0.3, t:names[i], dx:14, size:10, color: i === active ? '#2443F5' : '#47474E' })) });
+      const sv = (o) => I.svg(React, { w:380, h:250, ...o });
+      arts[0] = sv({ s:22, ox:110, oy:120, boxes:[0,1,2,3,4,5].flatMap(i => [
+        { x:i*1.7, y:0, z:0, w:1, d:1, h:1.6, c: i === 3 ? 'accent' : 'white' }, { x:i*1.7 + 0.2, y:0.2, z:1.6, w:0.6, d:0.6, h:0.6, c: i === 3 ? 'accent' : 'white' }]),
+        labels:[{ x:5.1, y:0, z:2.6, t:'KECHIKDI · 7 DAQ', dx:-6, dy:-8, color:'#2443F5', size:9 }] });
+      arts[1] = sv({ s:27, ox:160, oy:60, boxes:[{ x:0, y:0, z:0, w:6, d:4.5, h:0.4, c:'white' },
+        ...[0,1,2].flatMap(r => [{ x:0.6, y:0.6 + r*1.3, z:0.4, w:0.7, d:0.7, h:0.3, c: r === 0 ? 'accent' : 'gray' }, { x:1.7, y:0.75 + r*1.3, z:0.4, w:3.6, d:0.4, h:0.1, c:'gray' }])],
+        labels:[{ x:6, y:0, z:0.4, t:'ISBOT · RASM', dx:8 }] });
+      arts[2] = sv({ s:25, ox:140, oy:110, boxes:[0,1,2,3].map(i => ({ x:i*0.5, y:0, z:i*0.7, w:5, d:3, h:0.35, c: i === 3 ? 'accent' : 'white' })),
+        labels:[{ x:6.5, y:0, z:2.3, t:'1 SOAT 30 DAQ', dx:8, color:'#2443F5' }, { x:5, y:0, z:0.2, t:'10:15', dx:8 }] });
+      arts[3] = sv({ s:25, ox:185, oy:40, boxes:[{ x:0, y:0, z:0, w:5.4, d:5.4, h:0.6, c:'white' }, { x:0, y:0, z:0.6, w:5.4, d:1, h:0.6, c:'gray' },
+        ...Array.from({ length:16 }, (_, k) => ({ x:0.3 + (k % 4) * 1.25, y:1.3 + Math.floor(k / 4) * 1, z:0.6, w:0.95, d:0.75, h:0.15, c: k === 9 ? 'accent' : 'white' }))],
+        labels:[{ x:5.4, y:3, z:0.8, t:"21.10 · TA'TIL", dx:10, color:'#2443F5' }] });
+      arts[4] = sv({ s:22, ox:165, oy:40, boxes:Array.from({ length:35 }, (_, k) => { const x = k % 7, y = Math.floor(k / 7); return { x:x*1.05, y:y*1.05, z:0, w:0.85, d:0.85, h: k === 19 ? 1.1 : (x === 6 ? 0.1 : 0.3 + ((k * 7) % 4) * 0.08), c: k === 19 ? 'accent' : (x === 6 ? 'gray' : 'white') }; }),
+        labels:[{ x:7.4, y:0, z:0, t:'EXCEL ↗', dx:6 }] });
+      arts[5] = I.svg(React, { w:380, h:250, s:25, ox:160, oy:100, cyls:[
+        ...[0,1,2,3,4].map(i => ({ cx:0, cy:2, z:i*0.35, r:1, h:0.3, c:'white' })),
+        ...[0,1,2,3,4,5,6].map(i => ({ cx:2.6, cy:2, z:i*0.35, r:1, h:0.3, c: i === 6 ? 'accent' : 'white' })),
+        ...[0,1,2].map(i => ({ cx:1.3, cy:4.4, z:i*0.35, r:1, h:0.3, c:'white' }))],
+        labels:[{ x:3.6, y:1.4, z:2.6, t:'+20 000 BONUS', dx:8, color:'#2443F5' }, { x:2.3, y:5, z:0.4, t:'−10 000', dx:10 }] });
+    }
+    const cells = cellsBase.map(([n,t,p,m],i) => ({ n, t, p, m, art: arts[i] }));
+    return { layers, cells, stackArt };
+  }
+}
+</script>
+</body>
+</html>

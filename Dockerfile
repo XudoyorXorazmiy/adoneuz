@@ -9,6 +9,12 @@ FROM base AS build
 # Coolify build-time env'larni build-arg sifatida beradi; proxy (edge) ROOT_DOMAIN'ni build paytida oladi.
 ARG ROOT_DOMAIN
 ARG PUBLIC_URL
+# Landing (/sayt) statik yig'iladi — aloqa havolalari build paytida olinadi (bo'sh bo'lsa ko'rinmaydi)
+ARG PLATFORM_BOT_USERNAME
+ARG NEXT_PUBLIC_SUPPORT_TELEGRAM
+ARG NEXT_PUBLIC_SUPPORT_PHONE
+ARG NEXT_PUBLIC_INSTAGRAM
+ARG NEXT_PUBLIC_YOUTUBE
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm --filter @adone/web build
 

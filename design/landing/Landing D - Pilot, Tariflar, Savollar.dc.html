@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..500&family=Inter+Tight:wght@400;500;600&family=Martian+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E9E6;color:#0B0B0D;-webkit-font-smoothing:antialiased}a{color:#0B0B0D;text-decoration:none}a:hover{color:#2443F5}</style>
+</helmet>
+<div data-screen-label="D — 07, 08, 09" style="position:relative;width:1440px;background:#FFFFFF;font-family:'Inter Tight',sans-serif;overflow:hidden">
+  <div style="position:absolute;top:0;bottom:0;left:64px;width:1px;background:rgba(11,11,13,.086)"></div>
+  <div style="position:absolute;top:0;bottom:0;left:1376px;width:1px;background:rgba(11,11,13,.086)"></div>
+  <div style="position:absolute;top:0;bottom:0;left:65px;width:8px;background:repeating-linear-gradient(180deg,rgba(11,11,13,.22) 0 1px,transparent 1px 120px)"></div>
+  <div style="position:absolute;top:0;bottom:0;left:1368px;width:8px;background:repeating-linear-gradient(180deg,rgba(11,11,13,.22) 0 1px,transparent 1px 120px)"></div>
+
+  <div style="position:relative;height:1px;background:rgba(11,11,13,.086)">
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:59px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:1371px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+  </div>
+  <section style="position:relative;padding:136px 107px 136px">
+    <div style="position:absolute;top:0;right:64px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#47474E"><span style="width:6px;height:6px;background:#2443F5"></span>07 PILOT</div>
+    <div style="display:flex;align-items:center;gap:10px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">
+      <svg width="12" height="13" viewBox="0 0 12 13"><path d="M6 .5 11.5 3.5 6 6.5 .5 3.5Z" fill="#fff" stroke="#0B0B0D"></path><path d="M.5 3.5V9.5L6 12.5V6.5ZM11.5 3.5V9.5L6 12.5V6.5Z" fill="#DFDFDB" stroke="#0B0B0D"></path></svg>MUDOM BOZOR · PILOT
+    </div>
+    <div style="margin:40px 0 0 355px;width:872px">
+      <p style="margin:0;font-family:'Fraunces',serif;font-weight:360;font-size:48px;line-height:57px;letter-spacing:-1.2px;color:#8D8D95">«[Mudom bozor egasining iqtibosi — keyin qo'yiladi]»</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:36px">
+        <span style="width:32px;height:32px;border-radius:999px;background:#F0F0EE;border:1px solid rgba(11,11,13,.086);display:flex;align-items:center;justify-content:center;font-family:'Martian Mono',monospace;font-size:10px;color:#47474E">MB</span>
+        <div><div style="font-size:15px;font-weight:500">[Ism Familiya]</div><div style="font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95;margin-top:2px">[LAVOZIM], MUDOM BOZOR</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);margin-top:64px;border-top:1px solid rgba(11,11,13,.086)">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+          <div style="padding:28px 24px 0;border-left:1px solid {{ s.bl }}">
+            <div style="font-family:'Fraunces',serif;font-weight:360;font-size:44px;letter-spacing:-1.3px;color:#8D8D95">[—]</div>
+            <div style="font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E;margin-top:10px">{{ s.l }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <div style="position:relative;height:1px;background:rgba(11,11,13,.086)">
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:59px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:1371px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+  </div>
+  <section id="tariflar" style="position:relative;padding:136px 107px 136px">
+    <div style="position:absolute;top:0;right:64px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#47474E"><span style="width:6px;height:6px;background:#2443F5"></span>08 TARIFLAR</div>
+    <div style="display:grid;grid-template-columns:511px 715px">
+      <div style="display:flex;align-items:center;gap:10px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E;align-self:start;padding-top:14px">
+        <svg width="12" height="13" viewBox="0 0 12 13"><path d="M6 .5 11.5 3.5 6 6.5 .5 3.5Z" fill="#fff" stroke="#0B0B0D"></path><path d="M.5 3.5V9.5L6 12.5V6.5ZM11.5 3.5V9.5L6 12.5V6.5Z" fill="#DFDFDB" stroke="#0B0B0D"></path></svg>TARIFLAR
+      </div>
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <h2 style="margin:0;font-family:'Fraunces',serif;font-weight:360;font-size:66px;line-height:66px;letter-spacing:-0.03em">Xodimlar soniga qarab. <span style="color:#8D8D95">14 kun bepul.</span></h2>
+        <div style="display:flex;align-self:flex-start;border:1px solid rgba(11,11,13,.22);font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em">
+          <span style="height:32px;padding:0 14px;display:flex;align-items:center;background:#0B0B0D;color:#fff">OYLIK</span>
+          <span style="height:32px;padding:0 14px;display:flex;align-items:center;color:#47474E">YILLIK <span style="color:#2443F5;margin-left:6px">−20%</span></span>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,398px);gap:16px;margin-top:88px;align-items:start">
+      <sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+        <div style="position:relative;transform:{{ p.tf }}">
+          <sc-if value="{{ p.lift }}"><div style="position:absolute;left:100%;top:-1px;width:8px;height:calc(100% + 2px);background:#1322C4;transform-origin:0 0;transform:skewY(45deg)"></div><div style="position:absolute;top:100%;left:-1px;width:calc(100% + 2px);height:8px;background:#2443F5;transform-origin:0 0;transform:skewX(45deg)"></div></sc-if>
+          <div style="position:relative;min-height:453px;box-sizing:border-box;padding:32px;background:#fff;border:1px solid {{ p.bd }};display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:17px;font-weight:500;letter-spacing:-0.17px">{{ p.n }}</span><span style="font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#2443F5">{{ p.badge }}</span></div>
+            <div style="display:flex;align-items:baseline;gap:10px;margin-top:28px"><span style="font-family:'Fraunces',serif;font-weight:400;font-size:56px;line-height:56px;letter-spacing:-1.7px">{{ p.price }}</span><span style="font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">{{ p.unit }}</span></div>
+            <div style="font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95;margin-top:8px;height:14px">{{ p.year }}</div>
+            <div style="font-size:16px;line-height:24px;color:#47474E;margin-top:12px">{{ p.lim }}</div>
+            <div style="margin-top:24px">
+              <sc-if value="{{ p.primary }}">
+                <span style="position:relative;display:flex;height:44px;margin-right:7px">
+                  <span style="position:absolute;left:100%;top:0;width:7px;height:100%;background:#1322C4;transform-origin:0 0;transform:skewY(45deg)"></span>
+                  <span style="position:absolute;top:100%;left:0;width:100%;height:7px;background:#2443F5;transform-origin:0 0;transform:skewX(45deg)"></span>
+                  <span style="position:relative;flex:1;height:44px;box-sizing:border-box;background:#0B0B0D;color:#fff;border:1px solid #0B0B0D;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;letter-spacing:-0.15px;white-space:nowrap;transition:transform .3s cubic-bezier(.2,.7,.1,1)" style-hover="transform:translate(5px,5px)">{{ p.btn }}</span>
+                </span>
+              </sc-if>
+              <sc-if value="{{ p.secondary }}">
+                <span style="position:relative;display:flex;height:44px;margin-right:7px">
+                  <span style="position:absolute;left:100%;top:0;width:7px;height:100%;background:#DFDFDB;transform-origin:0 0;transform:skewY(45deg)"></span>
+                  <span style="position:absolute;top:100%;left:0;width:100%;height:7px;background:#F0F0EE;transform-origin:0 0;transform:skewX(45deg)"></span>
+                  <span style="position:relative;flex:1;height:44px;box-sizing:border-box;background:#fff;color:#0B0B0D;border:1px solid #0B0B0D;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;letter-spacing:-0.15px;white-space:nowrap;transition:transform .3s cubic-bezier(.2,.7,.1,1)" style-hover="transform:translate(5px,5px)">{{ p.btn }}</span>
+                </span>
+              </sc-if>
+            </div>
+            <div style="border-top:1px solid rgba(11,11,13,.086);margin-top:32px;padding-top:20px;display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ p.feat }}" as="f" hint-placeholder-count="4"><div style="display:flex;gap:10px;font-size:15px;line-height:22px;color:#47474E"><span style="color:{{ p.arrow }};font-family:'Martian Mono',monospace;font-size:12px">→</span>{{ f }}</div></sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:40px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">TO'LOV: CLICK, PAYME YOKI BANK O'TKAZMASI</div>
+    <div style="margin-top:8px;font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#8D8D95">[NARXLAR — QORALAMA, EGASI O'ZGARTIRADI] · YILLIK HOLATDA: 79 000 / 199 000</div>
+  </section>
+
+  <div style="position:relative;height:1px;background:rgba(11,11,13,.086)">
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:59px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+    <svg width="12" height="7" viewBox="0 0 12 7" style="position:absolute;left:1371px;top:-3px"><polygon points="6,.5 11.5,3.5 6,6.5 .5,3.5" fill="#fff" stroke="#0B0B0D"></polygon></svg>
+  </div>
+  <section id="savollar" style="position:relative;padding:136px 107px 136px">
+    <div style="position:absolute;top:0;right:64px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-left:1px solid rgba(11,11,13,.086);border-bottom:1px solid rgba(11,11,13,.086);font-family:'Martian Mono',monospace;font-size:10px;letter-spacing:0.6px;color:#47474E"><span style="width:6px;height:6px;background:#2443F5"></span>09 SAVOLLAR</div>
+    <div style="display:grid;grid-template-columns:511px 715px">
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <div style="display:flex;align-items:center;gap:10px;font-family:'Martian Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#47474E">
+          <svg width="12" height="13" viewBox="0 0 12 13"><path d="M6 .5 11.5 3.5 6 6.5 .5 3.5Z" fill="#fff" stroke="#0B0B0D"></path><path d="M.5 3.5V9.5L6 12.5V6.5ZM11.5 3.5V9.5L6 12.5V6.5Z" fill="#DFDFDB" stroke="#0B0B0D"></path></svg>SAVOLLAR
+        </div>
+        <h2 style="margin:0;font-family:'Fraunces',serif;font-weight:360;font-size:66px;line-height:66px;letter-spacing:-0.03em;width:440px">Boshlashdan <span style="color:#8D8D95">oldin so'rashadi.</span></h2>
+      </div>
+      <div style="border-top:1px solid rgba(11,11,13,.086)">
+        <sc-for list="{{ faq }}" as="q" hint-placeholder-count="6">
+          <div style="border-bottom:1px solid rgba(11,11,13,.086);cursor:pointer" onClick="{{ q.toggle }}">
+            <div style="min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:24px">
+              <span style="font-size:18px;line-height:25px;font-weight:500;letter-spacing:-0.18px">{{ q.q }}</span>
+              <span style="width:28px;height:28px;box-sizing:border-box;border:1px solid rgba(11,11,13,.22);display:flex;align-items:center;justify-content:center;font-family:'Martian Mono',monospace;font-size:14px;color:{{ q.ic }}">{{ q.sign }}</span>
+            </div>
+            <sc-if value="{{ q.open }}"><p style="margin:0;padding:0 60px 28px 0;font-size:16px;line-height:24px;color:#47474E">{{ q.a }}</p></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { open: 0 };
+  renderVals() {
+    const stats = ['KECHIKISHLAR','TABELGA KETADIGAN VAQT','XODIMLAR'].map((l,i) => ({ l, bl: i === 0 ? 'transparent' : 'rgba(11,11,13,.086)' }));
+    const plans = [
+      { n:'Start', badge:'', price:'99 000', unit:"SO'M / OY", year:'', lim:'15 xodimgacha · 1 filial', btn:'Bepul sinash', secondary:true, bd:'rgba(11,11,13,.086)', arrow:'#8D8D95', tf:'none',
+        feat:['Davomat (GPS + selfi)','Vazifalar va ish jurnali','Oylik tabel, Excel','Telegram bot va Mini App'] },
+      { n:'Biznes', badge:"KO'P TANLANADI", price:'249 000', unit:"SO'M / OY", year:'', lim:'50 xodimgacha · 5 filial', btn:'14 kun bepul ↗', primary:true, lift:true, bd:'#0B0B0D', arrow:'#2443F5', tf:'translateY(-8px)',
+        feat:["Start'dagi hammasi",'Yuz va qurilma tekshiruvi','Ish haqi va qoidalar',"Ruxsat so'rovlari"] },
+      { n:'Korporativ', badge:'', price:'Kelishiladi', unit:'', year:'', lim:'50+ xodim · cheksiz filial', btn:"Bog'lanish", secondary:true, bd:'rgba(11,11,13,.086)', arrow:'#8D8D95', tf:'none',
+        feat:["Biznes'dagi hammasi","O'z Telegram botingiz","Xodimlarni o'rgatish",'Ustuvor yordam'] }
+    ];
+    const F = [
+      ['Xodimlarga alohida ilova kerakmi?','Yo\'q. Hammasi Telegram ichida: bot va Mini App. Smartfon va internet yetarli.'],
+      ['GPS ishlamasa-chi?','Joylashuv aniq bo\'lmasa, adone qayta urinishni so\'raydi. Baribir bo\'lmasa — rahbar panelda qo\'lda belgilaydi va sababini yozadi.'],
+      ['Yuz ma\'lumotlari qayerda saqlanadi?','Faqat sizning ishxonangiz uchun, shifrlangan serverda. Namuna faqat xodim roziligi bilan olinadi va xodim o\'chirilsa o\'chiriladi.'],
+      ['Smenali va tungi ish bo\'lsa?','Haftalik, 2/2 kabi navbatli va erkin jadval bor. Tungi smena ertasi kunga o\'tsa ham to\'g\'ri hisoblanadi.'],
+      ['Ish haqini adone to\'laydimi?','Yo\'q. adone hisoblaydi: asosiy, jarima, bonus. Natijani Excel\'da olasiz va o\'zingiz to\'laysiz.'],
+      ['Qanday boshlayman?','Ro\'yxatdan o\'ting, filial manzilini kiriting va xodimlarga taklif havolasini yuboring. Odatda 10 daqiqa.']
+    ];
+    const faq = F.map(([q,a],i) => { const open = this.state.open === i; return { q, a, open, sign: open ? '−' : '+', ic: open ? '#2443F5' : '#0B0B0D', toggle: () => this.setState({ open: open ? -1 : i }) }; });
+    return { stats, plans, faq };
+  }
+}
+</script>
+</body>
+</html>

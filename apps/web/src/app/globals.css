@@ -80,3 +80,43 @@
 @utility delta { @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-bold whitespace-nowrap; }
 /* Kartochka sarlavhasidagi rangli kvadrat ikonka */
 @utility card-icon { @apply flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-primary-tint text-primary; }
+
+/* ── Landing (adone.uz) — design/landing/*.dc.html (Tessel uslubi): burchak 0, soyasiz, izometrik hajm. Panel tokenlaridan alohida, `l-` prefiksi. ── */
+@theme inline {
+  --font-l-serif: var(--font-fraunces), 'Fraunces', serif;
+  --font-l-sans: var(--font-inter-tight), 'Inter Tight', sans-serif;
+  --font-l-mono: var(--font-martian), 'Martian Mono', monospace;
+}
+@theme {
+  --color-l-ink: #0B0B0D;
+  --color-l-body: #47474E;
+  --color-l-muted: #8D8D95;
+  --color-l-faint: #D5D5D2;
+  --color-l-panel: #F5F5F3;
+  --color-l-on-dark: #F3F3F1;
+  --color-l-on-dark-2: #B9B9B4;
+  --color-l-side: #F0F0EE;
+  --color-l-side-2: #DFDFDB;
+  --color-l-accent: #2443F5;
+  --color-l-accent-side: #1322C4;
+  --color-l-accent-light: #4353FF;
+  --color-l-accent-tint: rgba(36, 67, 245, 0.08);
+  --color-l-line: rgba(11, 11, 13, 0.086);
+  --color-l-line-strong: rgba(11, 11, 13, 0.22);
+  --color-l-line-dark: rgba(255, 255, 255, 0.1);
+  --color-l-danger: #E5484D;
+  --animate-l-marquee: l-marquee 40s linear infinite;
+  @keyframes l-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+}
+/* Mono yorliqlar: 11px (+0.04em) va kichik 10px (+0.6px), doim katta harf */
+@utility l-label { font-family: var(--font-martian), 'Martian Mono', monospace; font-size: 11px; line-height: 15.4px; letter-spacing: 0.04em; text-transform: uppercase; }
+@utility l-label-sm { font-family: var(--font-martian), 'Martian Mono', monospace; font-size: 10px; line-height: 14px; letter-spacing: 0.6px; text-transform: uppercase; }
+/* Izometrik to'r foni (panel) — 26px va 22px qadam */
+@utility l-iso-grid { background-color: #F5F5F3; background-image: repeating-linear-gradient(30deg, rgba(11,11,13,.045) 0 1px, transparent 1px 26px), repeating-linear-gradient(150deg, rgba(11,11,13,.045) 0 1px, transparent 1px 26px); }
+@utility l-iso-grid-sm { background-color: #F5F5F3; background-image: repeating-linear-gradient(30deg, rgba(11,11,13,.045) 0 1px, transparent 1px 22px), repeating-linear-gradient(150deg, rgba(11,11,13,.045) 0 1px, transparent 1px 22px); }
+@utility l-sq-grid { background-color: #F5F5F3; background-image: linear-gradient(rgba(11,11,13,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(11,11,13,.05) 1px, transparent 1px); background-size: 24px 24px; }
+@utility l-ticks { background: repeating-linear-gradient(180deg, rgba(11,11,13,.22) 0 1px, transparent 1px 120px); }
+@utility l-fade-x { -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+@media (prefers-reduced-motion: reduce) { .animate-l-marquee { animation: none; } }
+/* Ajratkich va qora band 1440 dan keng ekranda ham chetdan chetga (ramka markazda qoladi) */
+@utility l-bleed { margin-inline: min(0px, calc((1440px - 100vw) / 2)); padding-inline: max(0px, calc((100vw - 1440px) / 2)); }

@@ -115,3 +115,21 @@ export const auditLog = pgTable(
   },
   (t) => [index('audit_tenant_idx').on(t.tenantId, t.createdAt)],
 );
+
+/** Landing arizalari (adone.uz). Ishxonaga bog'liq emas: yozish — adone_auth (faqat INSERT), o'qish/holat — platforma. RLS — 0013. */
+export const leads = pgTable(
+  'leads',
+  {
+    id: id(),
+    name: text().notNull(),
+    phone: text().notNull(), // 998XXXXXXXXX
+    staffSize: text(),
+    source: text().notNull().default('landing'),
+    utm: jsonb().$type<Record<string, string>>().notNull().default({}),
+    status: text().notNull().default('new'), // new | contacted | won | rejected
+    note: text(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index('leads_created_idx').on(t.createdAt), index('leads_phone_idx').on(t.phone)],
+);

@@ -4,10 +4,10 @@
  */
 import './load-env';
 import assert from 'node:assert/strict';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db, pool } from './client';
 import { withAuth, withPlatform, withTenant } from './scoped';
-import { attendanceEvents, auditLog, botSessions, employees, faceTemplates, jobs, leaveRequests, payRules, payrollLines, payrollPeriods, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
+import { attendanceEvents, auditLog, botSessions, employees, faceTemplates, jobs, leads, leaveRequests, payRules, payrollLines, payrollPeriods, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
 
 async function main() {
   // Kontekstsiz — hech narsa ko'rinmaydi
@@ -104,6 +104,19 @@ async function main() {
     await assert.rejects(tx.transaction((sp) => sp.delete(leaveRequests)), 'so‘rov o‘chirilmaydi');
     throw Object.assign(new Error('rollback'), { rollback: true });
   }).catch((e) => { if (!e.rollback) throw e; });
+
+  // Landing arizalari: anonim (auth) faqat yozadi, o'qiy olmaydi; tenant roli umuman kirmaydi; platforma o'qiydi (hammasi rollback)
+  await db.transaction(async (tx) => {
+    const phone = '998901234567';
+    await tx.execute(sql`select set_config('role', 'adone_auth', true)`);
+    await tx.insert(leads).values({ name: 'rls_test', phone });
+    await assert.rejects(tx.transaction((sp) => sp.select().from(leads)), 'auth arizalarni o‘qiy olmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.insert(leads).values({ name: 'x', phone, status: 'won' })), 'auth faqat «new» yozadi');
+    await tx.execute(sql`select set_config('role', 'adone_platform', true)`);
+    assert.equal((await tx.select().from(leads).where(eq(leads.name, 'rls_test'))).length, 1, 'platforma arizani ko‘radi');
+    throw Object.assign(new Error('rollback'), { rollback: true });
+  }).catch((e) => { if (!e.rollback) throw e; });
+  await assert.rejects(withTenant(mudom.id, (tx) => tx.select().from(leads)), 'ishxona arizalarni ko‘rmaydi');
 
   // Siyosatlarda OR yo'q (indekslar ishlashi uchun)
   const { rows } = await pool.query<{ name: string }>(`select policyname as name from pg_policies where schemaname = 'public' and (qual ilike '% or %' or with_check ilike '% or %')`);

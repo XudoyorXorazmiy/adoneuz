@@ -12,6 +12,7 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 > dumaloq video) / ketdi, bugun, rahbarlarga bildirishnomalar, avto-yopish, kunlik «Kelmaganlar». **2-bosqich (vazifalar) asosiy qismi tayyor (2026-10-25)** —
 > qolgani pastdagi jadvalda. **3-bosqich tayyor (2026-10-25)**: Mini App (GPS + jonli selfi), yuz servisi (InsightFace, liveness), qurilma bog'lash, ruxsat so'rovlari.
 > **4-bosqich — ish haqi tayyor (2026-10-25)**: tahrirlanadigan qoidalar, oylik vedomost, qo'lda tuzatish + audit, oyni yopish (snapshot), Excel, Mini App'da o'z ish haqi.
+> **Landing (5-bosqich qismi) tayyor (2026-10-25)**: `design/landing` (Tessel uslubi) 1:1, ariza formasi → `leads`, platformada «Arizalar».
 > Domen, Coolify va bot tokeni hali ulanmagan.
 > Pilot: **Mudom bozor** (Hazorasp, kiyim do'koni; boshqaruv-tizim va chaat'da ham mijoz).
 
@@ -154,7 +155,7 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 | 2 ✅ | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, takrorlanuvchi, eslatmalar) + **o'zi qo'shgan ishlar va ish jurnali** (§7a). Qolgan: muddatni uzaytirish so'rovi (`deadline_requests`), «Vazifa berish»da fayl/ovozli xabar ilovasi, `selfTasksNeedApproval` sozlamasi UI'si (Sozlamalar sahifasi bilan) | |
 | 3 ✅ | Yuz servisi (InsightFace) + liveness, shubhali navbat (bosh sahifa «Qaror kutmoqda»), Mini App (GPS, kamera), qurilma bog'lash, ruxsat so'rovlari. Qolgan: `leave_balances` (ta'til qoldig'i), `holidays` taqvimi | to'liq anti-fraud |
 | 4 ✅ | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, Excel, profil va Mini App'da ko'rinish. Qolgan: KPI va reyting, PDF, bayram kunlari (`holidays`) | |
-| 5 | Landing, o'zi ro'yxatdan o'tish, tariflar (xodim soniga qarab), sinov 14 kun, Click/Payme, kirill/rus, QR rejim | sotuvga chiqish |
+| 5 | ~~Landing~~ ✅ (ariza formasi bilan), o'zi ro'yxatdan o'tish, tariflar (xodim soniga qarab), sinov 14 kun, Click/Payme, kirill/rus, QR rejim | sotuvga chiqish |
 
 ## 9. Deploy (qisqa — batafsil `docs/DEPLOY.md`)
 
@@ -197,6 +198,15 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 - Baza (0010/0011): `pay_rules` (ishxonaga bitta qator, jsonb), `payroll_periods` (`YYYY-MM`, `draft|closed`, ishlatilgan qoidalar nusxasi; DELETE yo'q), `payroll_lines` (xodim × davr snapshot: asosiy, jarima, bonus, tuzatish + sabab, jami, `breakdown` — PayResult).
 - Yozish faqat `server/payroll.ts`: `recomputePeriod` (qoralama — `attendance_days` + reja kunlari `shiftFor` + shu oyda TASDIQLANGAN vazifalar; o'zi qo'shgan ishlar faqat `countSelfTasks` bilan; tuzatish saqlanadi), `adjustLine` (faqat qoralama, sabab majburiy, `audit_log`), `setPeriodStatus` (yopish — yakuniy hisob bilan; qayta ochish — faqat egasi; CAS), `savePayRules` (audit: oldin/keyin). Qoralama `/ish-haqi` ochilganda qayta hisoblanadi, yopilgan oy o'zgarmaydi.
 - Panel `/ish-haqi` (egasi, admin — `payroll`): KPI, jadval (qator ochilsa — davomat va hisob tafsiloti, «Tuzatish»), «Qoidalar» drawer, «Oyni yopish» / «Qayta ochish», Excel `/api/eksport/ish-haqi`. Xodim profilida «Ish haqi» tabi (menejerga ko'rinmaydi), «So'rovlar» tabi. Mini App profilida — faqat `showToEmployee` yoqilgan bo'lsa (`ownPay`).
+
+## 9g. Landing (adone.uz, 2026-10-25)
+
+- Dizayn `design/landing/*.dc.html` (A hero+01, B 02–03, C 04–06, D 07–09, E 10+footer, F telefon, Stil; prompt `docs/DIZAYN-PROMPT-LANDING.md`, namuna Tessel). Ko'rish: `.dc.html` React 18 UMD + `iso.js` talab qiladi.
+- Kod `app/sayt/` (layout — Fraunces / Inter Tight / Martian Mono, next/font) + `components/landing/*`: `iso.tsx` (iso.js ko'chirmasi — izometrik SVG, server/client), `art.tsx` (sahnalar), `ui.tsx` (Guides ramka chiziqlari, Divider romblar, SectionTag, Eyebrow, `Btn3d` — 3D tugma, Section), `sections.tsx` (server bo'limlar), client: header (dropdown, mobil menyu), hero-art (kursor yaqinida qatlamlar ajraladi), stack-scroll (sticky, faol qatlam), word-reveal, pricing (oylik/yillik), faq, geofence-board (bosiladigan xarita), lead-form, footer-live (soat, `/api/health` javob vaqti, kub so'z belgisi). Matn/narx/FAQ — `lib/landing/content.ts` (narxlar QORALAMA).
+- Tokenlar `globals.css` oxirida `l-` prefiksi (panel tokenlariga tegmaydi); `l-label`/`l-label-sm` mono yorliqlar — `var(--font-martian)` to'g'ridan-to'g'ri (`@theme inline` o'zgaruvchisi :root'ga chiqmaydi). Breakpoint: telefon = Landing F, `lg` kasr ustunlar, `xl` = 1440 piksel 1:1; `l-bleed` — chiziq/qora band 1440 dan keng ekranda chetdan chetga.
+- Dizayndagi izoh qatorlari («HOLAT: …», «IZOH: …») va joy tutuvchilar prod'ga chiqmaydi: pilot bo'limi `PILOT = null` bo'lsa ko'rinmaydi; huquqiy sahifalar hali yo'q (footer'da havolasiz).
+- Ariza: `leads` (platforma jadvali, 0012/0013): anonim yozish `withAuth` (adone_auth faqat INSERT, `status='new'`), o'qish/holat `withPlatform`, adone_app'ga yopiq. `submitLeadAction` — honeypot, IP bo'yicha 10 daqiqada 5 ta, UTM referer'dan, `PLATFORM_OWNER_CHAT_ID` bo'lsa Telegram xabari (`after`). Platforma `/arizalar`. «Bepul sinash» hozircha ariza formasiga (`#ariza-forma`) — o'zi ro'yxatdan o'tish kelgach `/royxat`.
+- Landing statik (○): aloqa env'lari (`NEXT_PUBLIC_SUPPORT_*`, `PLATFORM_BOT_USERNAME`) build-arg (Dockerfile).
 
 ## 9c. Mini App (`app.adone.uz/tg`)
 

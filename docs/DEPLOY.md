@@ -45,6 +45,7 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
    - `AUTH_SECRET`, `SECRET_KEY` (AES-GCM), `CRON_SECRET` — har biri `openssl rand -hex 32`
    - `MEDIA_DIR=/app/media-data`, `DB_POOL_MAX=10`
    - Bot: `PLATFORM_BOT_TOKEN` (@BotFather'dan, `@adoneuz_bot`), `PLATFORM_BOT_USERNAME=adoneuz_bot`
+   - Landing: `PLATFORM_OWNER_CHAT_ID` (yangi ariza egasiga Telegram'da), ixtiyoriy `NEXT_PUBLIC_SUPPORT_TELEGRAM`, `NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_INSTAGRAM`, `NEXT_PUBLIC_YOUTUBE` — landing statik yig'iladi, shuning uchun bular va `PLATFORM_BOT_USERNAME` ham «Build Variable» bo'lsin
    - Yuz servisi: `FACE_SERVICE_URL=http://<adone-face konteyner nomi>:8000`, `FACE_SERVICE_KEY=…` (ikkala ilovada bir xil, `openssl rand -hex 24`). Servis o'chiq bo'lsa ham keldi/ketdi ishlaydi — «shubhali» bo'lib tushadi
 6. Cron (serverda): `/etc/cron.d/adone` → har daqiqa `curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://app.adone.uz/api/cron/jobs`.
 
