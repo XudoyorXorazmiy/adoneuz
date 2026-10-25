@@ -51,7 +51,7 @@ export default async function PayrollPage({ searchParams }: PageProps<'/ish-haqi
           <select name="bolim" defaultValue={departmentId ?? ''} className="input h-8 w-[170px] text-[13px]"><option value="">Barcha bo&apos;limlar</option>{options.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
           <button className="btn-secondary btn-sm">Filtr</button>
         </form>
-        <RulesDrawer rules={rules} />
+        <RulesDrawer rules={rules} open={sp.qoidalar === '1'} />
         {period && (closed ? (
           user.role === 'owner' && (
             <FormDrawer trigger={<><Icon name="lock_open" size={17} />Qayta ochish</>} triggerClass="btn-secondary btn-sm" title="Davrni qayta ochish" subtitle={`${MONTHS[m - 1]} ${y}`} action={periodStatusAction} submitLabel="Qayta ochish">
@@ -183,7 +183,8 @@ function Line({ label, value, tone = '', bold }: { label: string; value: string;
   return <div className={`flex justify-between gap-4 ${bold ? 'mt-1 border-t border-line pt-1.5 font-extrabold' : ''}`}><span className="text-ink-2">{label}</span><span className={`tnum ${tone}`}>{value}</span></div>;
 }
 
-function RulesDrawer({ rules }: { rules: PayRules }) {
+/** `open` — Sozlamalar → Ish haqi → «Qoidalarni tahrirlash» (/ish-haqi?qoidalar=1). */
+function RulesDrawer({ rules, open }: { rules: PayRules; open?: boolean }) {
   const num = (name: string, value: number, suffix: string, hint?: string) => (
     <Field label={suffix} hint={hint}><input name={name} inputMode="numeric" defaultValue={value || ''} placeholder="0" className="input tnum" /></Field>
   );
@@ -191,7 +192,7 @@ function RulesDrawer({ rules }: { rules: PayRules }) {
     <label className="flex items-start gap-3 text-sm"><input type="checkbox" name={name} defaultChecked={on} className="mt-0.5 size-4 accent-[var(--color-primary)]" /><span><b className="font-semibold">{label}</b>{hint && <span className="block text-xs text-muted">{hint}</span>}</span></label>
   );
   return (
-    <FormDrawer trigger={<><Icon name="tune" size={17} />Qoidalar</>} triggerClass="btn-secondary btn-sm" title="Ish haqi qoidalari" subtitle="Ishxona uchun; qoralama oylar darhol qayta hisoblanadi, yopilganlarga ta'sir qilmaydi" action={savePayRulesAction}>
+    <FormDrawer defaultOpen={open} trigger={<><Icon name="tune" size={17} />Qoidalar</>} triggerClass="btn-secondary btn-sm" title="Ish haqi qoidalari" subtitle="Ishxona uchun; qoralama oylar darhol qayta hisoblanadi, yopilganlarga ta'sir qilmaydi" action={savePayRulesAction}>
       <div className="text-xs font-bold text-muted uppercase">Asosiy maosh</div>
       {check('monthlyProration', rules.monthlyProration, 'Oylikni ishlangan kunlarga mutanosib', 'Jadvaldagi ish kunlari bo\'yicha: 22 kundan 20 kun — 20/22.')}
       {check('paidLeave', rules.paidLeave, "Tasdiqlangan ruxsat kunlari to'lanadi")}

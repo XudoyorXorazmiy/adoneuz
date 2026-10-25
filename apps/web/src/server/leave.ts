@@ -78,7 +78,7 @@ export async function leaveNotify(tenantId: string, id: string, kind: string): P
   const what = `${LEAVE_KIND_ICONS[l.kind]} ${LEAVE_KIND_LABELS[l.kind]} · ${leavePeriod(l.dateFrom, l.dateTo)} (${leaveDays(l.dateFrom, l.dateTo)} kun)`;
   if (kind === 'created') {
     if (l.status !== 'pending') return { skip: 'hal qilingan' };
-    const chats = await memberChats(tenantId, r.dep);
+    const chats = await memberChats(tenantId, r.dep, null, { event: 'leave' });
     if (!chats?.length) return { skip: 'rahbarlar Telegram ulamagan' };
     for (const c of chats) {
       await send(c.chatId, `📝 <b>Ruxsat so'rovi</b> · ${esc(r.name)}\n${what}${l.reason ? `\n💬 ${esc(l.reason)}` : ''}`, {

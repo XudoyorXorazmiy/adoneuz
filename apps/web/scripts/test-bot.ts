@@ -60,13 +60,15 @@ const { leaveNotify } = await import('../src/server/leave');
 const { createTasks, runTaskTemplates } = await import('../src/server/tasks');
 const { taskNotify } = await import('../src/server/task-notify');
 const { tasks: tasksT, taskBatches, taskReports, taskEvents, taskTemplates } = await import('@adone/db');
-const { addDays, isWorkday, localDate, toRuleSafe } = await import('./test-helpers');
+const { addDays, isWorkday, localDate, toRuleSafe, zonedTime } = await import('./test-helpers');
 
 const owner = new Pool({ connectionString: process.env.DATABASE_URL_MIGRATE, max: 1 });
 const odb = drizzle(owner, { casing: 'snake_case' });
 
 const UID = 990001;
 const OTHER = 990002;
+const TEAM_TG = 990003;
+const TEAM_PHONE = '998977770001';
 let uid = 1;
 const lastText = () => String([...calls].reverse().find((c) => c.method === 'sendMessage')?.body.text ?? '');
 const msg = (extra: Record<string, unknown>, from = UID) => ({ update_id: uid++, message: { message_id: uid, date: Math.floor(Date.now() / 1000), chat: { id: from, type: 'private' }, from: { id: from, first_name: 'Sinov', username: 'sinov_bot_user' }, ...extra } });
@@ -178,6 +180,19 @@ try {
   assert.match(lastText(), /Telegram ulandi/);
   ok('rahbar Telegram bog‘landi');
 
+  // 7b. Jamoa: «Telegram orqali taklif» — parol admin'ga ko'rsatilmaydi, bot bog'lagach o'zi yuboradi; havola bir martalik
+  const { addMember } = await import('@/server/team');
+  const added = await addMember({ tenantId: T, userId: ownerUser!.id, role: 'owner' }, { name: 'Sinov Menejer', phone: TEAM_PHONE, role: 'manager', departmentIds: [], branchIds: [branch.id], method: 'telegram' });
+  assert.ok(added.ok && added.telegramUrl && added.password === null, 'telegram usulida parol qaytmaydi');
+  const loginCode = added.ok ? added.telegramUrl!.split('mem_')[1]! : '';
+  await processUpdate(msg({ text: `/start mem_${loginCode}` }, TEAM_TG));
+  assert.match(lastText(), /Vaqtinchalik parol: <code>[a-z2-9]{3}-[a-z2-9]{4}<\/code>/);
+  const [tu] = await odb.execute<{ must: boolean }>(sql`select must_change_password as must from users where phone = ${TEAM_PHONE}`).then((r) => r.rows);
+  assert.equal(tu?.must, true, 'birinchi kirishda almashtirish so‘raladi');
+  await processUpdate(msg({ text: `/start mem_${loginCode}` }, TEAM_TG));
+  assert.match(lastText(), /yaroqsiz/, 'havola ikkinchi marta ishlamaydi');
+  ok('jamoa: Telegram orqali taklif → bot kirish parolini yubordi');
+
   // 8. Avto-yopish: oxirgi ish kunida kirgan, chiqmagan
   const now = new Date();
   const tz = mudom!.timezone;
@@ -185,10 +200,12 @@ try {
   const rule = await toRuleSafe(T, empId);
   while (!isWorkday(rule, d)) d = addDays(d, -1);
   await odb.execute(sql`insert into attendance_events (tenant_id, employee_id, work_date, kind, server_at, source, check_status) values (${T}, ${empId}, ${d}, 'check_in', (${d}::date + time '09:00') at time zone ${tz}, 'bot', 'ok')`);
-  await attendanceTick(T, now);
+  // Tick kecha+bugunni ko'radi: «hozir» = o'sha ish kunining ertasi 12:00 (dushanba/bayramdan keyin ham barqaror)
+  const tickAt = zonedTime(addDays(d, 1), '12:00', tz);
+  await attendanceTick(T, tickAt);
   const ac = await withTenant(T, (tx) => tx.select().from(attendanceEvents).where(and(eq(attendanceEvents.employeeId, empId), eq(attendanceEvents.kind, 'auto_close'))));
   assert.equal(ac.length, 1, 'avto-yopildi');
-  await attendanceTick(T, now);
+  await attendanceTick(T, tickAt);
   assert.equal((await withTenant(T, (tx) => tx.select().from(attendanceEvents).where(and(eq(attendanceEvents.employeeId, empId), eq(attendanceEvents.kind, 'auto_close'))))).length, 1, 'ikki marta yopilmaydi');
   ok('avto-yopish');
 
@@ -314,8 +331,10 @@ try {
   await odb.execute(sql`delete from task_templates where ${empId} = any(assignee_employee_ids)`);
   await odb.execute(sql`delete from task_batches where id in (select batch_id from tasks where assignee_employee_id = ${empId})`);
   await odb.execute(sql`delete from employees where id = ${empId}`);
-  await odb.execute(sql`delete from tg_links where telegram_user_id in (${UID}, ${OTHER})`);
-  await odb.execute(sql`delete from bot_sessions where telegram_user_id in (${UID}, ${OTHER})`);
+  await odb.execute(sql`delete from tg_links where telegram_user_id in (${UID}, ${OTHER}, ${TEAM_TG})`);
+  await odb.execute(sql`delete from bot_sessions where telegram_user_id in (${UID}, ${OTHER}, ${TEAM_TG})`);
+  await odb.execute(sql`delete from invites where ref_id in (select id from users where phone = ${TEAM_PHONE})`);
+  await odb.execute(sql`delete from users where phone = ${TEAM_PHONE}`);
   await odb.execute(sql`delete from invites where tenant_id = ${T} and (ref_id = ${empId} or code like 'testmem%')`);
   await odb.execute(sql`delete from jobs where tenant_id = ${T} and type in ('notify_members', 'notify_employee', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify')`);
   await owner.end();

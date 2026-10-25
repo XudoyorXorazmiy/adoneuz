@@ -12,6 +12,7 @@ import {
   type MemberRole, type TaskActor, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus,
 } from '@adone/core';
 import { enqueue } from '@/server/jobs/enqueue';
+import { readSettings } from '@/server/settings';
 
 /** Kim amal qilyapti: panel foydalanuvchisi yoki botdagi xodim. */
 export type ActorRef = { userId: string; role: MemberRole; employeeId?: string | null } | { employeeId: string; userId?: undefined };
@@ -83,7 +84,10 @@ export async function createTasks(tx: Tx, input: CreateInput): Promise<{ batchId
       await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'assigned' }, { maxAttempts: 3 });
       await scheduleReminders(tx, input.tenantId, id, input.dueAt, tz);
     }
-    if (status === 'submitted') await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'submitted' }, { maxAttempts: 3 });
+    if (status === 'submitted') {
+      await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'submitted' }, { maxAttempts: 3 });
+      await scheduleReviewReminder(tx, input.tenantId, id);
+    }
   }
   return { batchId: batch!.id, taskIds };
 }
@@ -96,18 +100,28 @@ async function insertReport(tx: Tx, tenantId: string, taskId: string, r: ReportI
   });
 }
 
-/** Eslatmalar (§7): 30 daqiqada qabul qilinmasa, muddatga 1 soat qolganda, muddat o'tganda. Tungi vaqtda — ertalabga. */
+/**
+ * Eslatmalar (§7, Sozlamalar → Vazifalar): N daqiqada qabul qilinmasa, muddatga 1 soat qolganda, muddat o'tganda.
+ * Tinch vaqtda (standart 22:00–08:00) — ertalabga.
+ */
 async function scheduleReminders(tx: Tx, tenantId: string, taskId: string, dueAt: Date | null, tz: string) {
+  const { reminders: r, quietHours } = await readSettings(tx);
   const now = Date.now();
   const at = (d: Date, kind: string) => {
-    const when = outsideQuietHours(d, tz).getTime();
+    const when = outsideQuietHours(d, tz, quietHours).getTime();
     return enqueue(tx, tenantId, 'task_notify', { taskId, kind }, { delaySec: Math.max(0, Math.round((when - now) / 1000)), maxAttempts: 2, dedupeKey: `tr:${kind}:${taskId}` });
   };
-  await at(new Date(now + 30 * MINUTE), 'not_accepted');
+  if (r.notAccepted) await at(new Date(now + r.notAcceptedMin * MINUTE), 'not_accepted');
   if (dueAt) {
-    if (dueAt.getTime() - 60 * MINUTE > now + 5 * MINUTE) await at(new Date(dueAt.getTime() - 60 * MINUTE), 'due_soon');
-    await at(new Date(Math.max(dueAt.getTime() + MINUTE, now + MINUTE)), 'overdue');
+    if (r.dueSoon && dueAt.getTime() - 60 * MINUTE > now + 5 * MINUTE) await at(new Date(dueAt.getTime() - 60 * MINUTE), 'due_soon');
+    if (r.overdue) await at(new Date(Math.max(dueAt.getTime() + MINUTE, now + MINUTE)), 'overdue');
   }
+}
+
+/** Hisobot 24 soat tekshirilmasa — rahbarlarga eslatma (Sozlamalar → Vazifalar → Eslatmalar). Har topshirishda qayta. */
+async function scheduleReviewReminder(tx: Tx, tenantId: string, taskId: string) {
+  if (!(await readSettings(tx)).reminders.reviewStale) return;
+  await enqueue(tx, tenantId, 'task_notify', { taskId, kind: 'review_stale' }, { delaySec: 24 * 3600, maxAttempts: 2 });
 }
 
 export interface TaskRow {
@@ -194,6 +208,7 @@ export async function transitionTask(tx: Tx, input: {
       return { ok: true, status: 'approved' };
     }
     await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'submitted', by: input.actor.userId ?? null }, { maxAttempts: 3 });
+    await scheduleReviewReminder(tx, input.tenantId, row.task.id);
   }
   if ((input.to === 'approved' || input.to === 'revision' || input.to === 'cancelled') && row.task.assigneeEmployeeId && role === 'reviewer') {
     await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: input.to }, { maxAttempts: 3 });

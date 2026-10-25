@@ -21,7 +21,7 @@ export async function loginAction(_prev: LoginState, form: FormData): Promise<Lo
   const ip = (h.get('x-forwarded-for') ?? '').split(',')[0]?.trim() || 'local';
   if (!(await allow(`login:ip:${ip}`, 20, 600))) return { error: "Juda ko'p urinish. 10 daqiqadan keyin qayta urinib ko'ring.", phone: raw };
 
-  const res = mode === 'platform' ? await loginPlatformAdmin(phone, password) : await loginTenantUser(phone, password);
+  const res = mode === 'platform' ? await loginPlatformAdmin(phone, password) : await loginTenantUser(phone, password, { ua: h.get('user-agent'), ip });
   if (!res.ok) return { error: res.error, phone: raw };
   await setSessionCookie(res.claims);
   if (mode === 'platform') redirect('/');

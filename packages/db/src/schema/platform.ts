@@ -28,6 +28,8 @@ export const users = pgTable('users', {
   /** Parol almashtirilganda suriladi — eski sessiyalar bekor bo'ladi. */
   passwordChangedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp({ withTimezone: true }),
+  /** Vaqtinchalik parol (jamoa a'zosi qo'shildi / parol tiklandi) — panel «parolni almashtiring» deydi. */
+  mustChangePassword: boolean().notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

@@ -9,6 +9,7 @@ import { attendanceEvents, branches, dayEvents, employees, rebuildDay, tenants, 
 import { checkGeofence, effectiveEvents, facePercent, formatTime, nextAction, type FaceDecision } from '@adone/core';
 import { escHtml as esc } from '@/lib/task-text';
 import { queueNotifyMembers } from '@/server/notify';
+import { readSettings } from '@/server/settings';
 
 export type CheckAction = 'check_in' | 'check_out';
 
@@ -56,7 +57,8 @@ export async function recordCheck(tx: Tx, input: {
     return { ok: false, reason: 'outside', message: `Zonadan tashqaridasiz: ${g.distanceM} m. Filialga yaqinroq boring.`, distanceM: g.distanceM, branchName: b.name };
   }
   const reasons = [...(input.face?.reasons ?? [])];
-  if (input.device) {
+  // Qurilma bog'lash (Sozlamalar → Davomat): o'chiq bo'lsa boshqa telefon shubhali emas
+  if (input.device && (await readSettings(tx)).deviceBinding) {
     if (!e.deviceId) await tx.update(employees).set({ deviceId: input.device.id, deviceLabel: input.device.label, deviceBoundAt: new Date() }).where(eq(employees.id, e.id));
     else if (e.deviceId !== input.device.id) reasons.push('other_device');
   }
@@ -64,10 +66,10 @@ export async function recordCheck(tx: Tx, input: {
   await tx.insert(attendanceEvents).values({ ...base, kind: input.action, checkStatus, reasons, faceScore: input.face?.score ?? null, livenessScore: input.face?.liveness ?? null });
   const r = await rebuildDay(tx, { tenantId: input.tenantId, employeeId: e.id, workDate: wd.date, tz });
   if (input.action === 'check_in' && r.lateMinutes > 0) {
-    await queueNotifyMembers(tx, input.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, tz)}, Mini App).`, e.departmentId);
+    await queueNotifyMembers(tx, input.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, tz)}, Mini App).`, e.departmentId, 'late');
   }
   if (checkStatus === 'suspicious') {
-    await queueNotifyMembers(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Panel → Davomat → «Shubhali».`, e.departmentId);
+    await queueNotifyMembers(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious');
   }
   return {
     ok: true, time: formatTime(new Date(), tz), lateMinutes: input.action === 'check_in' ? r.lateMinutes : 0, workedMinutes: r.workedMinutes, distanceM: g.distanceM, branchName: b.name,

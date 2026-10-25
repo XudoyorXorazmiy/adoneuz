@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { employees, media, taskBatches, taskEvents, taskReports, tasks, tenants, users, withTenant } from '@adone/db';
-import { formatTime, isOverdue, localDate, TASK_STATUS_LABELS, type TaskPriority, type TaskProof } from '@adone/core';
+import { formatTime, isOverdue, localDate, TASK_STATUS_LABELS, type NotifyEvent, type TaskPriority, type TaskProof } from '@adone/core';
 import { dueLabel, escHtml as esc, taskCardText } from '@/lib/task-text';
 import { appOrigin, publicApiOrigin, ROOT_DOMAIN } from '@/lib/host';
 import { sendFile, send, type Keyboard } from '@/server/telegram/api';
@@ -15,7 +15,7 @@ import { memberChats, notifyEmployee } from '@/server/notify';
 import { mediaRoot } from '@/server/media';
 import type { JobOutcome } from '@/server/jobs/types';
 
-export type TaskNotifyKind = 'assigned' | 'submitted' | 'approved' | 'revision' | 'cancelled' | 'comment' | 'question' | 'not_accepted' | 'due_soon' | 'overdue';
+export type TaskNotifyKind = 'assigned' | 'submitted' | 'approved' | 'revision' | 'cancelled' | 'comment' | 'question' | 'not_accepted' | 'due_soon' | 'overdue' | 'review_stale';
 
 /** Inline tugmalar (callback_data ≤ 64 bayt: «tk:<amal>:<uuid>»). */
 export const taskButtons = {
@@ -68,8 +68,9 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
   const due = t.dueAt ? dueLabel(localDate(t.dueAt, tz), formatTime(t.dueAt, tz), today) : null;
   const title = `<b>${esc(b.title)}</b>`;
   const toEmp = (text: string, kb?: Keyboard) => (t.assigneeEmployeeId ? notifyEmployee(tenantId, t.assigneeEmployeeId, text, kb) : Promise.resolve({ skip: 'ijrochi xodim emas' }));
-  const toMembers = async (text: string, kb?: Keyboard) => {
-    const chats = await memberChats(tenantId, data.deptId, extra.by ?? null);
+  // event — Sozlamalar → Bildirishnomalar (kimga, yoqilganmi); savol hamma rahbarlarga
+  const toMembers = async (text: string, kb?: Keyboard, event?: NotifyEvent) => {
+    const chats = await memberChats(tenantId, data.deptId, extra.by ?? null, { event, creatorUserId: b.createdByUserId });
     if (!chats?.length) return { skip: 'rahbarlar Telegram ulamagan' };
     for (const c of chats) {
       await send(c.chatId, text, kb);
@@ -90,6 +91,7 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
       return toMembers(
         [`📥 <b>Hisobot keldi</b>${b.source === 'self_done' ? ' · o‘zi qo‘shgan ish' : ''}`, title, `👤 ${esc(who)}`, data.reportText ? `💬 ${esc(data.reportText)}` : '', t.spentMinutes ? `⏱ ${t.spentMinutes} daqiqa` : '', data.files.length ? `📎 ${data.files.length} ta fayl quyida` : ''].filter(Boolean).join('\n'),
         taskButtons.review(t.id),
+        'task_submitted',
       );
     case 'approved':
       return toEmp(`✅ Vazifa tasdiqlandi: ${title}${t.rating ? `\n⭐️ Baho: ${'★'.repeat(t.rating)}${'☆'.repeat(5 - t.rating)}` : ''}\n\nRahmat!`);
@@ -110,8 +112,14 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
     case 'overdue': {
       if (!isOverdue({ status: t.status, dueAt: t.dueAt }, new Date())) return { skip: 'muddati o‘tmagan yoki topshirilgan' };
       await toEmp(`⚠️ Vazifa muddati o‘tdi: ${title}${due ? ` (${due})` : ''}\nIloji boricha tezroq bajaring.`, taskButtons.work(t.id, t.status !== 'new'));
-      const chats = await memberChats(tenantId, data.deptId);
+      const chats = await memberChats(tenantId, data.deptId, null, { event: 'task_overdue', creatorUserId: b.createdByUserId });
       for (const c of chats ?? []) await send(c.chatId, `⚠️ Muddati o‘tdi: ${title}\n👤 ${esc(who)}${due ? ` · ${due}` : ''}`);
+      return {};
+    }
+    case 'review_stale': {
+      if (t.status !== 'submitted' || !t.submittedAt || Date.now() - t.submittedAt.getTime() < 23 * 3600_000) return { skip: 'tekshirilgan yoki qayta topshirilgan' };
+      const chats = await memberChats(tenantId, data.deptId, null, { event: 'task_submitted', creatorUserId: b.createdByUserId });
+      for (const c of chats ?? []) await send(c.chatId, `⏰ Hisobot 24 soatdan beri tekshirilmagan: ${title}\n👤 ${esc(who)}`, taskButtons.review(t.id));
       return {};
     }
   }

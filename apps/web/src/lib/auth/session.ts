@@ -19,6 +19,8 @@ export interface CurrentUser {
   tenantStatus: TenantStatus | null;
   tenantTimezone: string | null;
   role: MemberRole | null;
+  /** Vaqtinchalik parol — panel «parolni almashtiring» deydi. */
+  mustChangePassword: boolean;
 }
 
 export type TenantUser = CurrentUser & { tenantId: string; role: MemberRole; tenantName: string; tenantTimezone: string };
@@ -39,7 +41,7 @@ export const currentUser = cache(async (): Promise<CurrentUser | null> => {
     return withPlatform(async (tx) => {
       const [u] = await tx.select().from(users).where(eq(users.id, claims.sub)).limit(1);
       if (!u || !u.isActive || !u.isPlatformAdmin || u.passwordChangedAt.getTime() > claims.pwd + 1000) return null;
-      return { id: u.id, name: u.name, phone: u.phone, isPlatformAdmin: true, tenantId: null, tenantName: null, tenantStatus: null, tenantTimezone: null, role: null };
+      return { id: u.id, name: u.name, phone: u.phone, isPlatformAdmin: true, tenantId: null, tenantName: null, tenantStatus: null, tenantTimezone: null, role: null, mustChangePassword: false };
     });
   }
 
@@ -50,7 +52,7 @@ export const currentUser = cache(async (): Promise<CurrentUser | null> => {
       const [r] = await tx
         .select({
           id: users.id, name: users.name, phone: users.phone, isActive: users.isActive, isPlatformAdmin: users.isPlatformAdmin,
-          pwdAt: users.passwordChangedAt, role: memberships.role, memberActive: memberships.isActive,
+          pwdAt: users.passwordChangedAt, mustChange: users.mustChangePassword, role: memberships.role, memberActive: memberships.isActive,
           tenantName: tenants.name, tenantStatus: tenants.status, tz: tenants.timezone,
         })
         .from(memberships)
@@ -63,7 +65,7 @@ export const currentUser = cache(async (): Promise<CurrentUser | null> => {
       if (r.tenantStatus === 'blocked' || r.tenantStatus === 'archived') return null;
       return {
         id: r.id, name: r.name, phone: r.phone, isPlatformAdmin: r.isPlatformAdmin, tenantId, tenantName: r.tenantName,
-        tenantStatus: r.tenantStatus, tenantTimezone: r.tz, role: r.role,
+        tenantStatus: r.tenantStatus, tenantTimezone: r.tz, role: r.role, mustChangePassword: r.mustChange,
       };
     });
   }

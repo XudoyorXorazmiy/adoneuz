@@ -1,6 +1,6 @@
 import 'server-only';
 import { and, eq } from 'drizzle-orm';
-import { memberships, tenants, users, withAuth } from '@adone/db';
+import { auditLog, memberships, tenants, users, withAuth } from '@adone/db';
 import { verifyPassword } from '@adone/db/password';
 import { canUsePanel } from '@adone/core';
 import type { SessionClaims } from './tokens';
@@ -34,7 +34,7 @@ async function registerFailure(tx: Parameters<Parameters<typeof withAuth>[0]>[0]
 }
 
 /** Ishxona paneli: telefon + parol → panelga kira oladigan birinchi faol a'zolik (xodim — faqat Telegram). */
-export async function loginTenantUser(phone: string, password: string): Promise<LoginResult> {
+export async function loginTenantUser(phone: string, password: string, meta: { ua?: string | null; ip?: string | null } = {}): Promise<LoginResult> {
   return withAuth(async (tx) => {
     const [u] = await tx.select().from(users).where(eq(users.phone, phone)).limit(1);
     const chk = await checkPassword(u, password);
@@ -53,6 +53,8 @@ export async function loginTenantUser(phone: string, password: string): Promise<
     if (!m) return { ok: false, error: u!.isPlatformAdmin ? 'Super admin admin.adone.uz orqali kiradi' : "Bu raqamga ishxona biriktirilmagan" };
     if (m.status === 'blocked' || m.status === 'archived') return { ok: false, error: 'Ishxona hisobi bloklangan. Qo‘llab-quvvatlashga yozing.' };
     await tx.update(users).set({ lastLoginAt: new Date(), failedLogins: 0, lockedUntil: null }).where(eq(users.id, u!.id));
+    // Sozlamalar → Profilim → «Kirishlar»
+    await tx.insert(auditLog).values({ tenantId: m.tenantId, userId: u!.id, action: 'auth.login', entity: 'user', entityId: u!.id, meta: { ua: meta.ua?.slice(0, 300) ?? null, ip: meta.ip ?? null } });
     return { ok: true, claims: { sub: u!.id, name: u!.name, tenantId: m.tenantId, role: m.role, platform: false, pwd: u!.passwordChangedAt.getTime() } };
   });
 }

@@ -6,7 +6,9 @@ import 'server-only';
  */
 import { and, eq, isNull } from 'drizzle-orm';
 import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
-import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatTime, nextAction, normalizePhone, shiftFor } from '@adone/core';
+import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor } from '@adone/core';
+import { appOrigin } from '@/lib/host';
+import { issueTelegramLogin } from '@/server/team';
 import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
 import type { TgCallback, TgMessage, TgUpdate } from '@/server/telegram/types';
 import { saveMedia } from '@/server/media';
@@ -197,7 +199,7 @@ async function finishRegistration(msg: TgMessage, state: Extract<BotState, { ste
       autoApprove
         ? `👤 Yangi xodim ro'yxatdan o'tdi: <b>${esc(e.fullName)}</b>.`
         : `👤 <b>${esc(e.fullName)}</b> botda ro'yxatdan o'tdi — panelda tasdiqlang: Xodimlar → «Tasdiq kutmoqda».`,
-      e.departmentId,
+      e.departmentId, 'new_employee',
     );
     return { company: t.name, active: autoApprove };
   });
@@ -218,7 +220,7 @@ async function linkMember(msg: TgMessage, code: string): Promise<JobOutcome> {
   const chat = msg.chat.id;
   const inv = await withPlatform(async (tx) => {
     const [r] = await tx.select({ i: invites, name: tenants.name }).from(invites).innerJoin(tenants, eq(tenants.id, invites.tenantId)).where(eq(invites.code, code)).limit(1);
-    if (!r || r.i.kind !== 'member' || r.i.usedAt || r.i.expiresAt < new Date()) return null;
+    if (!r || (r.i.kind !== 'member' && r.i.kind !== 'member_login') || r.i.usedAt || r.i.expiresAt < new Date()) return null;
     await tx.update(invites).set({ usedAt: new Date() }).where(eq(invites.code, code));
     return r;
   });
@@ -228,6 +230,11 @@ async function linkMember(msg: TgMessage, code: string): Promise<JobOutcome> {
   }
   await linkTelegram({ tgUserId: msg.from!.id, chatId: chat, tenantId: inv.i.tenantId, kind: 'member', refId: inv.i.refId });
   await send(chat, T.memberLinked(esc(inv.name)));
+  // Jamoaga «Telegram orqali taklif» bilan qo'shilgan — panelga kirish ma'lumoti shu yerga
+  if (inv.i.kind === 'member_login') {
+    const cred = await issueTelegramLogin(inv.i.tenantId, inv.i.refId);
+    if (cred) await send(chat, T.memberCredentials(appOrigin(), formatPhone(cred.phone), cred.password));
+  }
   return {};
 }
 
@@ -370,7 +377,10 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     });
     const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
     if (r.lateMinutes > 0) {
-      await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId);
+      await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId, 'late');
+    }
+    if (verdict.status === 'suspicious') {
+      await queueNotifyMembers(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${verdict.reasons.join(', ')}). Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious');
     }
     return { already: false as const, time: formatTime(r.firstIn ?? new Date(), t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious' };
   });

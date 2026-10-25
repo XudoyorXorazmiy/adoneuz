@@ -5,6 +5,7 @@ import { UserBox } from '@/components/shell/user-box';
 import { Logo } from '@/components/ui/logo';
 import { Icon } from '@/components/ui/icon';
 import { shellInfo } from '@/server/shell';
+import Link from 'next/link';
 
 /** Menyu tartibi dizayn bo'yicha (design/panel/Sidebar.dc.html). `ready: false` — keyingi bosqich. */
 const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready: boolean; count?: 'pending' | 'review' | 'leaves' }> = [
@@ -17,7 +18,7 @@ const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready:
   { href: '/filiallar', label: 'Filiallar', area: 'branches', icon: 'location_on', ready: true },
   { href: '/hisobotlar', label: 'Hisobotlar', area: 'reports', icon: 'bar_chart', ready: false },
   { href: '/ish-haqi', label: 'Ish haqi', area: 'payroll', icon: 'payments', ready: true },
-  { href: '/sozlamalar', label: 'Sozlamalar', area: 'settings', icon: 'settings', ready: false },
+  { href: '/sozlamalar', label: 'Sozlamalar', area: 'settings', icon: 'settings', ready: true },
 ];
 
 export default async function PanelLayout({ children }: LayoutProps<'/'>) {
@@ -62,7 +63,16 @@ export default async function PanelLayout({ children }: LayoutProps<'/'>) {
             <Logo size={24} text={18} />
             <span className="truncate text-[13px] font-semibold text-muted">{user.tenantName}</span>
           </div>
-          <div className="flex flex-col gap-5 px-4 pt-5 pb-7 md:px-7">{children}</div>
+          <div className="flex flex-col gap-5 px-4 pt-5 pb-7 md:px-7">
+            {user.mustChangePassword && (
+              <Link href="/sozlamalar?tab=profil" className="-mb-1 flex items-center gap-2.5 rounded-2xl border border-warning-line bg-warning-soft px-4 py-3 text-[13px] font-semibold text-warning-text">
+                <Icon name="key" size={18} />
+                <span className="flex-1">Siz vaqtinchalik parol bilan kirdingiz — Profilim&apos;da o&apos;zingizning parolingizni o&apos;rnating.</span>
+                <Icon name="arrow_forward" size={18} />
+              </Link>
+            )}
+            {children}
+          </div>
         </main>
       </div>
     </div>

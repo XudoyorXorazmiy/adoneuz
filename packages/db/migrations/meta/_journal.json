@@ -99,6 +99,13 @@
       "when": 1792897729552,
       "tag": "0013_rls_leads",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792958351734,
+      "tag": "0014_team_settings",
+      "breakpoints": true
     }
   ]
 }

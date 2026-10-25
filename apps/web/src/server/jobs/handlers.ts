@@ -12,6 +12,7 @@ import { taskNotify, type TaskNotifyKind } from '@/server/task-notify';
 import { enrollFace } from '@/server/face';
 import { leaveNotify } from '@/server/leave';
 import { needTenant, PermanentError, str, type JobOutcome, type JobRow } from './types';
+import type { NotifyEvent } from '@adone/core';
 
 export { PermanentError, type JobRow };
 
@@ -41,7 +42,7 @@ export const HANDLERS: Record<JobType, Handler> = {
   async notify_members(job) {
     const text = str(job.payload.text);
     if (!text) throw new PermanentError('matn yo‘q');
-    return tgSafe(() => notifyMembers(needTenant(job), text, str(job.payload.departmentId)));
+    return tgSafe(() => notifyMembers(needTenant(job), text, str(job.payload.departmentId), (str(job.payload.event) || null) as NotifyEvent | null));
   },
   async notify_employee(job) {
     const text = str(job.payload.text);

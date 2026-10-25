@@ -14,7 +14,8 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 > **4-bosqich — ish haqi tayyor (2026-10-25)**: tahrirlanadigan qoidalar, oylik vedomost, qo'lda tuzatish + audit, oyni yopish (snapshot), Excel, Mini App'da o'z ish haqi.
 > **Landing (5-bosqich qismi) tayyor (2026-10-25)**: `design/landing` (Tessel uslubi) 1:1, ariza formasi → `leads`, platformada «Arizalar».
 > **Prod (2026-10-25):** `adone.uz`, `app.`, `admin.` jonli (Coolify, Let's Encrypt), baza migratsiya qilingan, yuz servisi va cron ishlayapti (`docs/DEPLOY.md`).
-> Kutilmoqda: bot tokeni (egasi Coolify env'ga o'zi kiritadi) → restart + `setup-bot`; super admin `bootstrap` (egasi raqami).
+> Bot (@adoneuz_bot, webhook IP'ga qotirilgan), super admin va pilot ishxona «Mudom bozor» (17 xodim, filial, 3 jadval) prod'da.
+> **Sozlamalar tayyor (2026-10-26)** — §9i: Profilim, Ishxona, Jamoa (admin/menejer qo'shish), Davomat, Vazifalar, Ish haqi, Bildirishnomalar, Tarif.
 > Pilot: **Mudom bozor** (Hazorasp, kiyim do'koni; boshqaruv-tizim va chaat'da ham mijoz).
 
 ## 1. Asosiy qoidalar — buni buzma
@@ -153,7 +154,7 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 |---|---|---|
 | 0 ✅ | Monorepo, Postgres + RLS rollari, kirish, tenant/a'zolik, jobs runner, sirlar, host yuzalari, super admin: ishxona yaratish, Dockerfile (Coolify deploy — domen ulangach) | `admin.adone.uz`da ishxona ochiladi |
 | 1 ✅ | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** (deploy'dan keyin) |
-| 2 ✅ | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, takrorlanuvchi, eslatmalar) + **o'zi qo'shgan ishlar va ish jurnali** (§7a). Qolgan: muddatni uzaytirish so'rovi (`deadline_requests`), «Vazifa berish»da fayl/ovozli xabar ilovasi, `selfTasksNeedApproval` sozlamasi UI'si (Sozlamalar sahifasi bilan) | |
+| 2 ✅ | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, takrorlanuvchi, eslatmalar) + **o'zi qo'shgan ishlar va ish jurnali** (§7a). Qolgan: muddatni uzaytirish so'rovi (`deadline_requests`), «Vazifa berish»da fayl/ovozli xabar ilovasi, ish turlari (`task_categories`) | |
 | 3 ✅ | Yuz servisi (InsightFace) + liveness, shubhali navbat (bosh sahifa «Qaror kutmoqda»), Mini App (GPS, kamera), qurilma bog'lash, ruxsat so'rovlari. Qolgan: `leave_balances` (ta'til qoldig'i), `holidays` taqvimi | to'liq anti-fraud |
 | 4 ✅ | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, Excel, profil va Mini App'da ko'rinish. Qolgan: KPI va reyting, PDF, bayram kunlari (`holidays`) | |
 | 5 | ~~Landing~~ ✅ (ariza formasi bilan), o'zi ro'yxatdan o'tish, tariflar (xodim soniga qarab), sinov 14 kun, Click/Payme, kirill/rus, QR rejim | sotuvga chiqish |
@@ -208,6 +209,16 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 - Dizayndagi izoh qatorlari («HOLAT: …», «IZOH: …») va joy tutuvchilar prod'ga chiqmaydi: pilot bo'limi `PILOT = null` bo'lsa ko'rinmaydi; huquqiy sahifalar hali yo'q (footer'da havolasiz).
 - Ariza: `leads` (platforma jadvali, 0012/0013): anonim yozish `withAuth` (adone_auth faqat INSERT, `status='new'`), o'qish/holat `withPlatform`, adone_app'ga yopiq. `submitLeadAction` — honeypot, IP bo'yicha 10 daqiqada 5 ta, UTM referer'dan, `PLATFORM_OWNER_CHAT_ID` bo'lsa Telegram xabari (`after`). Platforma `/arizalar`. «Bepul sinash» hozircha ariza formasiga (`#ariza-forma`) — o'zi ro'yxatdan o'tish kelgach `/royxat`.
 - Landing statik (○): aloqa env'lari (`NEXT_PUBLIC_SUPPORT_*`, `PLATFORM_BOT_USERNAME`) build-arg (Dockerfile).
+
+## 9i. Sozlamalar (2026-10-26)
+
+- Dizayn `design/panel/Sozlamalar.dc.html` (prompt `docs/DIZAYN-NEXT-PROMPTS.md`). Sahifa `/sozlamalar?tab=profil|ishxona|jamoa|davomat|vazifalar|ish-haqi|bildirishnomalar|tarif`:
+  Profilim — har panel foydalanuvchisi (menejer faqat shuni ko'radi; foydalanuvchi qutisi → Profilim); qolgani `settings` (egasi, admin); Tarif — `billing` (egasi). Telefonda — tablar ro'yxati → ichki sahifa.
+- **Model** `packages/core/src/settings.ts` `tenantSettings()` — `tenants.settings` jsonb'dan to'liq, chegaralangan sozlama (standartlar = oldingi xatti-harakat): `autoApprove`, `absentDigestAt`, `autoCloseHours` (3) / `freeAutoCloseHours` (16), `face`, `deviceBinding`, `selfTasksNeedApproval`, `reminders` (qabul qilinmasa N daq, muddatga 1 soat, muddat o'tdi, hisobot 24 soat tekshirilmadi), `quietHours` (22–08), `notifications[event] = { on, to: owner|admin|manager|creator }`. Testlar `tests/settings.test.ts`.
+- Yozish `server/settings.ts saveSettings` (bo'lim bo'yicha, audit `settings.<bo'lim>` oldin/keyin; kartochkadagi «Oxirgi o'zgarish» — `lastChanges`). Ulanganlar: `ticks.ts` (avto-yopish soati, «Kelmaganlar» yoqilgan/vaqti), `checkin.ts` (qurilma bog'lash), `tasks.ts` (eslatmalar, tinch vaqt, `review_stale`), `notify.ts memberChats(…, { event, creatorUserId })` — hodisa rollari (menejer = `departments.manager_user_id` + shu bo'limga mas'ul `memberships.department_ids`).
+- **Jamoa** `server/team.ts` (yagona yozish nuqtasi): egasi admin va menejer qo'shadi, admin — faqat menejer; egasi qatori va o'zi bu yerdan o'zgarmaydi. Yangi hisob — vaqtinchalik parol (`users.must_change_password`, panelda sariq banner) yoki «Telegram orqali taklif» (invite `member_login` → bot bog'lagach parolni o'zi yuboradi, admin ko'rmaydi). Boshqa ishxonada ham a'zo hisobning paroli tiklanmaydi/o'zgarmaydi (`onlyHere`, adone_auth). Yangi user `RETURNING`siz (id serverda) — RLS SELECT siyosati a'zolikdan oldin qatorni ko'rmaydi.
+- Profilim: parol (kamida 8, harf+raqam) o'zgarsa `password_changed_at` suriladi — boshqa qurilmalar chiqadi, joriy cookie qayta imzolanadi; «Kirishlar» — login'da `audit_log auth.login` (UA, IP). Ishxonani yopish = holat `archived` (o'chirish emas).
+- Hali yo'q: ish turlari (kategoriyalar), logotip/rasm yuklash, Click/Payme (Tarif — «tez orada», tanlash qo'llab-quvvatlash orqali).
 
 ## 9c. Mini App (`app.adone.uz/tg`)
 
