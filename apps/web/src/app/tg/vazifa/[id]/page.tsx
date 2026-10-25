@@ -11,7 +11,8 @@ import { dueText, minutesText, STATUS_PILL } from '@/components/tasks/task-card'
 const PRI = { low: 'bg-subtle text-muted', medium: 'bg-warning-tint text-warning', high: 'bg-danger-tint text-danger' } as const;
 
 export default async function TgTaskPage({ params }: PageProps<'/tg/vazifa/[id]'>) {
-  const u = (await currentTgUser())!;
+  const u = await currentTgUser();
+  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const d = await myTask(u, id);

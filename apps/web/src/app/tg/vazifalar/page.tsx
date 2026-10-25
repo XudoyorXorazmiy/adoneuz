@@ -6,7 +6,8 @@ import { TgPage } from '@/components/tg/tg-shell';
 import { TaskRow } from '@/components/tg/task-row';
 
 export default async function TgTasksPage({ searchParams }: PageProps<'/tg/vazifalar'>) {
-  const u = (await currentTgUser())!;
+  const u = await currentTgUser();
+  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
   const sp = await searchParams;
   const rows = await myTasks(u);
   const groups: Array<[string, typeof rows]> = [

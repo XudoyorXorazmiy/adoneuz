@@ -6,7 +6,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { TgPage } from '@/components/tg/tg-shell';
 
 export default async function TgProfilePage() {
-  const u = (await currentTgUser())!;
+  const u = await currentTgUser();
+  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
   const month = localDate(new Date(), u.tz).slice(0, 7);
   const [m, pay] = await Promise.all([myMonth(u, month), ownPay(u.tenantId, u.employeeId, month)]);
   const mo = MONTHS[Number(month.slice(5)) - 1];

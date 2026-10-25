@@ -1,9 +1,13 @@
 'use client';
 import { useActionState, useEffect, useId, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { unstable_rethrow } from 'next/navigation';
 import { Icon } from './icon';
 
 export type FormState = { error?: string; ok?: string } | undefined;
+
+/** Action chaqiruvi o'zi yiqildi: yangi deploy'dan keyin eski sahifadagi action ID topilmaydi yoki aloqa uzildi — yangilash tiklaydi. */
+const STALE_ERROR = 'Sahifa eskirgan yoki aloqa uzildi — sahifani yangilang va qayta yuboring.';
 
 /**
  * O'ng tomondan chiqadigan forma (dizayn: «o'ng drawer, 520px»). `action` — server action (prev, FormData) → { error } | { ok }.
@@ -29,7 +33,14 @@ export function FormDrawer({
   const [inner, setInner] = useState(defaultOpen);
   const open = openProp ?? inner;
   const setOpen = (v: boolean) => (onOpenChange ? onOpenChange(v) : setInner(v));
-  const [state, formAction, pending] = useActionState<FormState, FormData>(action, undefined);
+  const [state, formAction, pending] = useActionState<FormState, FormData>(async (prev, form) => {
+    try {
+      return await action(prev, form);
+    } catch (e) {
+      unstable_rethrow(e); // redirect / notFound — Next o'zi boshqaradi
+      return { error: STALE_ERROR };
+    }
+  }, undefined);
   const formId = useId();
   useEffect(() => {
     if (state?.ok) setOpen(false);
@@ -56,8 +67,14 @@ export function FormDrawer({
             </div>
             <form id={formId} action={formAction} className="flex flex-1 flex-col gap-[18px] overflow-y-auto px-6 py-5">
               {children}
-              {state?.error && <div className="rounded-xl bg-danger-tint px-3 py-2.5 text-[13px] font-semibold text-danger-text">{state.error}</div>}
             </form>
+            {/* Xato aylanadigan forma tagida emas, footer ustida — uzun formada ham ko'rinadi */}
+            {state?.error && (
+              <div role="alert" className="mx-6 mb-3 flex items-center gap-3 rounded-xl bg-danger-tint px-3 py-2.5 text-[13px] font-semibold text-danger-text">
+                <span className="flex-1">{state.error}</span>
+                {state.error === STALE_ERROR && <button type="button" onClick={() => window.location.reload()} className="btn-secondary h-8 shrink-0 px-3 text-xs">Yangilash</button>}
+              </div>
+            )}
             <div className="flex items-center justify-between gap-2.5 border-t border-line-soft px-6 pt-4 pb-[22px]">
               <div>{danger}</div>
               <div className="flex gap-2.5">

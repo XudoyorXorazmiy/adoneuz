@@ -8,7 +8,8 @@ import { CancelLeave, LeaveForm } from '@/components/tg/leave-form';
 const TONE = { pending: 'bg-warning-tint text-warning', approved: 'bg-success-tint text-success', rejected: 'bg-danger-tint text-danger', cancelled: 'bg-subtle text-muted' } as const;
 
 export default async function TgLeavePage() {
-  const u = (await currentTgUser())!;
+  const u = await currentTgUser();
+  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
   const list = await withTenant(u.tenantId, (tx) => myLeaves(tx, u.employeeId));
   return (
     <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col bg-page pb-6">

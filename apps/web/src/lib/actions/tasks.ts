@@ -52,7 +52,7 @@ export async function createTaskAction(_p: FormState, f: FormData): Promise<Form
   const dueDate = str(f, 'dueDate');
   if (!repeat && dueDate && !isValidDate(dueDate)) return { error: 'Sana noto‘g‘ri' };
   const dueAt = !repeat && dueDate ? zonedTime(dueDate, dueTime, user.tenantTimezone) : null;
-  if (dueAt && dueAt.getTime() < Date.now() - 60_000) return { error: 'Muddat o‘tib ketgan vaqtga qo‘yilmaydi' };
+  if (dueAt && dueAt.getTime() < Date.now() - 60_000) return { error: 'Muddat o‘tib ketgan — keyinroq vaqtni yoki ertangi kunni tanlang' };
 
   const res = await withTenant(user.tenantId, async (tx) => {
     // Formadan kelgan uuid'lar shu ishxonaning faol xodimlari va (menejer bo'lsa) o'z bo'limidan

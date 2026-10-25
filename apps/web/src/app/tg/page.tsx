@@ -10,7 +10,8 @@ import { TaskRow } from '@/components/tg/task-row';
 
 /** Mini App bosh sahifasi (dizayn: «Kelishdan oldin» / «Check-in dan keyin»). */
 export default async function TgHome() {
-  const u = (await currentTgUser())!;
+  const u = await currentTgUser();
+  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
   const [h, m] = await Promise.all([homeData(u), myMonth(u, localDate(new Date(), u.tz).slice(0, 7))]);
   const tz = u.tz;
   const first = u.name.split(' ')[0];

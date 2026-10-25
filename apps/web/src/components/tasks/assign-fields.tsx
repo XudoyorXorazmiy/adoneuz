@@ -31,12 +31,12 @@ const decode = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').repl
  * «Vazifa berish» (dizayn): Kimga (xodim chiplari + «Bo'lim: …», «Filial: …» tezkor qo'shish), sarlavha, tavsif, muddat, muhimlik,
  * hisobot talabi, bosqichlar, takrorlash va xodim Telegram'da ko'radigan xabar.
  */
-export function AssignFields({ options, from, today, preselect = [] }: { options: AssignOption[]; from: string; today: string; preselect?: string[] }) {
+export function AssignFields({ options, from, today, defaultDue = today, preselect = [] }: { options: AssignOption[]; from: string; today: string; defaultDue?: string; preselect?: string[] }) {
   const [picked, setPicked] = useState<string[]>(preselect);
   const [q, setQ] = useState('');
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [dueDate, setDueDate] = useState(today);
+  const [dueDate, setDueDate] = useState(defaultDue);
   const [dueTime, setDueTime] = useState('18:00');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [proofs, setProofs] = useState<TaskProof[]>(['button']);

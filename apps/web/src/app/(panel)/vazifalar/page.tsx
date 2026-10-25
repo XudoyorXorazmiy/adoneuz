@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatDate, isoWeekday, KANBAN_COLUMNS, KANBAN_LABELS, kanbanColumn, TASK_PRIORITIES, TASK_PRIORITY_LABELS, WEEKDAY_LONG, type KanbanColumn, type TaskPriority } from '@adone/core';
+import { addDays, formatDate, isoWeekday, KANBAN_COLUMNS, KANBAN_LABELS, kanbanColumn, TASK_PRIORITIES, TASK_PRIORITY_LABELS, WEEKDAY_LONG, zonedParts, type KanbanColumn, type TaskPriority } from '@adone/core';
 import { withTenant } from '@adone/db';
 import { requireArea } from '@/lib/auth/guard';
 import { today } from '@/server/attendance';
@@ -38,6 +38,8 @@ export default async function TasksPage({ searchParams }: PageProps<'/vazifalar'
   };
   const t = today(user);
   const tz = user.tenantTimezone;
+  // Standart muddat bugun 18:00 — kechqurun ochilsa (17:00 dan keyin) ertaga, aks holda forma o'z standarti bilan rad etiladi
+  const dueDefault = zonedParts(new Date(), tz).h >= 17 ? addDays(t, 1) : t;
   const [{ rows, counts, batches }, kpi, options, selfPending, needsApproval] = await Promise.all([
     listTasks(user, f), taskKpis(user, view), assignOptions(user), selfPendingCount(user),
     withTenant(user.tenantId, (tx) => selfTasksNeedApproval(tx)),
@@ -52,7 +54,7 @@ export default async function TasksPage({ searchParams }: PageProps<'/vazifalar'
   const assignDrawer = (open = false) => (
     <FormDrawer trigger={<><Icon name="add" />Vazifa berish</>} triggerClass="btn-primary h-11 pr-[22px] pl-[18px] text-sm" title="Vazifa berish" subtitle="Xodim Telegram orqali xabar oladi"
       action={createTaskAction} submitLabel="Yuborish" defaultOpen={open}>
-      <AssignFields options={options} from={user.name} today={t} preselect={f.assignee ? [f.assignee] : []} />
+      <AssignFields options={options} from={user.name} today={t} defaultDue={dueDefault} preselect={f.assignee ? [f.assignee] : []} />
     </FormDrawer>
   );
 

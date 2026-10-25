@@ -8,7 +8,8 @@ import { DayStatusBadge } from '@/components/attendance/badges';
 const hm = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 
 export default async function TgHistoryPage() {
-  const u = (await currentTgUser())!;
+  const u = await currentTgUser();
+  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
   const month = localDate(new Date(), u.tz).slice(0, 7);
   const m = await myMonth(u, month);
   const [y, mo] = month.split('-').map(Number) as [number, number];
