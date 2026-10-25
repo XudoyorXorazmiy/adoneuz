@@ -13,22 +13,23 @@ export function ScheduleFields({ s, today }: { s?: S; today: string }) {
       {s && <input type="hidden" name="id" value={s.id} />}
       <input type="hidden" name="kind" value={kind} />
       <Field label="Nomi"><input name="name" defaultValue={s?.name} placeholder="Asosiy smena" className="input" required /></Field>
-      <div>
-        <span className="label">Turi</span>
-        <div className="inline-flex rounded-lg border border-line-strong p-0.5">
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-semibold">Turi</span>
+        <div className="flex gap-1 rounded-full bg-subtle p-1">
           {KINDS.map(([k, l]) => (
-            <button key={k} type="button" onClick={() => setKind(k)} className={`h-8 rounded-md px-3 text-[13px] font-medium ${kind === k ? 'bg-primary text-white' : 'text-ink-2 hover:bg-subtle'}`}>{l}</button>
+            <button key={k} type="button" onClick={() => setKind(k)}
+              className={`flex-1 rounded-full py-2 text-[13px] font-semibold whitespace-nowrap transition ${kind === k ? 'bg-card text-ink shadow-[0_1px_2px_rgba(16,24,40,.08)]' : 'text-muted hover:text-ink'}`}>{l}</button>
           ))}
         </div>
       </div>
       {kind === 'weekly' && (
-        <div>
-          <span className="label">Ish kunlari</span>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-semibold">Ish kunlari</span>
           <div className="flex flex-wrap gap-1.5">
             {WEEKDAY_SHORT.map((d, i) => (
               <label key={d} className="cursor-pointer">
                 <input type="checkbox" name="weekdays" value={i + 1} defaultChecked={s ? s.weekdays.includes(i + 1) : i < 5} className="peer sr-only" />
-                <span className="flex size-10 items-center justify-center rounded-lg border border-line-strong text-[13px] font-medium peer-checked:border-primary peer-checked:bg-primary-tint peer-checked:text-primary">{d}</span>
+                <span className="flex h-12 w-11 items-center justify-center rounded-full border border-line bg-card text-[13px] font-semibold text-ink-2 transition peer-checked:border-navy peer-checked:bg-navy peer-checked:text-white">{d}</span>
               </label>
             ))}
           </div>
@@ -53,7 +54,7 @@ export function ScheduleFields({ s, today }: { s?: S; today: string }) {
           </div>
         </>
       ) : (
-        <p className="m-0 rounded-lg bg-subtle px-3 py-2 text-[13px] text-muted">Erkin grafikda smena vaqti yo&apos;q: kechikish hisoblanmaydi, faqat ishlagan vaqt yoziladi.</p>
+        <p className="m-0 rounded-xl bg-page px-3.5 py-3 text-[13px] text-muted">Erkin grafikda smena vaqti yo&apos;q: kechikish hisoblanmaydi, faqat ishlagan vaqt yoziladi.</p>
       )}
     </>
   );

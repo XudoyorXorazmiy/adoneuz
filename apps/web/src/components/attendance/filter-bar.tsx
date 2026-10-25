@@ -8,9 +8,10 @@ type Opt = { id: string; name: string };
 /**
  * Davomat filtrlari (dizayn): sana pill'i, filial, bo'lim, «Ism yoki telefon» qidiruvi. URL parametrlari:
  * `sana`, `filial`, `bolim`, `q` — sahifa server tomonda filtrlaydi; tanlov o'zgarsa darhol o'tadi (1-sahifaga).
+ * `date` berilmasa sana pill'i chiqmaydi (Xodimlar kabi sahifalar).
  */
-export function FilterBar({ base, params, date, today, dateLabel, branches, departments }: {
-  base: string; params: Record<string, string | undefined>; date: string; today: string; dateLabel: string; branches: Opt[]; departments: Opt[];
+export function FilterBar({ base, params, date, today, dateLabel, branches, departments, placeholder = 'Ism yoki telefon…' }: {
+  base: string; params: Record<string, string | undefined>; date?: string; today?: string; dateLabel?: string; branches: Opt[]; departments: Opt[]; placeholder?: string;
 }) {
   const router = useRouter();
   const dateRef = useRef<HTMLInputElement>(null);
@@ -24,7 +25,7 @@ export function FilterBar({ base, params, date, today, dateLabel, branches, depa
   const pill = 'relative flex h-10 items-center gap-2 rounded-full border border-line bg-card pr-3 pl-3.5 text-[13px] font-semibold whitespace-nowrap';
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      <label className={`${pill} cursor-pointer pr-1.5`}>
+      {date && <label className={`${pill} cursor-pointer pr-1.5`}>
         <Icon name="calendar_today" size={18} />
         {dateLabel}
         <span className="flex size-7 items-center justify-center rounded-full bg-subtle"><Icon name="expand_more" size={18} /></span>
@@ -32,7 +33,7 @@ export function FilterBar({ base, params, date, today, dateLabel, branches, depa
           onClick={() => dateRef.current?.showPicker?.()}
           onChange={(e) => e.target.value && go({ sana: e.target.value === today ? undefined : e.target.value })}
           className="absolute inset-0 cursor-pointer opacity-0" />
-      </label>
+      </label>}
       {branches.length > 1 && (
         <label className={pill}>
           <Icon name="location_on" size={18} className="text-primary" />
@@ -57,7 +58,7 @@ export function FilterBar({ base, params, date, today, dateLabel, branches, depa
         <label className="flex h-10 w-[260px] items-center gap-2 rounded-xl border border-line px-3 text-[13px] focus-within:border-primary max-sm:w-full">
           <Icon name="search" size={18} className="text-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => (q.trim() || undefined) !== params.q && go({ q: q.trim() || undefined })}
-            placeholder="Ism yoki telefon…" className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-placeholder" />
+            placeholder={placeholder} className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-placeholder" />
           {params.q && <button type="button" onClick={() => { setQ(''); go({ q: undefined }); }} title="Tozalash" className="text-muted"><Icon name="close" size={16} /></button>}
         </label>
       </form>

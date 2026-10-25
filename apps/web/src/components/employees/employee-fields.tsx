@@ -1,5 +1,6 @@
 import { formatPhone } from '@adone/core';
 import { Field } from '@/components/ui/form-drawer';
+import { Segmented } from '@/components/settings/ui';
 
 type Opt = { id: string; name: string };
 export type EmployeeFormValue = {
@@ -30,11 +31,10 @@ export function EmployeeFields({ e, options }: { e?: EmployeeFormValue; options:
       </div>
       <Field label="Ish jadvali" hint="Jadvalsiz xodimga kechikish hisoblanmaydi.">{select('scheduleId', e?.scheduleId, options.schedules, '— jadvalsiz —')}</Field>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Ish haqi turi">
-          <select name="payType" defaultValue={e?.payType ?? 'monthly'} className="input">
-            <option value="monthly">Oylik</option><option value="daily">Kunbay</option><option value="hourly">Soatbay</option>
-          </select>
-        </Field>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-semibold">Ish haqi turi</span>
+          <Segmented name="payType" full defaultValue={e?.payType ?? 'monthly'} options={[{ value: 'monthly', label: 'Oylik' }, { value: 'daily', label: 'Kunbay' }, { value: 'hourly', label: 'Soatbay' }]} />
+        </div>
         <Field label="Stavka (so'm)"><input name="payRate" defaultValue={e?.payRate || ''} placeholder="4 500 000" inputMode="numeric" className="input tnum" /></Field>
       </div>
     </>

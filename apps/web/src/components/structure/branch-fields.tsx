@@ -1,4 +1,5 @@
 import { Field } from '@/components/ui/form-drawer';
+import { Slider } from '@/components/settings/client';
 
 export function BranchFields({ b }: { b?: { id: string; name: string; address: string | null; lat: number; lng: number; radiusM: number } }) {
   return (
@@ -12,9 +13,11 @@ export function BranchFields({ b }: { b?: { id: string; name: string; address: s
       >
         <input name="coords" defaultValue={b ? `${b.lat}, ${b.lng}` : ''} placeholder="https://maps.app.goo.gl/… yoki 41.3194, 61.0742" className="input tnum" required />
       </Field>
-      <Field label="Radius (metr)" hint="Xodim shu doira ichida «Keldim» qila oladi. Odatda 50–150 m.">
-        <input name="radiusM" type="number" min={20} max={2000} defaultValue={b?.radiusM ?? 100} className="input tnum" required />
-      </Field>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-semibold">Radius (metr)</span>
+        <Slider name="radiusM" min={20} max={2000} step={1} defaultValue={b?.radiusM ?? 100} unit=" m" lo="20 m" hi="2 km" />
+        <span className="block text-xs text-muted">Xodim shu doira ichida «Keldim» qila oladi. Odatda 50–150 m.</span>
+      </div>
     </>
   );
 }

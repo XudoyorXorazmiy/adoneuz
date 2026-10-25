@@ -120,3 +120,7 @@
 @media (prefers-reduced-motion: reduce) { .animate-l-marquee { animation: none; } }
 /* Ajratkich va qora band 1440 dan keng ekranda ham chetdan chetga (ramka markazda qoladi) */
 @utility l-bleed { margin-inline: min(0px, calc((1440px - 100vw) / 2)); padding-inline: max(0px, calc((100vw - 1440px) / 2)); }
+
+/* Filial xaritasi (components/structure/branch-map.tsx): och kulrang tile'lar, ixcham atributsiya */
+.adone-map .leaflet-tile-pane { filter: grayscale(1) brightness(1.06) contrast(0.92); }
+.adone-map .leaflet-control-attribution { font-size: 10px; background: rgba(255, 255, 255, 0.7); }
