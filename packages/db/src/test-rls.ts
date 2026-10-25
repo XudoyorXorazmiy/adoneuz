@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { db, pool } from './client';
 import { withAuth, withPlatform, withTenant } from './scoped';
-import { attendanceEvents, auditLog, botSessions, employees, jobs, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
+import { attendanceEvents, auditLog, botSessions, employees, faceTemplates, jobs, leaveRequests, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
 
 async function main() {
   // Kontekstsiz — hech narsa ko'rinmaydi
@@ -84,7 +84,15 @@ async function main() {
   }).catch((e) => { if (!e.rollback) throw e; });
   await withTenant(other.id, async (tx) => {
     assert.equal((await tx.select().from(tasks)).length, 0, 'Test do‘konda Mudom vazifalari ko‘rinmaydi');
+    assert.equal((await tx.select().from(leaveRequests)).length, 0, 'begona ruxsat so‘rovlari ko‘rinmaydi');
+    assert.equal((await tx.select().from(faceTemplates)).length, 0, 'begona yuz namunalari ko‘rinmaydi');
   });
+  await withTenant(mudom.id, async (tx) => {
+    const emp = (await tx.select().from(employees).limit(1))[0]!;
+    await tx.insert(leaveRequests).values({ tenantId: mudom.id, employeeId: emp.id, kind: 'sick', dateFrom: '2026-10-01', dateTo: '2026-10-01' });
+    await assert.rejects(tx.transaction((sp) => sp.delete(leaveRequests)), 'so‘rov o‘chirilmaydi');
+    throw Object.assign(new Error('rollback'), { rollback: true });
+  }).catch((e) => { if (!e.rollback) throw e; });
 
   // Siyosatlarda OR yo'q (indekslar ishlashi uchun)
   const { rows } = await pool.query<{ name: string }>(`select policyname as name from pg_policies where schemaname = 'public' and (qual ilike '% or %' or with_check ilike '% or %')`);

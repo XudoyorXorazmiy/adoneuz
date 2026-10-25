@@ -10,7 +10,7 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 > jadvallar (haftalik / navbatli / erkin, tungi smena), bo'limlar, xodimlar + taklif havolasi, kunlik davomat (isbot, tuzatish),
 > oylik tabel + Excel, jonli bosh sahifa. Bot: ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), keldi (jonli lokatsiya + geofence +
 > dumaloq video) / ketdi, bugun, rahbarlarga bildirishnomalar, avto-yopish, kunlik «Kelmaganlar». **2-bosqich (vazifalar) asosiy qismi tayyor (2026-10-25)** —
-> qolgani pastdagi jadvalda. **Mini App (3-bosqichning bir qismi) tayyor (2026-10-25)**: GPS + jonli selfi bilan keldi/ketdi, tanaffus, vazifa hisoboti, ish qo'shish.
+> qolgani pastdagi jadvalda. **3-bosqich tayyor (2026-10-25)**: Mini App (GPS + jonli selfi), yuz servisi (InsightFace, liveness), qurilma bog'lash, ruxsat so'rovlari.
 > Domen, Coolify va bot tokeni hali ulanmagan.
 > Pilot: **Mudom bozor** (Hazorasp, kiyim do'koni; boshqaruv-tizim va chaat'da ham mijoz).
 
@@ -150,7 +150,7 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 | 0 ✅ | Monorepo, Postgres + RLS rollari, kirish, tenant/a'zolik, jobs runner, sirlar, host yuzalari, super admin: ishxona yaratish, Dockerfile (Coolify deploy — domen ulangach) | `admin.adone.uz`da ishxona ochiladi |
 | 1 ✅ | Filial (xarita, radius), bo'lim, xodim + taklif havolasi, bot ro'yxatdan o'tish (kontakt, rozilik, yuz namunasi), jadval shablonlari, keldi/ketdi (live location + video_note, geofence), kechikish/kelmaganlar xabari, oylik tabel + Excel | **Mudom pilot** (deploy'dan keyin) |
 | 2 ✅ | Vazifalar (bot + panel, ko'p ijrochi, isbot turlari, tasdiq/qaytarish/baho, izohlar, takrorlanuvchi, eslatmalar) + **o'zi qo'shgan ishlar va ish jurnali** (§7a). Qolgan: muddatni uzaytirish so'rovi (`deadline_requests`), «Vazifa berish»da fayl/ovozli xabar ilovasi, `selfTasksNeedApproval` sozlamasi UI'si (Sozlamalar sahifasi bilan) | |
-| 3 | ~~Yuz servisi (InsightFace) + liveness~~ ✅, ~~shubhali navbat~~ ✅ (bosh sahifa «Qaror kutmoqda»), ~~Mini App (GPS, kamera)~~ ✅, ~~qurilma bog'lash~~ ✅, ruxsat so'rovlari | to'liq anti-fraud |
+| 3 ✅ | Yuz servisi (InsightFace) + liveness, shubhali navbat (bosh sahifa «Qaror kutmoqda»), Mini App (GPS, kamera), qurilma bog'lash, ruxsat so'rovlari. Qolgan: `leave_balances` (ta'til qoldig'i), `holidays` taqvimi | to'liq anti-fraud |
 | 4 | Ish haqi qoidalari (tahrirlanadi), davr yopish, qo'lda tuzatish + audit, KPI va reyting, Excel/PDF | |
 | 5 | Landing, o'zi ro'yxatdan o'tish, tariflar (xodim soniga qarab), sinov 14 kun, Click/Payme, kirill/rus, QR rejim | sotuvga chiqish |
 
@@ -181,6 +181,13 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 - **Check-in:** bot — dumaloq video (liveness talab yo'q, video o'zi jonli); Mini App — 3 kadr (to'g'ri / chapga / o'ngga, avtomatik) → liveness talab. Servis chaqiruvi TRANZAKSIYADAN TASHQARIDA (25 s timeout); yo'q bo'lsa `face_unavailable`. `attendance_events.face_score` (0..1), `liveness_score` (gradus).
 - **Qurilma:** Mini App localStorage `adone_device` (uuid) — birinchi Keldim bog'laydi (`employees.device_id/label/bound_at`), boshqasidan — `other_device` (shubhali). Panel profil «Qurilma» → «Uzish».
 - **Biometrika o'chirish:** xodim `disabled` → `deleteBiometrics` (vektorlar + face_sample fayllari) va qurilma.
+
+## 9e. Ruxsat so'rovlari (3-bosqich)
+
+- `leave_requests` (kind `sick|vacation|personal|remote|other`, davr, sabab, holat `pending|approved|rejected|cancelled`, kim/qachon hal qildi; DELETE yo'q, RLS 0009). Core `leave.ts` (`validLeaveRange` — ≤60 kun, 30 kundan eski emas; `canDecideLeave`).
+- Yozish faqat `server/leave.ts`: `createLeave` (ustma-ust pending/approved — rad), `decideLeave` (CAS, menejer — o'z bo'limi, xodim — o'zinikini bekor qiladi; tasdiqlansa o'tgan/bugungi kunlar `rebuildDay`), `leave_notify` ishi (rahbarlarga `lv:ok/no` tugmalari, xodimga qaror).
+- Tasdiqlangan ruxsat kuni — `computeDay({ onLeave })` → «Ruxsatda» (kelmagan emas): `rebuildDay` (`onLeave` db helper), kunlik davomat (`leavesOn`), «Kelmaganlar» xabari, profil, Mini App, bot «Bugun».
+- Bot: «📝 So'rov» / `/sorov` → tur → «Bugun / Ertaga» yoki `25.10–28.10` → sabab. Mini App: `/tg/sorov` (Tarix'dan). Panel: `/sorovlar` (Kutilmoqda / Tasdiqlangan / Rad etilgan; rad etishda sabab), menyuda kutilayotganlar soni.
 
 ## 9c. Mini App (`app.adone.uz/tg`)
 

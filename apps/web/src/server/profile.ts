@@ -1,7 +1,7 @@
 import 'server-only';
 /** Xodim profili (panel): asosiy ma'lumot, oylik tabel (attendance_days + bugun jonli), yuz namunalari. */
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
-import { attendanceDays, branches, consents, dayEvents, departments, employees, faceTemplates, media, schedules, toRule, withTenant } from '@adone/db';
+import { attendanceDays, branches, consents, dayEvents, onLeave, departments, employees, faceTemplates, media, schedules, toRule, withTenant } from '@adone/db';
 import { computeDay, localDate, monthDays, shiftFor, type DayResult, type DayStatus, type Shift } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope } from './scope';
@@ -45,7 +45,7 @@ export async function employeeProfile(user: TenantUser, id: string, month: strin
     let live: DayResult | null = null;
     if (dates.includes(today)) {
       const evs = await dayEvents(tx, id, today);
-      if (evs.length) live = computeDay({ events: evs, shift: rule ? shiftFor(rule, today, tz) : null, now: new Date() });
+      if (evs.length) live = computeDay({ events: evs, shift: rule ? shiftFor(rule, today, tz) : null, now: new Date(), onLeave: await onLeave(tx, id, today) });
     }
     const days: ProfileDay[] = dates.map((date) => {
       const shift = rule ? shiftFor(rule, date, tz) : null;

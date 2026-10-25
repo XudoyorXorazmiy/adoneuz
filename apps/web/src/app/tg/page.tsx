@@ -35,7 +35,7 @@ export default async function TgHome() {
             <p className="m-0 rounded-2xl bg-warning-tint p-4 text-sm font-semibold text-warning-text">Hisobingiz hali tasdiqlanmagan. Rahbaringiz tasdiqlagach «Keldim» ishlaydi.</p>
           ) : (
             <PresenceCard state={state} since={h.day.firstIn ? formatTime(h.day.firstIn, tz) : null} worked={h.day.workedMinutes} renderedAt={Date.now()}
-              shiftStart={h.shift?.start.getTime() ?? null} shiftEnd={h.shift?.end.getTime() ?? null} onBreak={h.onBreak} restDay={!h.shift && h.hasSchedule}
+              shiftStart={h.shift?.start.getTime() ?? null} shiftEnd={h.shift?.end.getTime() ?? null} onBreak={h.onBreak} restDay={!h.shift && h.hasSchedule} leaveToday={h.onLeave}
               doneText={`Bugun ishladingiz: ${formatMinutes(h.day.workedMinutes)}${h.day.lastOut ? ` · ketdingiz ${formatTime(h.day.lastOut, tz)}` : ''}`} />
           )}
         </section>

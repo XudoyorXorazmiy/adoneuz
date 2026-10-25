@@ -13,7 +13,7 @@ const dur = (m: number) => `${Math.floor(m / 60)} soat ${m % 60} daqiqa`;
  * smena tugashigacha qolgan vaqt, «Tanaffus» va «Ketdim».
  */
 export function PresenceCard(p: {
-  state: 'out' | 'in' | 'done'; since: string | null; worked: number; renderedAt: number; shiftStart: number | null; shiftEnd: number | null; onBreak: boolean; restDay: boolean; doneText?: string;
+  state: 'out' | 'in' | 'done'; since: string | null; worked: number; renderedAt: number; shiftStart: number | null; shiftEnd: number | null; onBreak: boolean; restDay: boolean; leaveToday?: boolean; doneText?: string;
 }) {
   const [now, setNow] = useState(p.renderedAt);
   const [pending, start] = useTransition();
@@ -28,7 +28,7 @@ export function PresenceCard(p: {
       <div className="flex flex-col items-center gap-4 pt-2 pb-1">
         <span className="flex items-center gap-1.5 text-sm font-semibold text-muted">
           <span className="size-1.5 rounded-full bg-placeholder" />
-          {p.state === 'done' ? p.doneText : p.restDay ? 'Bugun dam olish kuningiz' : 'Hali kelmadingiz'}
+          {p.state === 'done' ? p.doneText : p.leaveToday ? 'Bugun ruxsatdasiz' : p.restDay ? 'Bugun dam olish kuningiz' : 'Hali kelmadingiz'}
         </span>
         <Link href="/tg/keldim" onClick={() => haptic('success')}
           className="flex size-[176px] items-center justify-center rounded-full bg-primary/10 transition active:scale-95">

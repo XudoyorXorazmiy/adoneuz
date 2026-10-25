@@ -55,7 +55,8 @@ const { createInvite } = await import('../src/server/employees');
 const { processUpdate } = await import('../src/server/bot');
 const { attendanceTick } = await import('../src/server/ticks');
 const { enrollFace, deleteBiometrics } = await import('../src/server/face');
-const { faceTemplates } = await import('@adone/db');
+const { faceTemplates, leaveRequests } = await import('@adone/db');
+const { leaveNotify } = await import('../src/server/leave');
 const { createTasks, runTaskTemplates } = await import('../src/server/tasks');
 const { taskNotify } = await import('../src/server/task-notify');
 const { tasks: tasksT, taskBatches, taskReports, taskEvents, taskTemplates } = await import('@adone/db');
@@ -279,6 +280,29 @@ try {
   assert.ok(made1 >= 1 && made2 === 0, 'takroriy vazifa kuniga bir marta');
   ok('takrorlanuvchi vazifa');
 
+  // 12a. Ruxsat so'rovi: «📝 So'rov» → kasal → ertaga → sabab → rahbar Telegram'dan tasdiqlaydi; takror so'rov — rad
+  await processUpdate(msg({ text: "📝 So'rov" }));
+  assert.match(lastText(), /Ruxsat so'rash/);
+  await cb('lv:k:sick');
+  await cb('lv:d:1');
+  await processUpdate(msg({ text: 'Isitma' }));
+  assert.match(lastText(), /So'rov yuborildi/);
+  const [lv] = await withTenant(T, (tx) => tx.select().from(leaveRequests).where(eq(leaveRequests.employeeId, empId)));
+  assert.ok(lv && lv.status === 'pending' && lv.kind === 'sick' && lv.reason === 'Isitma');
+  calls.length = 0;
+  await leaveNotify(T, lv!.id, 'created');
+  assert.ok(calls.some((c) => c.body.chat_id === OTHER && JSON.stringify(c.body.reply_markup).includes(`lv:ok:${lv!.id}`)), 'rahbarga tugmali xabar');
+  await cb(`lv:ok:${lv!.id}`, 990003);
+  assert.equal((await withTenant(T, (tx) => tx.select().from(leaveRequests).where(eq(leaveRequests.id, lv!.id))))[0]!.status, 'pending', 'begona tasdiqlay olmaydi');
+  await cb(`lv:ok:${lv!.id}`, OTHER);
+  assert.equal((await withTenant(T, (tx) => tx.select().from(leaveRequests).where(eq(leaveRequests.id, lv!.id))))[0]!.status, 'approved');
+  await processUpdate(msg({ text: "📝 So'rov" }));
+  await cb('lv:k:personal');
+  await cb('lv:d:1');
+  await processUpdate(msg({ text: '-' }));
+  assert.match(lastText(), /allaqachon bor/, 'ustma-ust so‘rov rad');
+  ok("ruxsat so'rovi: bot → rahbar tasdig'i, takror rad");
+
   // 12. Xodim o'chirilsa biometrika o'chadi (§1.4)
   await withTenant(T, (tx) => deleteBiometrics(tx, empId));
   assert.equal((await withTenant(T, (tx) => tx.select().from(faceTemplates).where(eq(faceTemplates.employeeId, empId)))).length, 0);
@@ -293,7 +317,7 @@ try {
   await odb.execute(sql`delete from tg_links where telegram_user_id in (${UID}, ${OTHER})`);
   await odb.execute(sql`delete from bot_sessions where telegram_user_id in (${UID}, ${OTHER})`);
   await odb.execute(sql`delete from invites where tenant_id = ${T} and (ref_id = ${empId} or code like 'testmem%')`);
-  await odb.execute(sql`delete from jobs where tenant_id = ${T} and type in ('notify_members', 'notify_employee', 'absent_digest', 'task_notify', 'face_enroll')`);
+  await odb.execute(sql`delete from jobs where tenant_id = ${T} and type in ('notify_members', 'notify_employee', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify')`);
   await owner.end();
   await pool.end();
   server.close();

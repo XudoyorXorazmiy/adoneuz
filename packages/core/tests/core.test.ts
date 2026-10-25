@@ -75,3 +75,15 @@ test('yuz qarori: chegara, servis yo‘q, namuna yo‘q, liveness', async () => 
   assert.equal(faceSettings({ threshold: 5 }).threshold, 0.45, 'yaroqsiz sozlama — standart');
   assert.equal(faceDecision(v(0.5), { templates: 1, challenge: false, settings: faceSettings({ threshold: 0.6 }) }).status, 'suspicious');
 });
+
+test('ruxsat so‘rovlari', async () => {
+  const { validLeaveRange, leaveDays, canDecideLeave } = await import('../src/index');
+  assert.equal(validLeaveRange('2026-10-20', '2026-10-22', '2026-10-19'), null);
+  assert.match(validLeaveRange('2026-10-22', '2026-10-20', '2026-10-19')!, /oldin/);
+  assert.match(validLeaveRange('2026-08-01', '2026-08-02', '2026-10-19')!, /30 kundan/);
+  assert.equal(leaveDays('2026-10-20', '2026-10-22'), 3);
+  assert.equal(canDecideLeave('pending', 'approved', 'reviewer'), true);
+  assert.equal(canDecideLeave('pending', 'approved', 'employee'), false, 'xodim o‘zi tasdiqlamaydi');
+  assert.equal(canDecideLeave('approved', 'rejected', 'reviewer'), false, 'hal qilingani o‘zgarmaydi');
+  assert.equal(canDecideLeave('pending', 'cancelled', 'employee'), true);
+});

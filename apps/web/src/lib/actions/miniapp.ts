@@ -3,13 +3,14 @@ import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { tasks, taskBatches, withTenant } from '@adone/db';
-import { faceDecision, isValidDate, isValidTime, zonedTime, type FaceDecision } from '@adone/core';
+import { faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision } from '@adone/core';
 import { assertTgUser } from '@/lib/tg/session';
 import { saveMedia } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
 import { createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
 import { kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
+import { createLeave, decideLeave } from '@/server/leave';
 
 /**
  * Mini App amallari. Kim — FAQAT Mini App sessiyasidan (initData bilan berilgan cookie), formadan emas.
@@ -151,4 +152,27 @@ export async function tgAddWorkAction(f: FormData): Promise<{ ok?: boolean; erro
   revalidatePath('/tg', 'layout');
   kick();
   return { ok: true, needs: !plan && needs };
+}
+
+/** Ruxsat so'rash (Mini App). */
+export async function tgLeaveAction(f: FormData): Promise<{ ok?: boolean; error?: string }> {
+  const u = await assertTgUser();
+  const kind = z.enum(LEAVE_KINDS).safeParse(f.get('kind'));
+  const from = String(f.get('from') ?? '');
+  const to = String(f.get('to') || from);
+  if (!kind.success) return { error: 'Sababni tanlang' };
+  if (!isValidDate(from) || !isValidDate(to)) return { error: 'Sanani tanlang' };
+  const res = await withTenant(u.tenantId, (tx) => createLeave(tx, { tenantId: u.tenantId, employeeId: u.employeeId, kind: kind.data, from, to, reason: String(f.get('reason') ?? '').trim() || null }));
+  if ('error' in res) return { error: res.error };
+  revalidatePath('/tg', 'layout');
+  kick();
+  return { ok: true };
+}
+
+export async function tgCancelLeaveAction(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const u = await assertTgUser();
+  if (!z.uuid().safeParse(id).success) return { error: "Ma'lumot noto'g'ri" };
+  const res = await withTenant(u.tenantId, (tx) => decideLeave(tx, { tenantId: u.tenantId, id, to: 'cancelled', actor: { employeeId: u.employeeId } }));
+  revalidatePath('/tg', 'layout');
+  return 'error' in res ? { error: res.error } : { ok: true };
 }

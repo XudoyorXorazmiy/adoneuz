@@ -6,7 +6,7 @@ import 'server-only';
  *   - kunlik «Kelmaganlar» ro'yxati rahbarlarga (standart 10:00, `tenants.settings.absentDigestAt`).
  */
 import { and, eq, inArray } from 'drizzle-orm';
-import { attendanceEvents, employees, rebuildDay, tenants, withPlatform, withTenant, dayEvents, employeeRule } from '@adone/db';
+import { attendanceEvents, employees, onLeave, rebuildDay, tenants, withPlatform, withTenant, dayEvents, employeeRule } from '@adone/db';
 import { addDays, computeDay, formatTime, localDate, shiftFor, zonedParts } from '@adone/core';
 import { esc } from '@/server/telegram/api';
 import { enqueue } from '@/server/jobs/enqueue';
@@ -76,7 +76,7 @@ export async function absentDigest(tenantId: string, date: string): Promise<JobO
       const rule = await employeeRule(tx, e.id);
       const shift = rule ? shiftFor(rule, date, t!.tz) : null;
       if (!shift) continue;
-      const r = computeDay({ events: await dayEvents(tx, e.id, date), shift, now: new Date() });
+      const r = computeDay({ events: await dayEvents(tx, e.id, date), shift, now: new Date(), onLeave: await onLeave(tx, e.id, date) });
       if (r.status === 'absent') absent.push(`• ${esc(e.fullName)}${e.phone ? ` — +${e.phone}` : ''} (smena ${formatTime(shift.start, t!.tz)})`);
       else if (r.lateMinutes > 0) late.push(`• ${esc(e.fullName)} — ${r.lateMinutes} daq`);
     }

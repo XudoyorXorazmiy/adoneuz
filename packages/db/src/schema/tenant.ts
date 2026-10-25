@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { bigint, boolean, date, doublePrecision, index, integer, jsonb, pgTable, real, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, id, updatedAt } from './columns';
-import { attendanceEventKindEnum, attendanceSourceEnum, checkStatusEnum, dayStatusEnum, employeeStatusEnum, mediaKindEnum, payTypeEnum, scheduleKindEnum } from './enums';
+import { leaveKindEnum, leaveStatusEnum, attendanceEventKindEnum, attendanceSourceEnum, checkStatusEnum, dayStatusEnum, employeeStatusEnum, mediaKindEnum, payTypeEnum, scheduleKindEnum } from './enums';
 import { tenants, users } from './platform';
 
 /** Ishxona ichki jadvallari: har birida tenant_id + RLS (migrations/0003_rls_tenant.sql). */
@@ -195,4 +195,26 @@ export const faceTemplates = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('face_templates_emp_idx').on(t.tenantId, t.employeeId)],
+);
+
+/** Ruxsat so'rovlari (kasal, ta'til, shaxsiy, masofadan). Tasdiqlangan davr — davomatda «Ruxsatda». */
+export const leaveRequests = pgTable(
+  'leave_requests',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    employeeId: uuid().notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    kind: leaveKindEnum().notNull(),
+    dateFrom: date({ mode: 'string' }).notNull(),
+    dateTo: date({ mode: 'string' }).notNull(),
+    reason: text(),
+    mediaId: uuid().references(() => media.id, { onDelete: 'set null' }),
+    status: leaveStatusEnum().notNull().default('pending'),
+    decidedByUserId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    decidedAt: timestamp({ withTimezone: true }),
+    decisionComment: text(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index('leave_requests_emp_idx').on(t.tenantId, t.employeeId, t.dateFrom), index('leave_requests_status_idx').on(t.tenantId, t.status)],
 );

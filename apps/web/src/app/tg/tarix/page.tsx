@@ -1,4 +1,5 @@
 import { formatDate, formatTime, isoWeekday, localDate, MONTHS, WEEKDAY_SHORT } from '@adone/core';
+import Link from 'next/link';
 import { currentTgUser } from '@/lib/tg/session';
 import { myMonth } from '@/server/miniapp';
 import { TgPage } from '@/components/tg/tg-shell';
@@ -14,7 +15,10 @@ export default async function TgHistoryPage() {
   return (
     <TgPage>
       <div className="flex flex-col gap-3 px-4 pt-4">
-        <h1 className="m-0 text-2xl font-bold tracking-[-0.02em]">Tarix · {MONTHS[mo - 1]} {y}</h1>
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="m-0 text-2xl font-bold tracking-[-0.02em]">Tarix · {MONTHS[mo - 1]} {y}</h1>
+          <Link href="/tg/sorov" className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-card px-3.5 text-[13px] font-bold shadow-[var(--shadow-card)]">📝 So&apos;rov</Link>
+        </div>
         <div className="grid grid-cols-3 gap-2.5">
           {[['Ish kuni', String(m.workedDays)], ['Soat', hm(m.worked)], ['Kechikish', String(m.late)]].map(([l, v]) => (
             <div key={l} className="rounded-2xl bg-card p-3.5 shadow-[var(--shadow-card)]"><div className="tnum text-xl font-extrabold">{v}</div><div className="text-xs text-muted">{l}</div></div>

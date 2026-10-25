@@ -1,7 +1,7 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { computeDay, shiftFor, workdayFor, type DayEvent, type ScheduleRule } from '@adone/core';
 import type { Tx } from './client';
-import { attendanceDays, attendanceEvents, employees, schedules } from './schema/index';
+import { attendanceDays, attendanceEvents, employees, leaveRequests, schedules } from './schema/index';
 
 /**
  * Kunlik yig'ma — FAQAT shu yerdan yoziladi (CLAUDE.md §1.2): jurnal → core computeDay() → attendance_days.
@@ -46,11 +46,25 @@ export async function dayEvents(tx: Tx, employeeId: string, workDate: string): P
   return rows;
 }
 
+/** Shu kuni tasdiqlangan ruxsat bormi (davomatda «Ruxsatda», kelmagan emas). */
+export async function onLeave(tx: Tx, employeeId: string, date: string): Promise<boolean> {
+  const r = await tx.select({ id: leaveRequests.id }).from(leaveRequests)
+    .where(and(eq(leaveRequests.employeeId, employeeId), eq(leaveRequests.status, 'approved'), lte(leaveRequests.dateFrom, date), gte(leaveRequests.dateTo, date))).limit(1);
+  return r.length > 0;
+}
+
+/** Bir kunda ruxsatdagi xodimlar (ro'yxat sahifalari uchun, bitta so'rov). */
+export async function leavesOn(tx: Tx, date: string): Promise<Set<string>> {
+  const r = await tx.select({ e: leaveRequests.employeeId }).from(leaveRequests)
+    .where(and(eq(leaveRequests.status, 'approved'), lte(leaveRequests.dateFrom, date), gte(leaveRequests.dateTo, date)));
+  return new Set(r.map((x) => x.e));
+}
+
 export async function rebuildDay(tx: Tx, input: { tenantId: string; employeeId: string; workDate: string; tz: string; now?: Date }) {
   const rule = await employeeRule(tx, input.employeeId);
   const shift = rule ? shiftFor(rule, input.workDate, input.tz) : null;
   const events = await dayEvents(tx, input.employeeId, input.workDate);
-  const r = computeDay({ events, shift, now: input.now ?? new Date() });
+  const r = computeDay({ events, shift, now: input.now ?? new Date(), onLeave: await onLeave(tx, input.employeeId, input.workDate) });
   const values = {
     tenantId: input.tenantId,
     employeeId: input.employeeId,

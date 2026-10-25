@@ -1,7 +1,7 @@
 import 'server-only';
 /** Davomat ko'rinishlari (panel). Hisob — core computeDay(); jurnal — attendance_events (append-only). */
 import { and, asc, eq, gte, inArray, lte, ne } from 'drizzle-orm';
-import { attendanceDays, attendanceEvents, branches, departments, employees, media, schedules, toRule, withTenant } from '@adone/db';
+import { attendanceDays, attendanceEvents, branches, departments, employees, leavesOn, media, schedules, toRule, withTenant } from '@adone/db';
 import { computeDay, localDate, shiftFor, type DayResult, type DayStatus, type Shift } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope, inScope } from './scope';
@@ -50,13 +50,14 @@ export async function listDay(user: TenantUser, f: DayFilter): Promise<DayRow[]>
       .from(attendanceEvents)
       .where(and(eq(attendanceEvents.workDate, f.date), inArray(attendanceEvents.employeeId, emps.map((x) => x.e.id))))
       .orderBy(asc(attendanceEvents.serverAt));
+    const leave = await leavesOn(tx, f.date);
     const byEmp = new Map<string, typeof evs>();
     for (const e of evs) byEmp.set(e.employeeId, [...(byEmp.get(e.employeeId) ?? []), e]);
     const now = new Date();
     return emps.map(({ e, s, departmentName, branchName, branchRadiusM }) => {
       const list = byEmp.get(e.id) ?? [];
       const shift = s ? shiftFor(toRule(s), f.date, tz) : null;
-      const result = computeDay({ events: list.map((x) => ({ id: x.id, kind: x.kind, at: x.serverAt, checkStatus: x.checkStatus, meta: x.meta })), shift, now });
+      const result = computeDay({ events: list.map((x) => ({ id: x.id, kind: x.kind, at: x.serverAt, checkStatus: x.checkStatus, meta: x.meta })), shift, now, onLeave: leave.has(e.id) });
       return {
         id: e.id, fullName: e.fullName, phone: e.phone, telegramUsername: e.telegramUsername, position: e.position, departmentName, branchName, branchRadiusM, scheduleName: s?.name ?? null, shift, result,
         events: list.map((x) => ({

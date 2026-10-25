@@ -131,6 +131,15 @@ async function seedMudom(tenantId: string, userIds: Record<string, string>) {
   }
 
   await seedTasks(tenantId, emps, userIds, now);
+
+  // Ruxsat so'rovlari: kutilayotgan (ertadan ta'til), tasdiqlangan (kecha kasal — tabelda «Ruxsatda»)
+  const E = Object.fromEntries(emps.map((e) => [e.fullName, e]));
+  await db.insert(s.leaveRequests).values([
+    { tenantId, employeeId: E['Shahnoza Allayeva']!.id, kind: 'vacation', dateFrom: addDays(today, 1), dateTo: addDays(today, 3), reason: "Oilaviy to'y" },
+    { tenantId, employeeId: E['Zarina Qosimova']!.id, kind: 'personal', dateFrom: addDays(today, 2), dateTo: addDays(today, 2), reason: 'Hujjat topshirish' },
+    { tenantId, employeeId: E["Ulug'bek Sobirov"]!.id, kind: 'sick', dateFrom: addDays(today, -1), dateTo: addDays(today, -1), reason: 'Isitma', status: 'approved', decidedByUserId: userIds['Aziz Karimov'], decidedAt: now },
+  ]);
+  await db.transaction(async (tx) => rebuildDay(tx as never, { tenantId, employeeId: E["Ulug'bek Sobirov"]!.id, workDate: addDays(today, -1), tz: TZ, now }));
 }
 
 /** Vazifalar demo (2-bosqich): har holatdan, ko'p ijrochili, o'zi qo'shgan va takroriy. Bildirishnoma navbatga yozilmaydi. */

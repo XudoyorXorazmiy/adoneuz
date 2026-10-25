@@ -115,3 +115,11 @@ test('vaqtni qayta belgilash (retimePlan) va tuzatishni bekor qilish', () => {
   assert.equal(r.lastOut?.toISOString(), at(d, '19:00').toISOString());
   assert.deepEqual(retimePlan(events, { in: at(d, '09:00') }), [], "o'zgarmasa — bo'sh");
 });
+
+test('ruxsatda: kelmagan kun «Ruxsatda», kelgan bo‘lsa — Ishda', () => {
+  const d = '2026-10-20';
+  const shift = shiftFor(base, d, TZ)!;
+  assert.equal(computeDay({ events: [], shift, now: at(d, '15:00'), onLeave: true }).status, 'leave');
+  assert.equal(computeDay({ events: [], shift, now: at(d, '15:00') }).status, 'absent');
+  assert.equal(computeDay({ events: [ev('check_in', at(d, '09:00'))], shift, now: at(d, '15:00'), onLeave: true }).status, 'present');
+});

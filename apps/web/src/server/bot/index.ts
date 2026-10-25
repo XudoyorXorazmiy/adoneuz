@@ -5,7 +5,7 @@ import 'server-only';
  * davomat — append-only jurnal (§1.2). Telegram'ga so'rovlar tranzaksiyadan TASHQARIDA.
  */
 import { and, eq, isNull } from 'drizzle-orm';
-import { attendanceEvents, branches, consents, employees, invites, rebuildDay, tenants, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
+import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
 import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatTime, nextAction, normalizePhone, shiftFor } from '@adone/core';
 import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
 import type { TgCallback, TgMessage, TgUpdate } from '@/server/telegram/types';
@@ -17,6 +17,7 @@ import type { JobOutcome } from '@/server/jobs/types';
 import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from './session';
 import { employeeLinks, linkTelegram, type EmployeeLink } from './links';
 import { isTaskState, onTaskCallback, onTaskMessage, showMyTasks, startAddWork } from './tasks';
+import { isLeaveState, onLeaveCallback, onLeaveMessage, startLeave } from './leave';
 import { BTN, CONSENT_VERSION, consentKeyboard, contactKeyboard, menuKeyboard, removeKeyboard, T } from './texts';
 
 /** Jonli joylashuv xabari shundan eski bo'lsa — eskirgan (forward/qayta yuborish). */
@@ -42,11 +43,13 @@ export async function processUpdate(u: TgUpdate): Promise<JobOutcome> {
   if (msg.contact) return onContact(msg);
   if (text === BTN.tasks || text === '/vazifalar') return showMyTasks(uid, chat);
   if (text === BTN.addWork || text === '/ish') return startAddWork(uid, chat);
+  if (text === BTN.leave || text === '/sorov') return startLeave(uid, chat);
   // Vazifa sessiyasi (hisobot fayli, lokatsiya, izoh, savol) — menyu tugmalari bosilmagan bo'lsa shu yerga
   const menuTexts: string[] = Object.values(BTN);
   if (!menuTexts.includes(text)) {
     const st = await getState(uid);
     if (isTaskState(st)) return onTaskMessage(msg, st);
+    if (isLeaveState(st) && msg.text) return onLeaveMessage(msg, st);
   }
   if (msg.location) return onLocation(msg);
   if (msg.video_note) return onVideoNote(msg);
@@ -152,6 +155,7 @@ async function onCallback(cb: TgCallback): Promise<JobOutcome> {
     return {};
   }
   if (data.startsWith('tk:') || data.startsWith('wk:')) return onTaskCallback(cb);
+  if (data.startsWith('lv:')) return onLeaveCallback(cb);
   // Bir nechta ishxona: act:<check_in|check_out>:<tenantId>
   const m = /^act:(check_in|check_out):([0-9a-f-]{36})$/.exec(data);
   if (m) {
@@ -400,7 +404,7 @@ async function showToday(msg: TgMessage): Promise<JobOutcome> {
       const wd = await workdayOf(tx, l.employeeId, new Date(), tz);
       const rule = await employeeRule(tx, l.employeeId);
       const shift = rule ? shiftFor(rule, wd.date, tz) : null;
-      const r = computeDay({ events: await dayEvents(tx, l.employeeId, wd.date), shift, now: new Date() });
+      const r = computeDay({ events: await dayEvents(tx, l.employeeId, wd.date), shift, now: new Date(), onLeave: await onLeave(tx, l.employeeId, wd.date) });
       const s = shift ? `Smena: ${formatTime(shift.start, tz)}–${formatTime(shift.end, tz)}` : 'Smena: erkin grafik / dam';
       const came = r.firstIn ? `Keldingiz: ${formatTime(r.firstIn, tz)}${r.lateMinutes ? ` (kechikish ${r.lateMinutes} daq)` : ''}` : 'Hali kelmadingiz';
       const left = r.open ? 'Hozir ishdasiz' : r.lastOut ? `Ketdingiz: ${formatTime(r.lastOut, tz)}` : '';

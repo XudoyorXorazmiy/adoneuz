@@ -10,11 +10,12 @@ import { notifyEmployee, notifyMembers } from '@/server/notify';
 import { absentDigest, attendanceTick } from '@/server/ticks';
 import { taskNotify, type TaskNotifyKind } from '@/server/task-notify';
 import { enrollFace } from '@/server/face';
+import { leaveNotify } from '@/server/leave';
 import { needTenant, PermanentError, str, type JobOutcome, type JobRow } from './types';
 
 export { PermanentError, type JobRow };
 
-export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest', 'task_notify', 'face_enroll'] as const;
+export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify'] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
 type Handler = (job: JobRow) => Promise<JobOutcome>;
@@ -62,6 +63,12 @@ export const HANDLERS: Record<JobType, Handler> = {
     const mediaId = str(job.payload.mediaId);
     if (!employeeId || !mediaId) throw new PermanentError('payload noto‘g‘ri');
     return enrollFace(needTenant(job), employeeId, mediaId, job.payload.replace === true);
+  },
+  async leave_notify(job) {
+    const id = str(job.payload.id);
+    const kind = str(job.payload.kind);
+    if (!id || !kind) throw new PermanentError('payload noto‘g‘ri');
+    return tgSafe(() => leaveNotify(needTenant(job), id, kind));
   },
   async absent_digest(job) {
     const date = str(job.payload.date);

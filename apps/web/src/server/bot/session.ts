@@ -19,6 +19,8 @@ export type BotState =
   | { step: 'work_title'; tenantId: string; employeeId: string }
   | { step: 'work_mode'; tenantId: string; employeeId: string; title: string }
   | { step: 'face_resample'; tenantId: string; employeeId: string }
+  | { step: 'leave_dates'; tenantId: string; employeeId: string; kind: string }
+  | { step: 'leave_reason'; tenantId: string; employeeId: string; kind: string; from: string; to: string }
   | { step: 'idle' };
 
 export const SESSION_TTL_MS = 15 * 60_000;

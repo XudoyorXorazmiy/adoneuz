@@ -9,3 +9,4 @@ export * from './schedule';
 export * from './attendance';
 export * from './task-flow';
 export * from './face';
+export * from './leave';
