@@ -210,6 +210,22 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 - Ariza: `leads` (platforma jadvali, 0012/0013): anonim yozish `withAuth` (adone_auth faqat INSERT, `status='new'`), o'qish/holat `withPlatform`, adone_app'ga yopiq. `submitLeadAction` — honeypot, IP bo'yicha 10 daqiqada 5 ta, UTM referer'dan, `PLATFORM_OWNER_CHAT_ID` bo'lsa Telegram xabari (`after`). Platforma `/arizalar`. «Bepul sinash» hozircha ariza formasiga (`#ariza-forma`) — o'zi ro'yxatdan o'tish kelgach `/royxat`.
 - Landing statik (○): aloqa env'lari (`NEXT_PUBLIC_SUPPORT_*`, `PLATFORM_BOT_USERNAME`) build-arg (Dockerfile).
 
+## 9h. Hisobotlar (2026-10-26)
+
+- Dizayn `design/panel/Hisobotlar.dc.html` (prompt `docs/DIZAYN-NEXT-PROMPTS.md` → PROMPT 2). Sahifa `/hisobotlar` — faqat `reports` (egasi, admin; menejer kirmaydi).
+  URL: `tab=davomat|vazifalar|reyting|jurnal`, `davr=hafta|otgan-hafta|oy|otgan-oy|tanlash` (+ `dan`, `gacha`, ≤ 93 kun), `filial`, `bolim`, `solishtir=0`; jurnal — `xodim`, `manba=berilgan|ozi`; reyting — `tur=bolimlar`.
+  Ma'lumot `<Suspense key=…>` ichida — filtr o'zgarsa skeleton. Bo'sh davr — «… uchun ma'lumot yo'q». Telefonda: filtrlar gorizontal, KPI 2×2, jadval → kartochkalar.
+- **Hisob** `packages/core/src/reports.ts` (testlar `tests/reports.test.ts`): `reportPeriod` (oldingi davr: oy — oldingi oyning shu kunlari, butun oy — butun oldingi oy, hafta — oldingi hafta, tanlash — shu uzunlik),
+  `attendanceStats` (davomat % = kelgan / (kelgan + sababsiz kelmagan); ruxsat va dam olish kirmaydi), `dailySeries`/`weeklySeries`, `arrivalHistogram` (smena boshiga nisbatan, 5 daq qutilar),
+  `taskStats` (berilgan = `assigned`, bekor qilinganlarsiz; o'z vaqtida — topshirilganlar ichida; kechikdi = kech topshirilgan + hozir muddati o'tgan; o'zi qo'shganlar alohida),
+  `ratingScore` (**ball = davomat 40% + o'z vaqtida 40% + baho 20%**, `RATING_WEIGHTS`; yo'q qism — og'irlik qolganlarga qayta taqsimlanadi), `rankBy`, `attentionReason` (ballni eng ko'p tushirgan qism).
+- **O'qish** `apps/web/src/server/reports.ts` — `buildReport` (davomat — faqat `attendance_days`; `planned` = smena bor va kun boshlangan; vazifalar — `tasks` davrda **yaratilgani** bo'yicha), `loadJournal` (davrda topshirilgan/yaratilgan barcha ishlar, rahbarning o'z ishlari ham, 300 ta chegara, hisobot rasmlari `/api/media`), `reportOptions`, `parseReportParams` (sahifa va Excel bir xil).
+  Faol xodimlar + davrda yozuvi bor o'chirilganlar. O'tgan davrda ma'lumot bo'lmasa farq (delta) va o'rin o'zgarishi ko'rsatilmaydi. «E'tibor talab qiladi» — 90 balldan pastlar (≥ 4 xodim bo'lsa).
+- UI `components/reports/*`: `tabs.tsx` (server — KPI, bo'limlar, kelish vaqti, haftalar grafigi, manba donut, shohsupa, jurnal), `charts.tsx` (Kun | Hafta ustunlar, tooltip), `tables.tsx` (saralanadigan jadvallar, vazifalar qatori ochiladi — oxirgi 5),
+  `controls.tsx` (davr menyusi, filtrlar, solishtirish, Excel oynasi, ⋯ → chop etish / PDF brauzer orqali). `lib/report-url.ts` — havola (server ham, client ham).
+- Excel `/api/eksport/hisobot?varaq=davomat,vazifalar,reyting,jurnal` — har biri alohida varaq (+ kunlar / haftalar / bo'limlar bloklari).
+- Hali yo'q: «Ish turlari» kartasi bo'sh holatda (`task_categories` kelgach — turlar bo'yicha vaqt; jurnalda tur chiplari o'rniga manba chiplari), reyting og'irliklari ishxona sozlamasi emas, haqiqiy PDF eksport.
+
 ## 9i. Sozlamalar (2026-10-26)
 
 - Dizayn `design/panel/Sozlamalar.dc.html` (prompt `docs/DIZAYN-NEXT-PROMPTS.md`). Sahifa `/sozlamalar?tab=profil|ishxona|jamoa|davomat|vazifalar|ish-haqi|bildirishnomalar|tarif`:

@@ -16,7 +16,7 @@ const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready:
   { href: '/xodimlar', label: 'Xodimlar', area: 'employees', icon: 'group', ready: true, count: 'pending' },
   { href: '/jadvallar', label: 'Jadvallar', area: 'schedules', icon: 'calendar_month', ready: true },
   { href: '/filiallar', label: 'Filiallar', area: 'branches', icon: 'location_on', ready: true },
-  { href: '/hisobotlar', label: 'Hisobotlar', area: 'reports', icon: 'bar_chart', ready: false },
+  { href: '/hisobotlar', label: 'Hisobotlar', area: 'reports', icon: 'bar_chart', ready: true },
   { href: '/ish-haqi', label: 'Ish haqi', area: 'payroll', icon: 'payments', ready: true },
   { href: '/sozlamalar', label: 'Sozlamalar', area: 'settings', icon: 'settings', ready: true },
 ];
