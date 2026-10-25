@@ -24,14 +24,19 @@ export default async function LeavePage({ searchParams }: PageProps<'/sorovlar'>
   return (
     <>
       <PageHeader title="So'rovlar" badge={counts.pending ? `${counts.pending} kutilmoqda` : undefined} subtitle="Ruxsat so'rovlari: kasal, ta'til, shaxsiy ish, masofadan ishlash" alert={!!counts.pending} />
-      <section className="card flex flex-col gap-4 p-5 max-sm:p-4">
-        <div className="flex flex-wrap gap-1 border-b border-line-soft pb-3">
-          {TABS.map(([k, l]) => (
-            <Link key={k} href={k === 'pending' ? '/sorovlar' : `/sorovlar?holat=${k}`}
-              className={`flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] ${tab === k ? 'bg-subtle font-bold text-ink' : 'font-medium text-muted hover:text-ink'}`}>
-              {l}{k !== 'all' && counts[k] ? <span className={`tnum rounded-full px-1.5 text-[11px] font-bold ${k === 'pending' ? 'bg-warning-tint text-warning' : 'bg-subtle text-muted'}`}>{counts[k]}</span> : null}
-            </Link>
-          ))}
+      <section className="card flex flex-col gap-4 px-6 pt-3 pb-5 max-sm:px-4">
+        <div className="flex gap-1 overflow-x-auto border-b border-line-soft">
+          {TABS.map(([k, l]) => {
+            const on = tab === k;
+            const n = k === 'all' ? null : (counts[k] ?? 0);
+            return (
+              <Link key={k} href={k === 'pending' ? '/sorovlar' : `/sorovlar?holat=${k}`}
+                className={`-mb-px flex items-center gap-1.5 border-b-2 px-3.5 pt-2.5 pb-3 text-[13px] whitespace-nowrap ${on ? 'border-primary font-bold text-ink' : 'border-transparent font-medium text-muted hover:text-ink'}`}>
+                {l}
+                {n != null && <span className={`tnum rounded-full px-[7px] py-px text-[11px] font-bold ${on ? 'bg-primary text-white' : k === 'pending' && n ? 'bg-warning-tint text-warning' : 'bg-subtle text-muted'}`}>{n}</span>}
+              </Link>
+            );
+          })}
         </div>
         {rows.length === 0 ? (
           <EmptyState text={tab === 'pending' ? "Kutilayotgan so'rov yo'q. Xodimlar botda «📝 So'rov» yoki Mini App'da ruxsat so'raydi." : "Bu bo'limda so'rov yo'q."} />
@@ -53,7 +58,7 @@ export default async function LeavePage({ searchParams }: PageProps<'/sorovlar'>
                   <div className="mt-1 text-xs text-placeholder">{formatDateTime(r.createdAt, tz)}{r.decidedBy ? ` · ${r.decidedBy}${r.comment ? `: «${r.comment}»` : ''}` : ''}</div>
                 </div>
                 {r.status === 'pending' ? (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 max-sm:w-full max-sm:[&>*]:flex-1 max-sm:[&_button]:w-full">
                     <form action={quickDecideLeaveAction}><input type="hidden" name="id" value={r.id} /><input type="hidden" name="to" value="approved" /><button className="btn-primary h-10 shadow-none"><Icon name="check" size={18} />Tasdiqlash</button></form>
                     <FormDrawer trigger={<><Icon name="close" size={18} />Rad etish</>} triggerClass="btn-danger h-10" title="Rad etish" subtitle={`${r.name} · ${leavePeriod(r.from, r.to)}`} action={decideLeaveAction} submitLabel="Rad etish">
                       <input type="hidden" name="id" value={r.id} /><input type="hidden" name="to" value="rejected" />

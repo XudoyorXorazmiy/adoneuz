@@ -22,11 +22,11 @@ export function LeaveForm({ today }: { today: string }) {
     setBusy(false); setMsg(r); haptic(r.error ? 'error' : 'success');
     if (!r.error) { setReason(''); router.refresh(); }
   };
-  const chip = (on: boolean) => `h-10 rounded-full border px-3.5 text-sm font-semibold ${on ? 'border-primary bg-primary-tint text-primary' : 'border-line bg-card'}`;
+  const chip = (on: boolean) => `inline-flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold ${on ? 'border-primary bg-primary-tint text-primary' : 'border-line bg-card'}`;
   return (
     <section className="flex flex-col gap-3.5 rounded-[20px] bg-card p-4 shadow-[var(--shadow-card)]">
       <div className="flex flex-wrap gap-2">
-        {LEAVE_KINDS.map((k) => <button key={k} onClick={() => setKind(k)} className={chip(kind === k)}>{LEAVE_KIND_ICONS[k]} {LEAVE_KIND_LABELS[k]}</button>)}
+        {LEAVE_KINDS.map((k) => <button key={k} onClick={() => setKind(k)} className={chip(kind === k)}><span>{LEAVE_KIND_ICONS[k]}</span>{LEAVE_KIND_LABELS[k]}</button>)}
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <label className="flex flex-col gap-1 text-sm font-semibold">Qachondan<input type="date" value={from} onChange={(e) => { setFrom(e.target.value); if (to < e.target.value) setTo(e.target.value); }} className="input h-11" /></label>

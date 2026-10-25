@@ -16,14 +16,20 @@ export default async function LeadsPage({ searchParams }: PageProps<'/platforma/
   return (
     <>
       <h1 className="page-title">Arizalar {counts.new ? <span className="tnum text-placeholder">{counts.new}</span> : null}</h1>
-      <div className="flex flex-wrap gap-1">
-        {[...LEAD_STATUSES, 'all' as const].map((k) => (
-          <Link key={k} href={k === 'new' ? '/arizalar' : `/arizalar?holat=${k}`} className={`flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] ${tab === k ? 'bg-card font-bold text-ink shadow-[var(--shadow-card)]' : 'font-medium text-muted hover:text-ink'}`}>
-            {k === 'all' ? 'Barchasi' : LEAD_STATUS_LABELS[k]}{k !== 'all' && counts[k] ? <span className="tnum text-[11px] text-muted">{counts[k]}</span> : null}
-          </Link>
-        ))}
-      </div>
       <div className="card overflow-hidden">
+        <div className="flex gap-1 overflow-x-auto border-b border-line-soft px-6 pt-2 max-sm:px-4">
+          {[...LEAD_STATUSES, 'all' as const].map((k) => {
+            const on = tab === k;
+            const n = k === 'all' ? null : (counts[k] ?? 0);
+            return (
+              <Link key={k} href={k === 'new' ? '/arizalar' : `/arizalar?holat=${k}`}
+                className={`-mb-px flex items-center gap-1.5 border-b-2 px-3.5 pt-2.5 pb-3 text-[13px] whitespace-nowrap ${on ? 'border-primary font-bold text-ink' : 'border-transparent font-medium text-muted hover:text-ink'}`}>
+                {k === 'all' ? 'Barchasi' : LEAD_STATUS_LABELS[k]}
+                {n != null && <span className={`tnum rounded-full px-[7px] py-px text-[11px] font-bold ${on ? 'bg-primary text-white' : k === 'new' && n ? 'bg-info-tint text-info-text' : 'bg-subtle text-muted'}`}>{n}</span>}
+              </Link>
+            );
+          })}
+        </div>
         {rows.length === 0 ? <p className="m-0 p-10 text-center text-muted">Ariza yo&apos;q.</p> : (
           <>
             <ul className="m-0 flex list-none flex-col p-0 sm:hidden">
@@ -38,7 +44,7 @@ export default async function LeadsPage({ searchParams }: PageProps<'/platforma/
             </ul>
             <div className="hidden overflow-x-auto sm:block">
               <table className="w-full min-w-[760px] border-collapse text-[13px]">
-                <thead className="bg-page text-left text-xs text-muted">
+                <thead className="text-left text-xs text-placeholder">
                   <tr><th className="px-4 py-2.5 font-medium">Ism</th><th className="px-4 py-2.5 font-medium">Telefon</th><th className="px-4 py-2.5 font-medium">Xodimlar</th><th className="px-4 py-2.5 font-medium">Qayerdan</th><th className="px-4 py-2.5 font-medium">Vaqt</th><th className="px-4 py-2.5 font-medium">Holat</th></tr>
                 </thead>
                 <tbody>

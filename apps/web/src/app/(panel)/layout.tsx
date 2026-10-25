@@ -2,6 +2,7 @@ import { can, type Area } from '@adone/core';
 import { requireUser } from '@/lib/auth/session';
 import { NavLink } from '@/components/shell/nav-link';
 import { UserBox } from '@/components/shell/user-box';
+import { MobileNav } from '@/components/shell/mobile-nav';
 import { Logo } from '@/components/ui/logo';
 import { Icon } from '@/components/ui/icon';
 import { shellInfo } from '@/server/shell';
@@ -24,6 +25,13 @@ const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready:
 export default async function PanelLayout({ children }: LayoutProps<'/'>) {
   const user = await requireUser();
   const info = await shellInfo(user.tenantId);
+  const countOf = (n: (typeof NAV)[number]) => (n.count === 'pending' ? info.pending : n.count === 'review' && user.role !== 'manager' ? info.review : n.count === 'leaves' && user.role !== 'manager' ? info.leaves : undefined);
+  const visible = NAV.filter((n) => can(user.role, n.area));
+  const mobileItems = [
+    ...visible.map((n) => ({ href: n.href, label: n.label, icon: n.icon, count: countOf(n), disabled: !n.ready })),
+    // Menejer Sozlamalar menyusini ko'rmaydi, lekin Profilim (parol, Telegram) unga ham kerak
+    ...(can(user.role, 'settings') ? [] : [{ href: '/sozlamalar?tab=profil', label: 'Profilim', icon: 'person' }]),
+  ];
   const pct = info.maxEmployees ? Math.min(100, Math.round((info.active / info.maxEmployees) * 100)) : 0;
   return (
     <div className="min-h-screen bg-canvas p-0 lg:p-4">
@@ -43,8 +51,8 @@ export default async function PanelLayout({ children }: LayoutProps<'/'>) {
           </div>
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
             <div className="px-3 pb-1.5 text-[11px] font-bold tracking-[0.08em] text-placeholder">MENYU</div>
-            {NAV.filter((n) => can(user.role, n.area)).map((n) => (
-              <NavLink key={n.href} href={n.href} icon={n.icon} disabled={!n.ready} count={n.count === 'pending' ? info.pending : n.count === 'review' && user.role !== 'manager' ? info.review : n.count === 'leaves' && user.role !== 'manager' ? info.leaves : undefined}>{n.label}</NavLink>
+            {visible.map((n) => (
+              <NavLink key={n.href} href={n.href} icon={n.icon} disabled={!n.ready} count={countOf(n)}>{n.label}</NavLink>
             ))}
           </nav>
           <div className="flex flex-col gap-3">
@@ -59,9 +67,10 @@ export default async function PanelLayout({ children }: LayoutProps<'/'>) {
           </div>
         </aside>
         <main className="m-0 flex min-w-0 flex-1 flex-col bg-page lg:my-2 lg:mr-2 lg:rounded-[20px]">
-          <div className="flex h-14 items-center justify-between border-b border-line bg-card px-4 lg:hidden">
+          <div className="flex h-14 items-center gap-2 border-b border-line bg-card px-2 lg:hidden">
+            <MobileNav items={mobileItems} title={<Logo size={24} text={18} />} footer={<UserBox name={user.name} phone={user.phone} />} />
             <Logo size={24} text={18} />
-            <span className="truncate text-[13px] font-semibold text-muted">{user.tenantName}</span>
+            <span className="ml-auto truncate pr-2 text-[13px] font-semibold text-muted">{user.tenantName}</span>
           </div>
           <div className="flex flex-col gap-5 px-4 pt-5 pb-7 md:px-7">
             {user.mustChangePassword && (

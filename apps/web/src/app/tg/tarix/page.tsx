@@ -18,7 +18,7 @@ export default async function TgHistoryPage() {
       <div className="flex flex-col gap-3 px-4 pt-4">
         <div className="flex items-center justify-between gap-2">
           <h1 className="m-0 text-2xl font-bold tracking-[-0.02em]">Tarix · {MONTHS[mo - 1]} {y}</h1>
-          <Link href="/tg/sorov" className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-card px-3.5 text-[13px] font-bold shadow-[var(--shadow-card)]">📝 So&apos;rov</Link>
+          <Link href="/tg/sorov" className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-card px-3.5 text-[13px] font-bold shadow-[var(--shadow-card)]"><span>📝</span>So&apos;rov</Link>
         </div>
         <div className="grid grid-cols-3 gap-2.5">
           {[['Ish kuni', String(m.workedDays)], ['Soat', hm(m.worked)], ['Kechikish', String(m.late)]].map(([l, v]) => (

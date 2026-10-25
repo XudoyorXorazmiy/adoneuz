@@ -17,6 +17,7 @@ export async function decideLeaveAction(_p: FormState, f: FormData): Promise<For
   if ('error' in res) return { error: res.error };
   revalidatePath('/sorovlar');
   revalidatePath('/davomat');
+  revalidatePath('/xodimlar/[id]', 'page'); // profil → So'rovlar tabidan ham hal qilinadi
   revalidatePath('/');
   kick();
   return { ok: to.data === 'approved' ? 'Tasdiqlandi' : 'Rad etildi' };

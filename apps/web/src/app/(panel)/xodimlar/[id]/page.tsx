@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { can, describeSchedule, formatDate, formatPhone, formatSom, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_STATUS_LABELS, leaveDays, MONTHS, PAY_TYPE_LABELS, type LeaveStatus } from '@adone/core';
+import { can, describeSchedule, formatDate, formatPhone, formatSom, isoWeekday, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_STATUS_LABELS, leaveDays, MONTHS, PAY_TYPE_LABELS, WEEKDAY_LONG, type LeaveStatus } from '@adone/core';
 import { toRule, withTenant } from '@adone/db';
 import { leavePeriod, myLeaves } from '@/server/leave';
 import { employeePay } from '@/server/payroll';
@@ -13,7 +13,8 @@ import { employeeJournal } from '@/server/task-queries';
 import { StatusPill, minutesText } from '@/components/tasks/task-card';
 import { requestFaceResampleAction, saveEmployeeAction, setEmployeeStatusAction, unbindDeviceAction } from '@/lib/actions/employees';
 import { EmptyState, PageHeader } from '@/components/ui/page-header';
-import { FormDrawer } from '@/components/ui/form-drawer';
+import { Field, FormDrawer } from '@/components/ui/form-drawer';
+import { decideLeaveAction, quickDecideLeaveAction } from '@/lib/actions/leave';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { EmployeeFields } from '@/components/employees/employee-fields';
@@ -60,6 +61,15 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
     const s = u.toString();
     return s ? `/xodimlar/${id}?${s}` : `/xodimlar/${id}`;
   };
+  const monthSwitch = (
+    <div className="flex h-9 items-center gap-1 rounded-full border border-line px-1 text-[13px] font-bold">
+      <Link href={qs({ oy: shiftMonth(month, -1) })} className="flex size-7 items-center justify-center rounded-full hover:bg-subtle" title="Oldingi oy"><Icon name="chevron_left" size={18} /></Link>
+      <span className="px-1.5 whitespace-nowrap">{MONTHS[m - 1]} {y}</span>
+      {month < cur
+        ? <Link href={qs({ oy: shiftMonth(month, 1) === cur ? undefined : shiftMonth(month, 1) })} className="flex size-7 items-center justify-center rounded-full hover:bg-subtle" title="Keyingi oy"><Icon name="chevron_right" size={18} /></Link>
+        : <span className="flex size-7 items-center justify-center text-[#C4C9D2]"><Icon name="chevron_right" size={18} /></span>}
+    </div>
+  );
   const kpis: Array<[string, string, string, string]> = [
     ['Ish kunlari', String(tot.workedDays), `/ ${tot.plannedSoFar}`, `Oy rejasi: ${tot.planned} kun`],
     ['Kechikishlar', String(tot.lateDays), '', tot.lateMinutes ? `jami ${tot.lateMinutes} daq` : "kechikish yo'q"],
@@ -121,13 +131,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
                 <div className="flex flex-wrap items-center gap-2.5">
                   <span className="card-icon"><Icon name="calendar_month" size={18} fill /></span>
                   <h2 className="m-0 flex-1 text-base font-bold">Tabel</h2>
-                  <div className="flex h-9 items-center gap-1 rounded-full border border-line px-1 text-[13px] font-bold">
-                    <Link href={qs({ oy: shiftMonth(month, -1) })} className="flex size-7 items-center justify-center rounded-full hover:bg-subtle" title="Oldingi oy"><Icon name="chevron_left" size={18} /></Link>
-                    <span className="px-1.5">{MONTHS[m - 1]} {y}</span>
-                    {month < cur
-                      ? <Link href={qs({ oy: shiftMonth(month, 1) === cur ? undefined : shiftMonth(month, 1) })} className="flex size-7 items-center justify-center rounded-full hover:bg-subtle" title="Keyingi oy"><Icon name="chevron_right" size={18} /></Link>
-                      : <span className="flex size-7 items-center justify-center text-[#C4C9D2]"><Icon name="chevron_right" size={18} /></span>}
-                  </div>
+                  {monthSwitch}
                   <a href={`/api/eksport/tabel?oy=${month}&xodim=${id}`} className="btn-icon size-9" title="Excel"><Icon name="download" /></a>
                 </div>
                 <div className="mt-3.5 flex flex-wrap gap-4 text-xs text-muted">
@@ -139,8 +143,18 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
             </>
           )}
           {tab === 'malumot' && (
-            <section className="card p-6 max-sm:p-4">
-              <dl className="m-0 grid grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
+            <section className="card px-6 pt-5 pb-1.5 max-sm:px-4">
+              <div className="flex items-center gap-2.5 border-b border-line-soft pb-3.5">
+                <span className="card-icon"><Icon name="badge" size={18} fill /></span>
+                <h2 className="m-0 flex-1 text-base font-bold">Ma&apos;lumotlar</h2>
+                {e.status !== 'disabled' && (
+                  <FormDrawer trigger={<><Icon name="edit" size={16} />Tahrirlash</>} triggerClass="btn-secondary btn-sm h-8 px-3" title="Xodimni tahrirlash" subtitle={e.fullName} action={saveEmployeeAction}
+                    danger={<form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="disabled" /><button className="btn-ghost text-danger">Ishdan bo&apos;shatish</button></form>}>
+                    <EmployeeFields e={e} options={formOptions} />
+                  </FormDrawer>
+                )}
+              </div>
+              <dl className="m-0 flex flex-col text-sm">
                 {([
                   ['Telefon', e.phone ? formatPhone(e.phone) : '—'],
                   ['Telegram', e.telegramUsername ? `@${e.telegramUsername}` : e.telegramUserId ? 'ulangan' : 'ulanmagan'],
@@ -152,7 +166,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
                   ['Biometrik rozilik', p.consent ? `${formatDate(p.consent.acceptedAt, tz)} (v${p.consent.version})` : "yo'q"],
                   ...(can(user.role, 'payroll') ? [['Stavka', e.payRate ? `${formatSom(e.payRate)} · ${PAY[e.payType]}` : 'kiritilmagan'] as [string, string]] : []),
                 ] as Array<[string, string]>).map(([k, v]) => (
-                  <div key={k} className="flex flex-col gap-0.5 border-b border-line-soft pb-3"><dt className="text-xs font-medium text-muted">{k}</dt><dd className="m-0 font-semibold">{v}</dd></div>
+                  <div key={k} className="flex items-center justify-between gap-6 border-b border-line-soft py-3.5 last:border-b-0 max-sm:flex-col max-sm:items-start max-sm:gap-0.5"><dt className="font-semibold text-ink-2">{k}</dt><dd className="m-0 text-right font-bold max-sm:text-left">{v}</dd></div>
                 ))}
               </dl>
             </section>
@@ -161,17 +175,19 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
             <section className="card flex flex-col gap-4 p-6 max-sm:p-4">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="card-icon"><Icon name="task_alt" size={18} fill /></span>
-                <h2 className="m-0 flex-1 text-base font-bold">Ish jurnali · {MONTHS[m - 1]} {y}</h2>
+                <h2 className="m-0 flex-1 text-base font-bold">Ish jurnali</h2>
                 <span className="text-[13px] text-muted">{journal.doneCount} ta tasdiqlangan{journal.minutes ? ` · ${minutesText(journal.minutes)}` : ''}</span>
+                {monthSwitch}
               </div>
               {journal.items.length === 0 ? <EmptyState text="Bu oyda vazifa yoki qayd etilgan ish yo'q." /> : (
                 [...new Set(journal.items.map((i) => i.day))].map((day) => (
                   <div key={day} className="flex flex-col gap-1.5">
-                    <div className="text-xs font-bold text-muted">{formatDate(`${day}T12:00:00Z`)}</div>
+                    <div className="text-xs font-bold text-muted">{formatDate(`${day}T12:00:00Z`)}, {WEEKDAY_LONG[isoWeekday(day) - 1]}</div>
                     {journal.items.filter((i) => i.day === day).map((i) => (
                       <Link key={i.id} href={`/vazifalar/${i.id}`} className="flex flex-wrap items-center gap-2.5 rounded-xl bg-page px-3 py-2.5 text-[13px] hover:bg-primary-soft">
                         <Icon name={i.source === 'assigned' ? 'assignment' : 'edit_note'} size={18} className="text-muted" />
                         <span className="min-w-0 flex-1 font-semibold">{i.title}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${i.source === 'assigned' ? 'bg-primary-tint text-primary' : 'bg-subtle text-ink-2'}`}>{i.source === 'assigned' ? 'Berilgan' : "O'zi qo'shdi"}</span>
                         {i.spentMinutes ? <span className="text-xs text-muted">{minutesText(i.spentMinutes)}</span> : null}
                         {i.onTime === false && <span className="text-xs font-semibold text-danger">kechikdi</span>}
                         {i.rating ? <span className="text-xs text-warning">{'★'.repeat(i.rating)}</span> : null}
@@ -184,14 +200,27 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
             </section>
           )}
           {tab === 'sorovlar' && (
-            <section className="card flex flex-col gap-2.5 p-5">
+            <section className="card flex flex-col gap-2.5 px-6 pt-5 pb-5 max-sm:px-4">
+              <div className="flex items-center gap-2.5 pb-1">
+                <span className="card-icon"><Icon name="inbox" size={18} fill /></span>
+                <h2 className="m-0 flex-1 text-base font-bold">Ruxsat so&apos;rovlari</h2>
+              </div>
               {!leaves?.length ? <EmptyState text="Ruxsat so'rovlari yo'q. Xodim botda «📝 So'rov» yoki Mini App'da so'raydi." /> : leaves.map((l) => (
                 <div key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-line px-4 py-3 text-sm">
                   <span className="font-bold">{LEAVE_KIND_ICONS[l.kind]} {LEAVE_KIND_LABELS[l.kind]}</span>
                   <span className="tnum font-semibold">{leavePeriod(l.dateFrom, l.dateTo)}</span>
                   <span className="text-xs text-muted">{leaveDays(l.dateFrom, l.dateTo)} kun</span>
                   {l.reason && <span className="min-w-0 flex-1 truncate text-[13px] text-ink-2">«{l.reason}»</span>}
-                  <span className={`badge ml-auto ${LEAVE_TONE[l.status]}`}><span className="badge-dot" />{LEAVE_STATUS_LABELS[l.status]}</span>
+                  {l.status === 'pending' ? (
+                    <span className="ml-auto flex gap-2">
+                      <form action={quickDecideLeaveAction}><input type="hidden" name="id" value={l.id} /><input type="hidden" name="to" value="approved" /><button className="btn-primary btn-sm h-8 px-3 shadow-none"><Icon name="check" size={16} />Tasdiqlash</button></form>
+                      <FormDrawer trigger={<><Icon name="close" size={16} />Rad etish</>} triggerClass="btn-danger btn-sm h-8 px-3" title="Rad etish" subtitle={`${e.fullName} · ${leavePeriod(l.dateFrom, l.dateTo)}`} action={decideLeaveAction} submitLabel="Rad etish">
+                        <input type="hidden" name="id" value={l.id} /><input type="hidden" name="to" value="rejected" />
+                        <Field label="Sabab" hint="Xodimga Telegram'da yuboriladi."><textarea name="comment" rows={3} maxLength={500} className="input h-auto py-2.5" /></Field>
+                      </FormDrawer>
+                    </span>
+                  ) : <span className={`badge ml-auto ${LEAVE_TONE[l.status]}`}><span className="badge-dot" />{LEAVE_STATUS_LABELS[l.status]}</span>}
+                  {l.decisionComment && <span className="w-full text-xs text-placeholder">Rahbar: «{l.decisionComment}»</span>}
                 </div>
               ))}
               <Link href="/sorovlar" className="text-xs font-semibold text-primary">Barcha so&apos;rovlar →</Link>
@@ -201,12 +230,14 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
             <section className="card flex flex-col gap-3 p-5">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="card-icon"><Icon name="payments" size={18} fill /></span>
-                <h2 className="m-0 flex-1 text-base font-bold">{MONTHS[m - 1]} {y}</h2>
+                <h2 className="m-0 flex-1 text-base font-bold">Ish haqi</h2>
+                {monthSwitch}
                 {pay && <span className={`badge ${pay.status === 'closed' ? 'bg-success-tint text-success' : 'bg-subtle text-muted'}`}><span className="badge-dot" />{pay.status === 'closed' ? 'Yopilgan' : month === cur ? 'Hozirgacha' : 'Qoralama'}</span>}
                 <Link href={`/ish-haqi?oy=${month}`} className="btn-secondary btn-sm">Vedomost</Link>
               </div>
               {!pay ? <EmptyState text="Bu xodim uchun hisob yo'q (tasdiqlanmagan)." /> : (
-                <div className="flex max-w-[520px] flex-col gap-1 text-[13px]">
+                <div className="flex max-w-[560px] flex-col gap-1 text-[13px]">
+                  <div className="mb-2 flex items-baseline gap-2"><span className="tnum text-[32px] leading-10 font-extrabold tracking-[-0.03em]">{formatSom(pay.total)}</span><span className="text-sm text-muted">{MONTHS[m - 1]} {y}</span></div>
                   <PayLine label={`Stavka: ${PAY_TYPE_LABELS[pay.payType]}`} value={formatSom(pay.rate)} muted />
                   <PayLine label={`Asosiy (${pay.result.stats.workedDays}${pay.result.stats.plannedDays ? `/${pay.result.stats.plannedDays}` : ''} kun)`} value={formatSom(pay.result.base)} />
                   {pay.result.penalties.map((x) => <PayLine key={x.kind} label={`${x.label}: ${x.count}`} value={`−${formatSom(x.amount)}`} tone="text-danger" />)}

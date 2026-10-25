@@ -4,78 +4,87 @@ import { listPlans, listTenants, platformStats } from '@/server/platform';
 import { setTenantStatusAction } from '@/lib/actions/platform';
 import { CreateTenant } from '@/components/platform/create-tenant';
 import { TenantStatusBadge } from '@/components/ui/status-badge';
+import { StatCard } from '@/components/ui/page-header';
 
 export const metadata: Metadata = { title: 'Ishxonalar' };
 
+const COLS = 'grid-cols-[minmax(0,1.8fr)_minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.9fr)_70px_minmax(0,0.9fr)_220px]';
+
+/** Super admin → Ishxonalar: panel uslubi (StatCard, grid jadval, telefonda kartochkalar). */
 export default async function TenantsPage() {
   const [rows, plans, stats] = await Promise.all([listTenants(), listPlans(), platformStats()]);
+  const soon = (d: Date | null) => !!d && d.getTime() - Date.now() < 7 * 86_400_000;
+  const actions = (t: (typeof rows)[number]) => (
+    <form action={setTenantStatusAction} className="flex justify-end gap-1.5">
+      <input type="hidden" name="id" value={t.id} />
+      {t.status === 'blocked' ? (
+        <button name="status" value="active" className="btn-secondary btn-sm h-8 px-3">Blokdan chiqarish</button>
+      ) : (
+        <>
+          {t.status !== 'active' && <button name="status" value="active" className="btn-secondary btn-sm h-8 px-3">Faollashtirish</button>}
+          <button name="status" value="blocked" className="btn-ghost btn-sm h-8 px-3 text-danger-text">Bloklash</button>
+        </>
+      )}
+    </form>
+  );
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="page-title">Ishxonalar <span className="tnum text-muted">{rows.length}</span></h1>
+        <h1 className="page-title">Ishxonalar <span className="tnum text-placeholder">{rows.length}</span></h1>
         <CreateTenant plans={plans} />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Ishxonalar" value={stats.tenants} />
-        <Kpi label="Faol (to'lovli)" value={stats.active} />
-        <Kpi label="Sinovda" value={stats.trial} />
-        <Kpi label="Panel foydalanuvchilari" value={stats.members} />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard icon="storefront" tone="primary" label="Ishxonalar" value={stats.tenants} caption="jami ochilgan" />
+        <StatCard icon="verified" tone="success" label="Faol (to'lovli)" value={stats.active} caption="obuna faol" />
+        <StatCard icon="hourglass_top" tone="warning" label="Sinovda" value={stats.trial} caption="sinov muddatida" />
+        <StatCard icon="group" tone="primary" label="Panel foydalanuvchilari" value={stats.members} caption="egasi, admin, menejer" />
       </div>
-      <div className="card overflow-hidden">
+      <section className="card px-6 pt-2 pb-2 max-sm:px-4">
         {rows.length === 0 ? (
           <p className="m-0 p-10 text-center text-muted">Hali ishxona yo&apos;q. «Ishxona qo&apos;shish» bilan birinchisini oching.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] border-collapse text-[13px]">
-              <thead className="bg-page text-left text-xs text-muted">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">Ishxona</th>
-                  <th className="px-4 py-2.5 font-medium">Egasi</th>
-                  <th className="px-4 py-2.5 font-medium">Tarif</th>
-                  <th className="px-4 py-2.5 font-medium">Muddat</th>
-                  <th className="px-4 py-2.5 font-medium">A&apos;zolar</th>
-                  <th className="px-4 py-2.5 font-medium">Holat</th>
-                  <th className="px-4 py-2.5" />
-                </tr>
-              </thead>
-              <tbody>
+          <>
+            <div className="overflow-x-auto max-md:hidden">
+              <div className="min-w-[980px]">
+                <div className={`grid ${COLS} gap-3 border-b border-line-soft px-1 pt-3.5 pb-2.5 text-xs font-medium text-placeholder`}>
+                  <span>Ishxona</span><span>Egasi</span><span>Tarif</span><span>Muddat</span><span>A&apos;zolar</span><span>Holat</span><span />
+                </div>
                 {rows.map((t) => (
-                  <tr key={t.id} className="border-t border-line">
-                    <td className="px-4 py-3"><div className="font-medium">{t.name}</div><div className="text-xs text-muted">{t.slug} · {formatDate(t.createdAt)}</div></td>
-                    <td className="px-4 py-3"><div>{t.ownerName ?? '—'}</div><div className="tnum text-xs text-muted">{formatPhone(t.ownerPhone)}</div></td>
-                    <td className="px-4 py-3">{t.planName ?? '—'}</td>
-                    <td className="tnum px-4 py-3">{t.periodEnd ? formatDate(t.periodEnd) : '—'}</td>
-                    <td className="tnum px-4 py-3">{t.members}</td>
-                    <td className="px-4 py-3"><TenantStatusBadge status={t.status} /></td>
-                    <td className="px-4 py-3 text-right">
-                      <form action={setTenantStatusAction} className="inline-flex gap-1">
-                        <input type="hidden" name="id" value={t.id} />
-                        {t.status === 'blocked' ? (
-                          <button name="status" value="active" className="btn-secondary btn-sm">Blokdan chiqarish</button>
-                        ) : (
-                          <>
-                            {t.status !== 'active' && <button name="status" value="active" className="btn-secondary btn-sm">Faollashtirish</button>}
-                            <button name="status" value="blocked" className="btn-ghost btn-sm text-danger-text">Bloklash</button>
-                          </>
-                        )}
-                      </form>
-                    </td>
-                  </tr>
+                  <div key={t.id} className={`grid ${COLS} items-center gap-3 border-b border-[#F4F5F7] px-1 py-[11px] text-[13px] last:border-b-0`}>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-navy text-sm font-extrabold text-white">{t.name.slice(0, 1).toUpperCase()}</span>
+                      <span className="min-w-0"><span className="block truncate font-bold">{t.name}</span><span className="block truncate text-xs text-muted">{t.slug} · {formatDate(t.createdAt)}</span></span>
+                    </span>
+                    <span className="min-w-0"><span className="block truncate">{t.ownerName ?? '—'}</span><span className="tnum block truncate text-xs text-muted">{formatPhone(t.ownerPhone)}</span></span>
+                    <span className="font-semibold">{t.planName ?? '—'}</span>
+                    <span className={`tnum ${soon(t.periodEnd) ? 'font-bold text-warning' : ''}`}>{t.periodEnd ? formatDate(t.periodEnd) : '—'}</span>
+                    <span className="tnum">{t.members}</span>
+                    <span><TenantStatusBadge status={t.status} /></span>
+                    {actions(t)}
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2.5 py-3 md:hidden">
+              {rows.map((t) => (
+                <div key={t.id} className="flex flex-col gap-2.5 rounded-[20px] border border-line p-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-navy font-extrabold text-white">{t.name.slice(0, 1).toUpperCase()}</span>
+                    <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-bold">{t.name}</span><span className="block truncate text-xs text-muted">{t.ownerName ?? '—'} · {formatPhone(t.ownerPhone)}</span></span>
+                    <TenantStatusBadge status={t.status} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="rounded-full bg-subtle px-2.5 py-1 font-semibold">{t.planName ?? '—'}</span>
+                    <span className={`rounded-full px-2.5 py-1 font-semibold ${soon(t.periodEnd) ? 'bg-warning-tint text-warning' : 'bg-subtle'}`}>{t.periodEnd ? `${formatDate(t.periodEnd)} gacha` : '—'}</span>
+                    <span className="rounded-full bg-subtle px-2.5 py-1 font-semibold">{t.members} a&apos;zo</span>
+                  </div>
+                  {actions(t)}
+                </div>
+              ))}
+            </div>
+          </>
         )}
-      </div>
+      </section>
     </>
-  );
-}
-
-function Kpi({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="card-pad flex flex-col gap-1">
-      <span className="text-[13px] text-muted">{label}</span>
-      <span className="kpi-value tnum">{value}</span>
-    </div>
   );
 }
