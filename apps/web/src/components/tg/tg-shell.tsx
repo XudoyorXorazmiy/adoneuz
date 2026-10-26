@@ -12,10 +12,13 @@ const NAV: NavItem[] = [
   { href: '/tg/tarix', label: 'Tarix', icon: 'history' },
   { href: '/tg/profil', label: 'Profil', icon: 'person' },
 ];
-/** Rahbar (egasi, admin, bo'lim boshlig'i): Bugun · Qarorlar · Panel (tashqi havola). */
-export const managerNav = (panelUrl: string, pending: number): NavItem[] => [
+export type ManagerShell = { panelUrl: string; pending: number; reports: boolean };
+/** Rahbar (egasi, admin, bo'lim boshlig'i): Bugun · Vazifalar · Qarorlar · Hisobot (faqat `reports`) · Panel (tashqi havola). */
+export const managerNav = ({ panelUrl, pending, reports }: ManagerShell): NavItem[] => [
   { href: '/tg', label: 'Bugun', icon: 'how_to_reg' },
+  { href: '/tg/vazifalar', label: 'Vazifalar', icon: 'task_alt' },
   { href: '/tg/qarorlar', label: 'Qarorlar', icon: 'fact_check', count: pending },
+  ...(reports ? [{ href: '/tg/hisobot', label: 'Hisobot', icon: 'bar_chart' }] : []),
   { href: panelUrl, label: 'Panel', icon: 'open_in_new', external: true },
 ];
 
@@ -81,11 +84,11 @@ export function TgHeader({ title, sub, back = '/tg', dark }: { title: string; su
   );
 }
 
-export function TgPage({ children, nav = true, manager }: { children: ReactNode; nav?: boolean; manager?: { panelUrl: string; pending: number } }) {
+export function TgPage({ children, nav = true, manager }: { children: ReactNode; nav?: boolean; manager?: ManagerShell }) {
   return (
     <div className={`mx-auto flex min-h-dvh max-w-[520px] flex-col bg-page ${nav ? 'pb-24' : ''}`}>
       {children}
-      {nav && <TgNav items={manager ? managerNav(manager.panelUrl, manager.pending) : undefined} />}
+      {nav && <TgNav items={manager ? managerNav(manager) : undefined} />}
     </div>
   );
 }

@@ -1,8 +1,8 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { formatDateTime, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, leaveDays } from '@adone/core';
-import { appOrigin } from '@/lib/host';
 import { currentTgMember, currentTgUser } from '@/lib/tg/session';
-import { managerDecisions } from '@/server/manager';
+import { managerDecisions, managerShell } from '@/server/manager';
 import { leavePeriod } from '@/server/leave';
 import { TgPage } from '@/components/tg/tg-shell';
 import { Avatar } from '@/components/ui/avatar';
@@ -15,11 +15,10 @@ export default async function TgDecisionsPage() {
   const m = await currentTgMember();
   if (!m) return (await currentTgUser()) ? redirect('/tg') : null; // xodim sessiyasi — o'z bosh sahifasi
   const d = await managerDecisions(m);
-  const panel = appOrigin();
   const tz = m.tz;
   const card = 'flex flex-col gap-3 rounded-[24px] bg-card p-[18px] shadow-[var(--shadow-card)]';
   return (
-    <TgPage manager={{ panelUrl: panel, pending: d.total }}>
+    <TgPage manager={managerShell(m, d.total)}>
       <div className="flex flex-col gap-4 px-4 pt-4">
         <div className="flex items-center justify-between">
           <h1 className="m-0 text-2xl font-bold tracking-[-0.02em]">Qarorlar</h1>
@@ -92,7 +91,7 @@ export default async function TgDecisionsPage() {
                     </div>
                   </div>
                 </div>
-                <a href={`${panel}/vazifalar/${t.id}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[13px] font-semibold text-primary"><Icon name="photo_library" size={16} />Hisobot fayllari va yozishma — panelda ↗</a>
+                <Link href={`/tg/vazifa/${t.id}`} className="flex items-center gap-1.5 text-[13px] font-semibold text-primary"><Icon name="photo_library" size={16} />Hisobot fayllari va yozishma<Icon name="chevron_right" size={16} /></Link>
                 <TaskReview id={t.id} />
               </div>
             ))}

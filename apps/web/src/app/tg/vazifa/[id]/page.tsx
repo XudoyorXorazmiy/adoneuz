@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { formatDateTime, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, isUuid } from '@adone/core';
 import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { myTask } from '@/server/miniapp';
@@ -6,15 +6,20 @@ import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { TgHeader } from '@/components/tg/tg-shell';
 import { TaskReport } from '@/components/tg/task-report';
+import { ManagerTask } from '@/components/tg/manager-task';
 import { dueText, minutesText, STATUS_PILL } from '@/components/tasks/task-card';
 
 const PRI = { low: 'bg-subtle text-muted', medium: 'bg-warning-tint text-warning', high: 'bg-danger-tint text-danger' } as const;
 
 export default async function TgTaskPage({ params }: PageProps<'/tg/vazifa/[id]'>) {
   const u = await currentTgUser();
-  if (!u) return (await currentTgMember()) ? redirect('/tg') : null; // rahbar sessiyasi — Bugun ekrani; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
   const { id } = await params;
   if (!isUuid(id)) notFound();
+  if (!u) {
+    // Rahbar sessiyasi — vazifa sahifasi (qaror, hisobot fayllari, yozishma); sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
+    const m = await currentTgMember();
+    return m ? <ManagerTask m={m} id={id} /> : null;
+  }
   const d = await myTask(u, id);
   if (!d) notFound();
   const { t, b } = d;

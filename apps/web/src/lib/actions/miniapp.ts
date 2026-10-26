@@ -3,12 +3,14 @@ import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { tasks, taskBatches, withTenant } from '@adone/db';
-import { faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
+import { can, faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
 import { assertTgMember, assertTgUser, memberAsTenantUser } from '@/lib/tg/session';
+import type { FormState } from '@/components/ui/form-drawer';
 import { setEmployeeStatus } from '@/server/employees';
 import { saveMedia } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
-import { createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
+import { commentTask, createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
+import { createTaskFromForm } from '@/server/tasks-form';
 import { kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
 import { createLeave, decideLeave } from '@/server/leave';
@@ -181,10 +183,10 @@ export async function tgCancelLeaveAction(id: string): Promise<{ ok?: boolean; e
 // ---------- Rahbar Mini App'i (tg_links kind=member): kim — sessiyadan, rol va bo'lim cheklovi — panel funksiyalaridan ----------
 
 const bad = (): { error: string } => ({ error: "Ma'lumot noto'g'ri" });
+/** Bugun, Qarorlar, Vazifalar, vazifa sahifasi — hammasi /tg ostida; bildirishnomalar navbatini ham turtadi. */
 function refreshManager() {
   kick();
-  revalidatePath('/tg');
-  revalidatePath('/tg/qarorlar');
+  revalidatePath('/tg', 'layout');
 }
 
 export async function tgApproveEmployeeAction(id: string): Promise<{ error?: string }> {
@@ -205,14 +207,35 @@ export async function tgDecideLeaveAction(id: string, to: 'approved' | 'rejected
   return {};
 }
 
-export async function tgReviewTaskAction(taskId: string, to: 'approved' | 'revision', rating: number | null, comment: string): Promise<{ error?: string }> {
+/** Hisobotni tasdiqlash (baho) / qaytarish (sabab majburiy) / vazifani bekor qilish (sabab majburiy) — ruxsat `transitionTask` ichida. */
+export async function tgReviewTaskAction(taskId: string, to: 'approved' | 'revision' | 'cancelled', rating: number | null, comment: string): Promise<{ error?: string }> {
   const m = await assertTgMember();
-  if (!isUuid(taskId) || (to !== 'approved' && to !== 'revision')) return bad();
+  if (!isUuid(taskId) || (to !== 'approved' && to !== 'revision' && to !== 'cancelled')) return bad();
   const res = await withTenant(m.tenantId, (tx) => transitionTask(tx, {
     tenantId: m.tenantId, taskId, to, actor: { userId: m.userId, role: m.role },
-    comment: String(comment ?? '').slice(0, 1000) || null, rating: rating && rating >= 1 && rating <= 5 ? Math.round(rating) : null,
+    comment: String(comment ?? '').trim().slice(0, 1000) || null, rating: rating && rating >= 1 && rating <= 5 ? Math.round(rating) : null,
   }));
   if ('error' in res) return { error: res.error };
   refreshManager();
   return {};
+}
+
+/** Vazifaga izoh (yozishma) — xodimga Telegram'da boradi (`task_notify`). */
+export async function tgCommentTaskAction(taskId: string, text: string): Promise<{ error?: string }> {
+  const m = await assertTgMember();
+  const comment = String(text ?? '').trim().slice(0, 1000);
+  if (!isUuid(taskId) || !comment) return bad();
+  const res = await withTenant(m.tenantId, (tx) => commentTask(tx, { tenantId: m.tenantId, taskId, actor: { userId: m.userId, role: m.role }, comment }));
+  if ('error' in res) return { error: res.error };
+  refreshManager();
+  return {};
+}
+
+/** «Vazifa berish» — panel drawer'i bilan bir xil forma va tekshiruv (server/tasks-form.ts); menejer faqat o'z bo'limiga. */
+export async function tgCreateTaskAction(_p: FormState, f: FormData): Promise<FormState> {
+  const m = await assertTgMember();
+  if (!can(m.role, 'tasks')) return { error: 'Ruxsat yo‘q' };
+  const res = await createTaskFromForm(memberAsTenantUser(m), f);
+  if ('ok' in res) refreshManager();
+  return res;
 }

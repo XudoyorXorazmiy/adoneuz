@@ -1,9 +1,9 @@
 'use client';
-/** Rahbar Mini App'i — qaror tugmalari: xodimni tasdiqlash, ruxsat so'rovi, hisobotni baholash/qaytarish. */
+/** Rahbar Mini App'i — qaror tugmalari: xodimni tasdiqlash, ruxsat so'rovi, hisobotni baholash/qaytarish, vazifani bekor qilish, izoh. */
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
-import { tgApproveEmployeeAction, tgDecideLeaveAction, tgReviewTaskAction } from '@/lib/actions/miniapp';
+import { tgApproveEmployeeAction, tgCommentTaskAction, tgDecideLeaveAction, tgReviewTaskAction } from '@/lib/actions/miniapp';
 
 function useAct() {
   const router = useRouter();
@@ -94,6 +94,52 @@ export function TaskReview({ id }: { id: string }) {
         </>
       )}
       <Err text={a.error} />
+    </div>
+  );
+}
+
+/** Vazifani bekor qilish (sabab majburiy) — vazifa o'chirilmaydi, «Bekor qilindi» bo'lib qoladi. */
+export function TaskCancel({ id }: { id: string }) {
+  const a = useAct();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  if (a.done) return <Done text={a.done} />;
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="flex items-center gap-1.5 self-start text-[13px] font-semibold text-danger"><Icon name="block" size={16} />Vazifani bekor qilish</button>;
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl bg-danger-tint p-3">
+      <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} maxLength={1000} placeholder="Sabab (majburiy) — xodimga yuboriladi" className="input h-auto py-2.5 text-sm" />
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setOpen(false)} className="btn-secondary h-11 flex-1 text-sm">Bekor</button>
+        <button type="button" disabled={a.pending || !reason.trim()} onClick={() => a.run('Vazifa bekor qilindi', () => tgReviewTaskAction(id, 'cancelled', null, reason))} className="btn h-11 flex-1 bg-danger text-sm text-white"><Icon name="block" size={18} />Bekor qilish</button>
+      </div>
+      <Err text={a.error} />
+    </div>
+  );
+}
+
+/** Izoh (yozishma): xodim Telegram'da ko'radi. Yuborilgach maydon tozalanadi, tarix yangilanadi. */
+export function TaskComment({ id }: { id: string }) {
+  const router = useRouter();
+  const [text, setText] = useState('');
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const send = () =>
+    start(async () => {
+      try {
+        const r = await tgCommentTaskAction(id, text);
+        if (r.error) setError(r.error);
+        else { setError(null); setText(''); router.refresh(); }
+      } catch {
+        setError('Aloqa uzildi — qayta urinib ko‘ring');
+      }
+    });
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-end gap-2">
+        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={1000} placeholder="Izoh yozing…" className="input h-auto min-h-11 flex-1 py-2.5 text-sm" />
+        <button type="button" disabled={pending || !text.trim()} onClick={send} className="btn-primary size-11 shrink-0 rounded-full p-0 shadow-none" aria-label="Yuborish"><Icon name="send" size={20} /></button>
+      </div>
+      <Err text={error} />
     </div>
   );
 }

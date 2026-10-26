@@ -1,25 +1,26 @@
 import Link from 'next/link';
 import { formatDate, formatTime, isoWeekday, MEMBER_ROLE_LABELS, WEEKDAY_LONG } from '@adone/core';
-import { appOrigin } from '@/lib/host';
 import type { TgMember } from '@/lib/tg/session';
-import { managerDecisions, managerToday } from '@/server/manager';
+import { managerDecisions, managerShell, managerTaskKpis, managerToday } from '@/server/manager';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { DayStatusBadge } from '@/components/attendance/badges';
 import { TgPage } from './tg-shell';
 
-/** Rahbar Mini App'i — «Bugun»: davomat raqamlari, qaror kutayotganlar, xodimlar ro'yxati. Panel uslubida, Mini App o'lchamlarida. */
+/** Rahbar Mini App'i — «Bugun»: davomat raqamlari, vazifalar nazorati, qaror kutayotganlar, xodimlar ro'yxati. Panel uslubida, Mini App o'lchamlarida. */
 export async function ManagerHome({ m }: { m: TgMember }) {
-  const [t, d] = await Promise.all([managerToday(m), managerDecisions(m)]);
+  const [t, d, k] = await Promise.all([managerToday(m), managerDecisions(m), managerTaskKpis(m)]);
   const tz = m.tz;
   const c = t.counts;
   const order = (r: (typeof t.rows)[number]) => (r.result.open ? 0 : r.result.status === 'late' ? 1 : r.result.status === 'present' ? 2 : r.result.status === 'absent' ? 3 : r.result.status === 'leave' ? 4 : 5);
   const rows = [...t.rows].sort((a, b) => order(a) - order(b) || a.fullName.localeCompare(b.fullName));
   const tiles: Array<[string, number, string]> = [['Ishda', c.inside, 'text-success'], ['Kechikdi', c.late, 'text-warning'], ['Kelmadi', c.absent, 'text-danger'], ['Ruxsatda', c.leave, 'text-primary']];
+  const taskTiles: Array<[string, number, string, string]> = [['Faol', k.active, 'text-primary', '/tg/vazifalar'], ['Tekshiruvda', k.review, 'text-warning', '/tg/vazifalar?tab=review'], ["Muddati o'tgan", k.overdue, 'text-danger', '/tg/vazifalar?tab=overdue']];
   const decisions: Array<[string, number, string]> = [['Yangi xodimlar', d.employees.length, 'person_add'], ["Ruxsat so'rovlari", d.leaves.length, 'inbox'], ['Hisobotlar tekshiruvda', d.tasks.length, 'fact_check']];
-  const panel = appOrigin();
+  const shell = managerShell(m, d.total);
+  const panel = shell.panelUrl;
   return (
-    <TgPage manager={{ panelUrl: panel, pending: d.total }}>
+    <TgPage manager={shell}>
       <div className="flex flex-col gap-4 px-4 pt-4">
         <div className="flex items-center gap-3">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-navy text-lg font-extrabold text-white">{m.tenantName.slice(0, 1).toUpperCase()}</span>
@@ -28,6 +29,11 @@ export async function ManagerHome({ m }: { m: TgMember }) {
             <div className="truncate text-xl font-bold tracking-[-0.02em]">{m.tenantName}</div>
           </div>
           <span className="rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-primary">{MEMBER_ROLE_LABELS[m.role]}</span>
+        </div>
+
+        <div className={`grid gap-2.5 ${shell.reports ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <Link href="/tg/vazifa-berish" className="btn-primary h-12 text-sm shadow-none"><Icon name="add_task" size={20} />Vazifa berish</Link>
+          {shell.reports && <Link href="/tg/hisobot" className="btn-secondary h-12 text-sm"><Icon name="bar_chart" size={20} className="text-primary" />Hisobot</Link>}
         </div>
 
         <section className="flex flex-col gap-3 rounded-[24px] bg-card p-[18px] shadow-[var(--shadow-card)]">
@@ -46,6 +52,22 @@ export async function ManagerHome({ m }: { m: TgMember }) {
           {c.suspicious > 0 && (
             <p className="m-0 flex items-center gap-2 rounded-2xl bg-warning-tint px-3.5 py-2.5 text-[13px] font-semibold text-warning-text"><Icon name="gpp_maybe" size={18} />Shubhali keldi-ketdi: {c.suspicious} — panelda «Davomat → Shubhali»</p>
           )}
+        </section>
+
+        <section className="flex flex-col gap-3 rounded-[24px] bg-card p-[18px] shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between">
+            <h2 className="m-0 text-base font-bold">Vazifalar</h2>
+            <Link href="/tg/vazifalar" className="flex items-center text-[13px] font-semibold text-primary">Hammasi<Icon name="chevron_right" size={18} /></Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {taskTiles.map(([l, v, color, href]) => (
+              <Link key={l} href={href} className="flex flex-col items-center rounded-2xl bg-page py-3">
+                <span className={`tnum text-2xl font-extrabold tracking-[-0.02em] ${v ? color : 'text-placeholder'}`}>{v}</span>
+                <span className="text-[11px] font-medium text-muted">{l}</span>
+              </Link>
+            ))}
+          </div>
+          {k.onTimePct != null && <p className="m-0 text-[13px] text-muted">Oxirgi 30 kunda o&apos;z vaqtida topshirilgan: <b className="tnum text-ink">{k.onTimePct}%</b></p>}
         </section>
 
         <Link href="/tg/qarorlar" className="flex flex-col gap-2.5 rounded-[24px] bg-card p-[18px] shadow-[var(--shadow-card)]">
