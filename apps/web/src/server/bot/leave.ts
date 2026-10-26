@@ -5,7 +5,7 @@ import 'server-only';
  */
 import { eq } from 'drizzle-orm';
 import { memberships, tenants, withTenant } from '@adone/db';
-import { addDays, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_KINDS, LEAVE_STATUS_LABELS, localDate, type LeaveKind } from '@adone/core';
+import { addDays, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_KINDS, LEAVE_STATUS_LABELS, localDate, type LeaveKind, UUID_SRC } from '@adone/core';
 import { answerCallback, editMarkup, send } from '@/server/telegram/api';
 import type { TgCallback, TgMessage } from '@/server/telegram/types';
 import { kick } from '@/server/jobs/enqueue';
@@ -72,7 +72,7 @@ export async function onLeaveCallback(cb: TgCallback): Promise<JobOutcome> {
     await pickDays(uid, chat, Number(d[1]));
     return {};
   }
-  const m = /^lv:(ok|no):([0-9a-f-]{36})$/.exec(data);
+  const m = new RegExp(`^lv:(ok|no):(${UUID_SRC})$`).exec(data);
   if (!m) {
     await answerCallback(cb.id);
     return { skip: `noma'lum: ${data}` };

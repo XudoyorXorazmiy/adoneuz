@@ -1,6 +1,6 @@
 import 'server-only';
 /** Ishxona sozlamalari (Sozlamalar sahifasi) — o'qish, bo'lim bo'yicha saqlash (audit bilan), «Oxirgi o'zgarish». */
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { asc, count, desc, eq, sql } from 'drizzle-orm';
 import { auditLog, branches, employees, payrollPeriods, plans, subscriptions, tenants, users, withTenant, type Tx } from '@adone/db';
 import { tenantSettings, type TenantSettings } from '@adone/core';
 
@@ -34,19 +34,18 @@ export async function saveSettings(tx: Tx, actor: { tenantId: string; userId: st
   return next;
 }
 
-/** Har audit amali bo'yicha oxirgi o'zgarish: kim, qachon. */
-export async function lastChanges(tenantId: string, actions: string[]): Promise<Record<string, { name: string; at: Date }>> {
+/** Har audit amali bo'yicha oxirgi o'zgarish: kim, qachon. `userId` — faqat shu foydalanuvchining amallari (Profilim). */
+export async function lastChanges(tenantId: string, actions: string[], userId?: string): Promise<Record<string, { name: string; at: Date }>> {
   if (!actions.length) return {};
   return withTenant(tenantId, async (tx) => {
-    const rows = await tx
-      .select({ action: auditLog.action, at: auditLog.createdAt, name: users.name })
-      .from(auditLog)
-      .leftJoin(users, eq(users.id, auditLog.userId))
-      .where(and(eq(auditLog.tenantId, tenantId), inArray(auditLog.action, actions)))
-      .orderBy(desc(auditLog.createdAt))
-      .limit(200);
+    const rows = await tx.execute<{ action: string; at: Date; name: string | null }>(sql`
+      select distinct on (a.action) a.action, a.created_at as at, u.name
+      from audit_log a left join users u on u.id = a.user_id
+      where a.tenant_id = ${tenantId} and a.action in (${sql.join(actions.map((x) => sql`${x}`), sql`, `)})
+        ${userId ? sql`and a.user_id = ${userId}` : sql``}
+      order by a.action, a.created_at desc`).then((r) => r.rows);
     const out: Record<string, { name: string; at: Date }> = {};
-    for (const r of rows) if (!out[r.action]) out[r.action] = { name: r.name ?? 'tizim', at: r.at };
+    for (const r of rows) out[r.action] = { name: r.name ?? 'tizim', at: new Date(r.at) };
     return out;
   });
 }

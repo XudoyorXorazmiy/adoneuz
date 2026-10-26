@@ -8,7 +8,8 @@ export type EmployeeFormValue = {
   scheduleId: string | null; payType: 'monthly' | 'hourly' | 'daily'; payRate: number;
 };
 
-export function EmployeeFields({ e, options }: { e?: EmployeeFormValue; options: { departments: Opt[]; branches: Opt[]; schedules: Opt[] } }) {
+/** `showPay` — faqat `payroll` ruxsati bor rol (egasi, admin): menejer stavkani ko'rmaydi ham, yozmaydi ham (§4). */
+export function EmployeeFields({ e, options, showPay = true }: { e?: EmployeeFormValue; options: { departments: Opt[]; branches: Opt[]; schedules: Opt[] }; showPay?: boolean }) {
   const select = (name: string, value: string | null | undefined, opts: Opt[], empty: string) => (
     <select name={name} defaultValue={value ?? ''} className="input">
       <option value="">{empty}</option>
@@ -30,13 +31,13 @@ export function EmployeeFields({ e, options }: { e?: EmployeeFormValue; options:
         <Field label="Filial">{select('branchId', e?.branchId, options.branches, '— tanlanmagan —')}</Field>
       </div>
       <Field label="Ish jadvali" hint="Jadvalsiz xodimga kechikish hisoblanmaydi.">{select('scheduleId', e?.scheduleId, options.schedules, '— jadvalsiz —')}</Field>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {showPay && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <span className="text-[13px] font-semibold">Ish haqi turi</span>
           <Segmented name="payType" full defaultValue={e?.payType ?? 'monthly'} options={[{ value: 'monthly', label: 'Oylik' }, { value: 'daily', label: 'Kunbay' }, { value: 'hourly', label: 'Soatbay' }]} />
         </div>
         <Field label="Stavka (so'm)"><input name="payRate" defaultValue={e?.payRate || ''} placeholder="4 500 000" inputMode="numeric" className="input tnum" /></Field>
-      </div>
+      </div>}
     </>
   );
 }

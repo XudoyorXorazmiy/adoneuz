@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { formatDateTime, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from '@adone/core';
+import { formatDateTime, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, isUuid } from '@adone/core';
 import { currentTgUser } from '@/lib/tg/session';
 import { myTask } from '@/server/miniapp';
 import { Avatar } from '@/components/ui/avatar';
@@ -14,7 +14,7 @@ export default async function TgTaskPage({ params }: PageProps<'/tg/vazifa/[id]'
   const u = await currentTgUser();
   if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const d = await myTask(u, id);
   if (!d) notFound();
   const { t, b } = d;

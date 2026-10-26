@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { MONTHS, periodLabel, REPORT_PRESET_LABELS, REPORT_PRESETS, reportPeriod, shortRange } from '@adone/core';
+import { MONTHS, periodLabel, REPORT_PRESET_LABELS, REPORT_PRESETS, reportPeriod, shortRange, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import type { TenantUser } from '@/lib/auth/session';
 import { today as todayOf } from '@/server/attendance';
@@ -22,7 +22,7 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
-const uuid = (v: unknown) => (typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v) ? v : undefined);
+const uuid = (v: unknown) => (isUuid(v) ? v : undefined);
 const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
 
 /**

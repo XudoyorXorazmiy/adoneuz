@@ -21,6 +21,8 @@ export type BotState =
   | { step: 'face_resample'; tenantId: string; employeeId: string }
   | { step: 'leave_dates'; tenantId: string; employeeId: string; kind: string }
   | { step: 'leave_reason'; tenantId: string; employeeId: string; kind: string; from: string; to: string }
+  /** Rahbar Telegram'i (/start mem_): kontakt bilan tasdiqlash kutilmoqda; `login` — bog'langach panel paroli yuboriladi */
+  | { step: 'mem_contact'; tenantId: string; userId: string; code: string; login: boolean }
   | { step: 'idle' };
 
 export const SESSION_TTL_MS = 15 * 60_000;

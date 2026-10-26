@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { DAY_STATUS_LABELS, isoWeekday, monthDays, MONTHS, WEEKDAY_SHORT, type DayStatus } from '@adone/core';
+import { DAY_STATUS_LABELS, isoWeekday, monthDays, MONTHS, WEEKDAY_SHORT, type DayStatus, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { monthGrid, monthTotals, today } from '@/server/attendance';
 import { employeeOptions } from '@/server/employees';
@@ -29,7 +29,7 @@ export default async function TimesheetPage({ searchParams }: PageProps<'/davoma
   const sp = await searchParams;
   const cur = today(user).slice(0, 7);
   const month = typeof sp.oy === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.oy) && sp.oy <= cur ? sp.oy : cur;
-  const departmentId = typeof sp.bolim === 'string' && /^[0-9a-f-]{36}$/.test(sp.bolim) ? sp.bolim : undefined;
+  const departmentId = isUuid(sp.bolim) ? sp.bolim : undefined;
   const [{ emps, cells }, options] = await Promise.all([monthGrid(user, month, departmentId), employeeOptions(user.tenantId)]);
   const dates = monthDays(month);
   const t = today(user);

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { addDays, formatDate, formatTime, isValidDate, isoWeekday, WEEKDAY_LONG, type CheckStatus, type DayStatus } from '@adone/core';
+import { addDays, formatDate, formatTime, isValidDate, isoWeekday, WEEKDAY_LONG, type CheckStatus, type DayStatus, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { listDay, summarize, today, type DayRow } from '@/server/attendance';
 import { employeeOptions } from '@/server/employees';
@@ -43,7 +43,7 @@ export default async function AttendancePage({ searchParams }: PageProps<'/davom
   const date = typeof sp.sana === 'string' && isValidDate(sp.sana) && sp.sana <= t ? sp.sana : t;
   const isToday = date === t;
   const tab = (TAB_KEYS as string[]).includes(String(sp.holat)) ? (String(sp.holat) as Tab) : 'all';
-  const uuid = (v: unknown) => (typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v) ? v : undefined);
+  const uuid = (v: unknown) => (isUuid(v) ? v : undefined);
   const branchId = uuid(sp.filial);
   const departmentId = uuid(sp.bolim);
   const q = typeof sp.q === 'string' ? sp.q.trim().slice(0, 60) : '';

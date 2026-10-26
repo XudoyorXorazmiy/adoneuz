@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { addDays, formatDate, isoWeekday, KANBAN_COLUMNS, KANBAN_LABELS, kanbanColumn, TASK_PRIORITIES, TASK_PRIORITY_LABELS, WEEKDAY_LONG, zonedParts, type KanbanColumn, type TaskPriority } from '@adone/core';
+import { addDays, formatDate, isoWeekday, KANBAN_COLUMNS, KANBAN_LABELS, kanbanColumn, TASK_PRIORITIES, TASK_PRIORITY_LABELS, WEEKDAY_LONG, zonedParts, type KanbanColumn, type TaskPriority, isUuid } from '@adone/core';
 import { withTenant } from '@adone/db';
 import { requireArea } from '@/lib/auth/guard';
 import { today } from '@/server/attendance';
@@ -22,7 +22,7 @@ const VIEWS: Array<[TaskView, string]> = [['berilgan', 'Berilgan'], ['ozi', "O'z
 const TABS: Array<[TaskTab, string]> = [['all', 'Barchasi'], ['new', 'Yangi'], ['progress', 'Jarayonda'], ['review', 'Tekshiruvda'], ['overdue', "Muddati o'tgan"], ['done', 'Tasdiqlangan'], ['cancelled', 'Bekor']];
 const COL_DOT: Record<KanbanColumn, string> = { new: 'bg-primary', progress: 'bg-navy', review: 'bg-warning', done: 'bg-success' };
 const DUE: Array<[NonNullable<TaskFilter['due']>, string]> = [['bugun', 'Bugun'], ['ertaga', 'Ertaga'], ['hafta', 'Shu hafta'], ['otgan', "Muddati o'tgan"]];
-const uuid = (v: unknown) => (typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v) ? v : undefined);
+const uuid = (v: unknown) => (isUuid(v) ? v : undefined);
 
 export default async function TasksPage({ searchParams }: PageProps<'/vazifalar'>) {
   const user = await requireArea('tasks');

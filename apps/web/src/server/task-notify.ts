@@ -12,6 +12,7 @@ import { dueLabel, escHtml as esc, taskCardText } from '@/lib/task-text';
 import { appOrigin, publicApiOrigin, ROOT_DOMAIN } from '@/lib/host';
 import { sendFile, send, type Keyboard } from '@/server/telegram/api';
 import { memberChats, notifyEmployee } from '@/server/notify';
+import { getSettings } from '@/server/settings';
 import { mediaRoot } from '@/server/media';
 import type { JobOutcome } from '@/server/jobs/types';
 
@@ -81,6 +82,13 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
     }
     return {};
   };
+
+  // Eslatmalar: sozlama keyin o'chirilgan bo'lsa — navbatdagi ish yuborilmaydi
+  if (kind === 'not_accepted' || kind === 'due_soon' || kind === 'overdue' || kind === 'review_stale') {
+    const r = (await getSettings(tenantId)).reminders;
+    const enabled = kind === 'not_accepted' ? r.notAccepted : kind === 'due_soon' ? r.dueSoon : kind === 'overdue' ? r.overdue : r.reviewStale;
+    if (!enabled) return { skip: 'eslatma sozlamada o‘chiq' };
+  }
 
   switch (kind) {
     case 'assigned':

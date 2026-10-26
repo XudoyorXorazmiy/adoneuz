@@ -43,5 +43,11 @@ test('tungi tinchlik', () => {
   const day = zonedTime('2026-10-20', '15:00', tz);
   assert.equal(outsideQuietHours(day, tz).getTime(), day.getTime());
   assert.equal(outsideQuietHours(zonedTime('2026-10-20', '23:10', tz), tz).toISOString(), zonedTime('2026-10-21', '08:00', tz).toISOString());
+  assert.equal(outsideQuietHours(zonedTime('2026-10-21', '03:00', tz), tz).toISOString(), zonedTime('2026-10-21', '08:00', tz).toISOString(), 'tungi — shu kuni ertalab');
+  // Kun ichidagi oraliq (ishxona sozlamasi): 00→06 va 10→14
+  assert.equal(outsideQuietHours(zonedTime('2026-10-21', '03:00', tz), tz, { from: 0, to: 6 }).toISOString(), zonedTime('2026-10-21', '06:00', tz).toISOString());
+  assert.equal(outsideQuietHours(zonedTime('2026-10-21', '12:00', tz), tz, { from: 10, to: 14 }).toISOString(), zonedTime('2026-10-21', '14:00', tz).toISOString());
+  assert.equal(outsideQuietHours(zonedTime('2026-10-21', '09:00', tz), tz, { from: 10, to: 14 }).toISOString(), zonedTime('2026-10-21', '09:00', tz).toISOString(), 'oraliqdan tashqari — o‘zgarmaydi');
+  assert.equal(outsideQuietHours(zonedTime('2026-10-21', '15:00', tz), tz, { from: 10, to: 14 }).toISOString(), zonedTime('2026-10-21', '15:00', tz).toISOString());
   assert.equal(outsideQuietHours(zonedTime('2026-10-21', '03:00', tz), tz).toISOString(), zonedTime('2026-10-21', '08:00', tz).toISOString());
 });

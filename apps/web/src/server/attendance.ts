@@ -2,7 +2,7 @@ import 'server-only';
 /** Davomat ko'rinishlari (panel). Hisob — core computeDay(); jurnal — attendance_events (append-only). */
 import { and, asc, eq, gte, inArray, lte, ne } from 'drizzle-orm';
 import { attendanceDays, attendanceEvents, branches, departments, employees, leavesOn, media, schedules, toRule, withTenant } from '@adone/db';
-import { computeDay, localDate, shiftFor, type DayResult, type DayStatus, type Shift } from '@adone/core';
+import { computeDay, localDate, monthDays, shiftFor, type DayResult, type DayStatus, type Shift } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope, inScope } from './scope';
 
@@ -83,7 +83,7 @@ export function summarize(rows: DayRow[]) {
 /** Oylik tabel: attendance_days dan (cron va har hodisa yangilaydi). */
 export async function monthGrid(user: TenantUser, month: string, departmentId?: string) {
   const from = `${month}-01`;
-  const to = `${month}-31`;
+  const to = monthDays(month).at(-1)!; // oyning haqiqiy oxirgi kuni (30/28 kunlik oylar)
   return withTenant(user.tenantId, async (tx) => {
     const scope = await departmentScope(tx, user);
     const emps = await tx

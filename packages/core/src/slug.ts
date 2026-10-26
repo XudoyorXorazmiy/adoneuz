@@ -20,3 +20,10 @@ export function slugify(input: string): string {
 export function isValidSlug(slug: string): boolean {
   return /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/.test(slug) && !slug.includes('--');
 }
+
+/** Qat'iy UUID (URL/callback parametrlari uchun; `[0-9a-f-]{36}` 36 ta defisni ham o'tkazib yuborardi → Postgres xatosi). */
+export const UUID_SRC = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const UUID_RE = new RegExp(`^${UUID_SRC}$`, 'i');
+export function isUuid(v: unknown): v is string {
+  return typeof v === 'string' && UUID_RE.test(v);
+}

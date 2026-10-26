@@ -6,7 +6,7 @@ import 'server-only';
  */
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { memberships, taskBatches, tasks, tenants, withTenant } from '@adone/db';
-import { formatTime, localDate, TASK_PROOF_LABELS, TASK_STATUS_LABELS, type TaskProof, type TaskStatus } from '@adone/core';
+import { formatTime, localDate, TASK_PROOF_LABELS, TASK_STATUS_LABELS, type TaskProof, type TaskStatus, UUID_SRC } from '@adone/core';
 import { answerCallback, downloadFile, editMarkup, send, type Keyboard } from '@/server/telegram/api';
 import type { TgCallback, TgMessage } from '@/server/telegram/types';
 import { saveMedia } from '@/server/media';
@@ -103,14 +103,14 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
     await answerCallback(cb.id);
     return chooseWorkMode(uid, chat, data === 'wk:done' ? 'done' : 'plan');
   }
-  const wt = /^wk:t:([0-9a-f-]{36})$/.exec(data);
+  const wt = new RegExp(`^wk:t:(${UUID_SRC})$`).exec(data);
   if (wt) {
     await answerCallback(cb.id);
     const link = (await employeeLinks(uid)).find((l) => l.tenantId === wt[1]);
     if (!link) return { skip: 'bog‘lanish yo‘q' };
     return askWorkTitle(uid, chat, link);
   }
-  const m = /^tk:(v|acc|go|done|ask|send|ok|rev|rt):([0-9a-f-]{36})(?::([1-5]))?$/.exec(data);
+  const m = new RegExp(`^tk:(v|acc|go|done|ask|send|ok|rev|rt):(${UUID_SRC})(?::([1-5]))?$`).exec(data);
   if (!m) {
     await answerCallback(cb.id);
     return { skip: `noma'lum callback: ${data}` };

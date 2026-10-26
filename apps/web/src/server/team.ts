@@ -8,7 +8,7 @@ import 'server-only';
  *    (bir ishxona admini boshqa ishxona egasi hisobini egallay olmasin).
  */
 import { randomInt, randomUUID } from 'node:crypto';
-import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNull, ne } from 'drizzle-orm';
 import { auditLog, branches, departments, employees, invites, memberships, tgLinks, users, withAuth, withTenant, type Tx } from '@adone/db';
 import { hashPassword } from '@adone/db/password';
 import type { MemberRole } from '@adone/core';
@@ -87,6 +87,12 @@ async function audit(tx: Tx, actor: Actor, action: string, entityId: string, met
 
 /** Panel foydalanuvchisi uchun bir martalik Telegram havolasi. `login` — bot bog'lagach yangi vaqtinchalik parol yuboradi. */
 async function memberInvite(tx: Tx, tenantId: string, userId: string, login: boolean): Promise<string> {
+  // Profilim/Jamoa har ochilganda yangi havola yaratilmasin — QR allaqachon skanerlangan bo'lishi mumkin
+  if (!login) {
+    const [cur] = await tx.select({ code: invites.code }).from(invites)
+      .where(and(eq(invites.kind, 'member'), eq(invites.refId, userId), isNull(invites.usedAt), gt(invites.expiresAt, new Date(Date.now() + 86_400_000)))).limit(1);
+    if (cur) return `https://t.me/${BOT_USERNAME}?start=mem_${cur.code}`;
+  }
   const code = Array.from({ length: 12 }, () => 'abcdefghjkmnpqrstvwxyz0123456789'[randomInt(32)]).join('');
   await tx.update(invites).set({ expiresAt: new Date() }).where(and(inArray(invites.kind, ['member', 'member_login']), eq(invites.refId, userId), isNull(invites.usedAt)));
   await tx.insert(invites).values({ code, tenantId, kind: login ? 'member_login' : 'member', refId: userId, expiresAt: new Date(Date.now() + 7 * 86_400_000) });
@@ -112,7 +118,7 @@ export async function addMember(actor: Actor, input: AddMemberInput): Promise<Ad
   if (!canManage(actor, input.role)) return { ok: false, error: input.role === 'admin' ? "Administratorni faqat egasi qo'shadi" : "Ruxsat yo'q" };
   // Hisob boshqa ishxonada bo'lishi mumkin — adone_auth bilan qidiriladi (adone_app faqat o'z a'zolarini ko'radi)
   const [found] = await withAuth((tx) => tx.select({ id: users.id, platform: users.isPlatformAdmin }).from(users).where(eq(users.phone, input.phone)).limit(1));
-  if (found?.platform) return { ok: false, error: 'Bu raqam platforma hisobi — boshqa raqam kiriting' };
+  if (found?.platform) return { ok: false, error: "Bu raqamni jamoaga qo'shib bo'lmaydi — boshqa raqam kiriting" };
   return withTenant(actor.tenantId, async (tx) => {
     if (found) {
       const [m] = await tx.select({ id: memberships.id }).from(memberships).where(eq(memberships.userId, found.id)).limit(1);

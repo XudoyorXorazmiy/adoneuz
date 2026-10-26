@@ -11,7 +11,7 @@ export function MobileNav({ items, title, footer }: { items: MobileNavItem[]; ti
   const [open, setOpen] = useState(false);
   const path = usePathname();
   useEffect(() => setOpen(false), [path]);
-  const active = (href: string) => (href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`));
+  const active = (href: string) => { const p = href.split('?')[0]!; return p === '/' ? path === '/' : path === p || path.startsWith(`${p}/`); };
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className="flex size-10 items-center justify-center rounded-full text-ink" title="Menyu" aria-label="Menyu"><Icon name="menu" size={24} /></button>

@@ -101,6 +101,7 @@ export async function saveAttendanceAction(_p: FormState, f: FormData): Promise<
   const yaw = num(f, 'faceYaw');
   if (!(threshold >= 30 && threshold <= 80) || !(yaw >= 5 && yaw <= 45)) return { error: 'Yuz tekshiruvi qiymatlari chegaradan tashqarida' };
   const absentTo = roles(f, 'absentTo', 'absent');
+  if (on(f, 'absentOn') && absentTo.length === 0) return { error: "«Kelmaganlar» xabari uchun kamida bitta qabul qiluvchi tanlang yoki uni o'chiring" };
   await withTenant(user.tenantId, async (tx) => {
     const cur = await readSettings(tx);
     const actor = { tenantId: user.tenantId, userId: user.id };

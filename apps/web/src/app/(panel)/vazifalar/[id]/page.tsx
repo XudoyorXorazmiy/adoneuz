@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { describeRecurrence, formatDateTime, isOverdue, nextStatuses, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, type TaskProof } from '@adone/core';
+import { describeRecurrence, formatDateTime, isOverdue, nextStatuses, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, type TaskProof, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { taskDetail } from '@/server/task-queries';
 import { quickTransitionAction, stopTemplateAction, transitionTaskAction } from '@/lib/actions/tasks';
@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: 'Vazifa' };
 export default async function TaskPage({ params }: PageProps<'/vazifalar/[id]'>) {
   const user = await requireArea('tasks');
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const d = await taskDetail(user, id);
   if (!d) notFound();
   const tz = user.tenantTimezone;

@@ -67,7 +67,7 @@ export default async function SettingsPage({ searchParams }: PageProps<'/sozlama
 async function TabContent({ tab, user, tz }: { tab: TabId; user: Awaited<ReturnType<typeof requireUser>>; tz: string }) {
   switch (tab) {
     case 'profil': {
-      const [acc, audit] = await Promise.all([myAccount(user), lastChanges(user.tenantId, ['account.name', 'account.password', 'account.telegram', 'auth.login'])]);
+      const [acc, audit] = await Promise.all([myAccount(user), lastChanges(user.tenantId, ['account.name', 'account.password', 'account.telegram', 'auth.login'], user.id)]);
       return <ProfileTab acc={acc} mustChange={user.mustChangePassword} audit={audit} tz={tz} />;
     }
     case 'ishxona': {

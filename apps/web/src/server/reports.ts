@@ -5,11 +5,7 @@ import 'server-only';
  */
 import { and, desc, eq, gte, inArray, lt, ne, sql } from 'drizzle-orm';
 import { attendanceDays, branches, departments, employees, media, taskBatches, taskReports, tasks, users, withTenant } from '@adone/db';
-import {
-  addDays, arrivalHistogram, attendanceStats, attentionReason, averageCame, dailySeries, localDate, periodDates, placeChange, rankBy, ratingScore,
-  reportPeriod, taskStats, weekBuckets, zonedTime,
-  type AttendanceStats, type ReportDay, type ReportPeriod, type ReportTask, type TaskSource, type TaskStats, type TaskStatus,
-} from '@adone/core';
+import { addDays, arrivalHistogram, attendanceStats, attentionReason, averageCame, dailySeries, localDate, periodDates, placeChange, rankBy, ratingScore, reportPeriod, taskStats, weekBuckets, zonedTime, type AttendanceStats, type ReportDay, type ReportPeriod, type ReportTask, type TaskSource, type TaskStats, type TaskStatus, isUuid } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope, inScope } from './scope';
 
@@ -235,12 +231,14 @@ export async function loadJournal(user: TenantUser, f: JournalFilter) {
         photos: rep.flatMap((r) => r.mediaIds).filter((id) => mime.has(id)).slice(0, 3).map((id) => ({ id, video: !mime.get(id)!.startsWith('image/') })),
       };
     });
+    // Bir xil ismli ikki xodim qo'shilib ketmasin — kalit id (xodim yo'q bo'lsa — ism)
     const people = new Map<string, { name: string; minutes: number; count: number }>();
     for (const e of entries) {
-      const p = people.get(e.name) ?? { name: e.name, minutes: 0, count: 0 };
+      const key = e.employeeId ?? `n:${e.name}`;
+      const p = people.get(key) ?? { name: e.name, minutes: 0, count: 0 };
       p.minutes += e.spentMinutes ?? 0;
       p.count++;
-      people.set(e.name, p);
+      people.set(key, p);
     }
     return {
       entries,
@@ -266,7 +264,7 @@ export async function reportOptions(user: TenantUser) {
 
 // ---------- URL parametrlari (sahifa va Excel bir xil) ----------
 
-const uuid = (v: unknown) => (typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v) ? v : undefined);
+const uuid = (v: unknown) => (isUuid(v) ? v : undefined);
 const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
 
 /** `davr`, `dan`, `gacha`, `filial`, `bolim`, `solishtir=0`. */

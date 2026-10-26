@@ -4,9 +4,9 @@ import 'server-only';
  * Qoidalar: tenant faqat tg_links / taklif kodidan (CLAUDE.md §1.1); isbot serverda tekshiriladi (§1.3);
  * davomat — append-only jurnal (§1.2). Telegram'ga so'rovlar tranzaksiyadan TASHQARIDA.
  */
-import { and, eq, isNull } from 'drizzle-orm';
-import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
-import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor } from '@adone/core';
+import { and, eq, gt, isNull } from 'drizzle-orm';
+import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
+import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor, UUID_SRC } from '@adone/core';
 import { appOrigin } from '@/lib/host';
 import { issueTelegramLogin } from '@/server/team';
 import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
@@ -107,6 +107,7 @@ async function onContact(msg: TgMessage): Promise<JobOutcome> {
   const uid = msg.from!.id;
   const chat = msg.chat.id;
   const state = await getState(uid);
+  if (state.step === 'mem_contact') return finishMemberLink(msg, state);
   if (state.step !== 'reg_contact') {
     await send(chat, T.unknown);
     return { skip: 'kontakt kutilmagan' };
@@ -159,7 +160,7 @@ async function onCallback(cb: TgCallback): Promise<JobOutcome> {
   if (data.startsWith('tk:') || data.startsWith('wk:')) return onTaskCallback(cb);
   if (data.startsWith('lv:')) return onLeaveCallback(cb);
   // Bir nechta ishxona: act:<check_in|check_out>:<tenantId>
-  const m = /^act:(check_in|check_out):([0-9a-f-]{36})$/.exec(data);
+  const m = new RegExp(`^act:(check_in|check_out):(${UUID_SRC})$`).exec(data);
   if (m) {
     await answerCallback(cb.id);
     const link = (await employeeLinks(uid)).find((l) => l.tenantId === m[2]);
@@ -216,23 +217,62 @@ async function finishRegistration(msg: TgMessage, state: Extract<BotState, { ste
 }
 
 /** Panel foydalanuvchisi (rahbar) Telegram'ini bildirishnomalar uchun bog'laydi: /start mem_<kod>. */
+/**
+ * Rahbar Telegram'i (/start mem_<kod>). Havola begonaga yetib qolsa parol/bildirishnoma unga ketmasin: xodim oqimidagidek
+ * avval kontakt (o'ziniki) so'raladi va paneldagi raqam bilan solishtiriladi; kod shundan keyingina ishlatilgan bo'ladi.
+ */
 async function linkMember(msg: TgMessage, code: string): Promise<JobOutcome> {
   const chat = msg.chat.id;
   const inv = await withPlatform(async (tx) => {
-    const [r] = await tx.select({ i: invites, name: tenants.name }).from(invites).innerJoin(tenants, eq(tenants.id, invites.tenantId)).where(eq(invites.code, code)).limit(1);
+    const [r] = await tx.select({ i: invites, name: tenants.name, status: tenants.status }).from(invites).innerJoin(tenants, eq(tenants.id, invites.tenantId)).where(eq(invites.code, code)).limit(1);
     if (!r || (r.i.kind !== 'member' && r.i.kind !== 'member_login') || r.i.usedAt || r.i.expiresAt < new Date()) return null;
-    await tx.update(invites).set({ usedAt: new Date() }).where(eq(invites.code, code));
     return r;
   });
   if (!inv) {
     await send(chat, T.badInvite);
     return { skip: 'yaroqsiz kod' };
   }
-  await linkTelegram({ tgUserId: msg.from!.id, chatId: chat, tenantId: inv.i.tenantId, kind: 'member', refId: inv.i.refId });
-  await send(chat, T.memberLinked(esc(inv.name)));
+  if (inv.status === 'blocked' || inv.status === 'archived') {
+    await send(chat, T.tenantInactive);
+    return { skip: 'ishxona faol emas' };
+  }
+  await setState(msg.from!.id, { step: 'mem_contact', tenantId: inv.i.tenantId, userId: inv.i.refId, code, login: inv.i.kind === 'member_login' });
+  await send(chat, T.memberContact(esc(inv.name)), contactKeyboard);
+  return {};
+}
+
+async function finishMemberLink(msg: TgMessage, state: Extract<BotState, { step: 'mem_contact' }>): Promise<JobOutcome> {
+  const uid = msg.from!.id;
+  const chat = msg.chat.id;
+  if (msg.contact!.user_id !== uid) {
+    await send(chat, T.ownContactOnly, contactKeyboard);
+    return { skip: 'begona kontakt' };
+  }
+  const phone = normalizePhone(msg.contact!.phone_number);
+  const res = await withPlatform(async (tx) => {
+    const [u] = await tx.select({ phone: users.phone }).from(users).where(eq(users.id, state.userId)).limit(1);
+    if (!u || !phone || u.phone !== phone) return 'mismatch' as const;
+    // Bir martalik — atomik: ikki hisobdan bir vaqtda bosilsa ham faqat bittasi oladi
+    const [used] = await tx.update(invites).set({ usedAt: new Date() })
+      .where(and(eq(invites.code, state.code), isNull(invites.usedAt), gt(invites.expiresAt, new Date()))).returning({ tenantId: invites.tenantId });
+    if (!used) return 'invalid' as const;
+    const [t] = await tx.select({ name: tenants.name }).from(tenants).where(eq(tenants.id, used.tenantId)).limit(1);
+    return { name: t?.name ?? '' };
+  });
+  await clearState(uid);
+  if (res === 'mismatch') {
+    await send(chat, T.memberPhoneMismatch, removeKeyboard);
+    return { skip: 'raqam mos emas' };
+  }
+  if (res === 'invalid') {
+    await send(chat, T.badInvite, removeKeyboard);
+    return { skip: 'yaroqsiz kod' };
+  }
+  await linkTelegram({ tgUserId: uid, chatId: chat, tenantId: state.tenantId, kind: 'member', refId: state.userId });
+  await send(chat, T.memberLinked(esc(res.name)), removeKeyboard);
   // Jamoaga «Telegram orqali taklif» bilan qo'shilgan — panelga kirish ma'lumoti shu yerga
-  if (inv.i.kind === 'member_login') {
-    const cred = await issueTelegramLogin(inv.i.tenantId, inv.i.refId);
+  if (state.login) {
+    const cred = await issueTelegramLogin(state.tenantId, state.userId);
     if (cred) await send(chat, T.memberCredentials(appOrigin(), formatPhone(cred.phone), cred.password));
   }
   return {};

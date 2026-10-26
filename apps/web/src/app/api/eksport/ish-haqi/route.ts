@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { can, MONTHS, PAY_TYPE_LABELS, PAYROLL_STATUS_LABELS } from '@adone/core';
+import { can, MONTHS, PAY_TYPE_LABELS, PAYROLL_STATUS_LABELS, isUuid } from '@adone/core';
 import { currentUser, type TenantUser } from '@/lib/auth/session';
 import { today } from '@/server/attendance';
 import { isMonth, payrollView } from '@/server/payroll';
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const oy = url.searchParams.get('oy');
   const month = isMonth(oy) && oy <= cur ? oy : cur;
   const bolim = url.searchParams.get('bolim');
-  const { period, rows } = await payrollView(u.tenantId, month, bolim && /^[0-9a-f-]{36}$/.test(bolim) ? bolim : undefined);
+  const { period, rows } = await payrollView(u.tenantId, month, isUuid(bolim) ? bolim : undefined);
   const [y, m] = month.split('-').map(Number) as [number, number];
 
   const wb = new ExcelJS.Workbook();

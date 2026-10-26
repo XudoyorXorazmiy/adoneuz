@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatDateTime, formatMinutes, formatSom, MONTHS, PAY_TYPE_LABELS, type PayRules } from '@adone/core';
+import { formatDateTime, formatMinutes, formatSom, MONTHS, PAY_TYPE_LABELS, type PayRules, isUuid } from '@adone/core';
 import { withTenant } from '@adone/db';
 import { requireArea } from '@/lib/auth/guard';
 import { adjustLineAction, periodStatusAction, savePayRulesAction } from '@/lib/actions/payroll';
@@ -25,7 +25,7 @@ const rateText = (r: PayrollRow) => `${PAY_TYPE_LABELS[r.payType]} · ${formatSo
 export default async function PayrollPage({ searchParams }: PageProps<'/ish-haqi'>) {
   const user = await requireArea('payroll');
   const sp = await searchParams;
-  const departmentId = typeof sp.bolim === 'string' && /^[0-9a-f-]{36}$/.test(sp.bolim) ? sp.bolim : undefined;
+  const departmentId = isUuid(sp.bolim) ? sp.bolim : undefined;
   const current = today(user).slice(0, 7);
   const month = isMonth(sp.oy) && sp.oy <= current ? sp.oy : current;
   const [{ period, rows }, rules, options] = await Promise.all([

@@ -3,7 +3,7 @@
  * Boshqaruv elementlari formaga oddiy input sifatida tushadi (toggle — checkbox, chip — checkbox, segment — radio),
  * shuning uchun `SettingsForm` o'zgarishni FormData bilan solishtirib topadi.
  */
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type { CSSProperties, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
 import { formatDateTime } from '@adone/core';
 import { Icon } from '@/components/ui/icon';
 
@@ -95,7 +95,7 @@ export function Segmented({ name, options, defaultValue, full }: { name: string;
 export function Field({ icon, suffix, width = 280, readOnly, ...props }: InputHTMLAttributes<HTMLInputElement> & { icon?: string; suffix?: string; width?: number }) {
   return (
     <span className="flex items-center gap-2 max-md:w-full">
-      <span className={`flex h-11 items-center gap-2 rounded-xl border border-line px-3 focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary-tint max-md:w-full max-md:flex-1 ${readOnly ? 'bg-page text-muted' : 'bg-card'}`} style={{ width }}>
+      <span className={`flex h-11 w-full items-center gap-2 rounded-xl border border-line px-3 focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary-tint md:w-[var(--w)] ${readOnly ? 'bg-page text-muted' : 'bg-card'}`} style={{ '--w': `${width}px` } as CSSProperties}>
         {(icon || readOnly) && <Icon name={icon ?? 'lock'} size={18} className="text-placeholder" />}
         <input {...props} readOnly={readOnly} className="tnum min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-placeholder" />
       </span>
@@ -106,7 +106,7 @@ export function Field({ icon, suffix, width = 280, readOnly, ...props }: InputHT
 
 export function SelectField({ icon, width = 280, children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { icon?: string; width?: number }) {
   return (
-    <span className="relative flex h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary-tint max-md:w-full" style={{ width }}>
+    <span className="relative flex h-11 w-full items-center gap-2 rounded-xl border border-line bg-card px-3 focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary-tint md:w-[var(--w)]" style={{ '--w': `${width}px` } as CSSProperties}>
       {icon && <Icon name={icon} size={18} className="text-placeholder" />}
       <select {...props} className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent pr-6 text-sm font-medium outline-none">{children}</select>
       <Icon name="expand_more" className="pointer-events-none absolute right-3 text-muted" />

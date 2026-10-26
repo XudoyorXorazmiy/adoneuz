@@ -174,11 +174,13 @@ try {
 
   // 7. Rahbar Telegram'i (mem_)
   const memCode = 'testmem' + Date.now();
-  const [ownerUser] = await odb.execute<{ id: string }>(sql`select u.id from users u join memberships m on m.user_id = u.id where m.tenant_id = ${T} and m.role = 'owner' limit 1`).then((r) => r.rows);
+  const [ownerUser] = await odb.execute<{ id: string; phone: string }>(sql`select u.id, u.phone from users u join memberships m on m.user_id = u.id where m.tenant_id = ${T} and m.role = 'owner' limit 1`).then((r) => r.rows);
   await withTenant(T, (tx) => tx.insert(invites).values({ code: memCode, tenantId: T, kind: 'member', refId: ownerUser!.id, expiresAt: new Date(Date.now() + 60_000) }));
   await processUpdate(msg({ text: `/start mem_${memCode}` }, OTHER));
+  assert.match(lastText(), /Raqamni yuborish/, 'avval kontakt so‘raladi');
+  await processUpdate(msg({ contact: { phone_number: `+${ownerUser!.phone}`, user_id: OTHER } }, OTHER));
   assert.match(lastText(), /Telegram ulandi/);
-  ok('rahbar Telegram bog‘landi');
+  ok('rahbar Telegram bog‘landi (kontakt bilan tasdiqlangan)');
 
   // 7b. Jamoa: «Telegram orqali taklif» — parol admin'ga ko'rsatilmaydi, bot bog'lagach o'zi yuboradi; havola bir martalik
   const { addMember } = await import('@/server/team');
@@ -186,6 +188,11 @@ try {
   assert.ok(added.ok && added.telegramUrl && added.password === null, 'telegram usulida parol qaytmaydi');
   const loginCode = added.ok ? added.telegramUrl!.split('mem_')[1]! : '';
   await processUpdate(msg({ text: `/start mem_${loginCode}` }, TEAM_TG));
+  await processUpdate(msg({ contact: { phone_number: '+998900000001', user_id: TEAM_TG } }, TEAM_TG));
+  assert.match(lastText(), /mos kelmadi/, 'begona raqam — parol berilmaydi');
+  assert.doesNotMatch(lastText(), /Vaqtinchalik parol/);
+  await processUpdate(msg({ text: `/start mem_${loginCode}` }, TEAM_TG));
+  await processUpdate(msg({ contact: { phone_number: `+${TEAM_PHONE}`, user_id: TEAM_TG } }, TEAM_TG));
   assert.match(lastText(), /Vaqtinchalik parol: <code>[a-z2-9]{3}-[a-z2-9]{4}<\/code>/);
   const [tu] = await odb.execute<{ must: boolean }>(sql`select must_change_password as must from users where phone = ${TEAM_PHONE}`).then((r) => r.rows);
   assert.equal(tu?.must, true, 'birinchi kirishda almashtirish so‘raladi');

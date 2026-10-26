@@ -123,12 +123,15 @@ export function describeRecurrence(r: Recurrence): string {
 }
 
 /**
- * Tungi tinchlik (CLAUDE.md §7): 22:00–08:00 oralig'idagi eslatma ertalab 08:00 ga suriladi. Kunduzgi vaqt — o'zgarmaydi.
+ * Tinch vaqt (CLAUDE.md §7, Sozlamalar → Vazifalar): oraliqdagi eslatma uning tugash soatiga suriladi, qolgan vaqt — o'zgarmaydi.
+ * Oraliq yarim tundan o'tishi (22→08) yoki kun ichida bo'lishi (00→06, 10→14) mumkin.
  */
 export function outsideQuietHours(at: Date, tz: string, quiet: { from: number; to: number } = { from: 22, to: 8 }): Date {
   const h = zonedParts(at, tz).h;
-  if (h >= quiet.to && h < quiet.from) return at;
+  const inQuiet = quiet.from > quiet.to ? h >= quiet.from || h < quiet.to : h >= quiet.from && h < quiet.to;
+  if (!inQuiet || quiet.from === quiet.to) return at;
   const day = localDate(at, tz);
-  const morning = `${String(quiet.to).padStart(2, '0')}:00`;
-  return zonedTime(h >= quiet.from ? addDays(day, 1) : day, morning, tz);
+  const end = `${String(quiet.to).padStart(2, '0')}:00`;
+  // Tugash soati bugun hali oldinda bo'lsa — bugun, aks holda ertaga
+  return zonedTime(h < quiet.to ? day : addDays(day, 1), end, tz);
 }

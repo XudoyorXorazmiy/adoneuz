@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { can, describeSchedule, formatDate, formatPhone, formatSom, isoWeekday, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_STATUS_LABELS, leaveDays, MONTHS, PAY_TYPE_LABELS, WEEKDAY_LONG, type LeaveStatus } from '@adone/core';
+import { can, describeSchedule, formatDate, formatPhone, formatSom, isoWeekday, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_STATUS_LABELS, leaveDays, MONTHS, PAY_TYPE_LABELS, WEEKDAY_LONG, type LeaveStatus, isUuid } from '@adone/core';
 import { toRule, withTenant } from '@adone/db';
 import { leavePeriod, myLeaves } from '@/server/leave';
 import { employeePay } from '@/server/payroll';
@@ -36,7 +36,7 @@ const PAY: Record<string, string> = { monthly: 'oylik', hourly: 'soatbay', daily
 export default async function EmployeeProfilePage({ params, searchParams }: PageProps<'/xodimlar/[id]'>) {
   const user = await requireArea('employees');
   const [{ id }, sp] = await Promise.all([params, searchParams]);
-  if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const tz = user.tenantTimezone;
   const cur = today(user).slice(0, 7);
   const month = typeof sp.oy === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.oy) && sp.oy <= cur ? sp.oy : cur;
@@ -101,7 +101,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
             {e.status !== 'disabled' && (
               <FormDrawer trigger={<Icon name="edit" />} triggerClass="btn-icon size-11" title="Xodimni tahrirlash" subtitle={e.fullName} action={saveEmployeeAction}
                 danger={<form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="disabled" /><button className="btn-ghost text-danger">Ishdan bo&apos;shatish</button></form>}>
-                <EmployeeFields e={e} options={formOptions} />
+                <EmployeeFields e={e} options={formOptions} showPay={can(user.role, 'payroll')} />
               </FormDrawer>
             )}
           </div>
@@ -150,7 +150,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
                 {e.status !== 'disabled' && (
                   <FormDrawer trigger={<><Icon name="edit" size={16} />Tahrirlash</>} triggerClass="btn-secondary btn-sm h-8 px-3" title="Xodimni tahrirlash" subtitle={e.fullName} action={saveEmployeeAction}
                     danger={<form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="disabled" /><button className="btn-ghost text-danger">Ishdan bo&apos;shatish</button></form>}>
-                    <EmployeeFields e={e} options={formOptions} />
+                    <EmployeeFields e={e} options={formOptions} showPay={can(user.role, 'payroll')} />
                   </FormDrawer>
                 )}
               </div>

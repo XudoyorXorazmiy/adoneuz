@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { auditLog, branches, departments, employees, invites, schedules, tgLinks, withTenant, type Tx } from '@adone/db';
-import { normalizePhone, PAY_TYPES } from '@adone/core';
+import { can, normalizePhone, PAY_TYPES } from '@adone/core';
 import { assertArea } from '@/lib/auth/guard';
 import type { TenantUser } from '@/lib/auth/session';
 import type { FormState } from '@/components/ui/form-drawer';
@@ -45,12 +45,14 @@ export async function saveEmployeeAction(_p: FormState, f: FormData): Promise<Fo
   const rawPhone = str(f, 'phone');
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
   if (rawPhone && !phone) return { error: "Telefon raqam noto'g'ri" };
-  const payType = z.enum(PAY_TYPES).catch('monthly').parse(str(f, 'payType'));
-  const payRate = Math.max(0, Math.round(Number(str(f, 'payRate').replace(/\s/g, '') || 0)));
+  // Stavka — faqat `payroll` ruxsati bilan (menejer formada ko'rmaydi; yuborsa ham yozilmaydi, §4)
+  const pay = can(user.role, 'payroll')
+    ? { payType: z.enum(PAY_TYPES).catch('monthly').parse(str(f, 'payType')), payRate: Math.max(0, Math.round(Number(str(f, 'payRate').replace(/\s/g, '') || 0))) }
+    : {};
   const values = {
     fullName, phone, position: str(f, 'position') || null,
     departmentId: optUuid(str(f, 'departmentId')), branchId: optUuid(str(f, 'branchId')), scheduleId: optUuid(str(f, 'scheduleId')),
-    payType, payRate,
+    ...pay,
   };
   const err = await withTenant(user.tenantId, async (tx) => {
     if (!(await owns(tx, departments, values.departmentId)) || !(await owns(tx, branches, values.branchId)) || !(await owns(tx, schedules, values.scheduleId))) return 'Tanlov topilmadi';

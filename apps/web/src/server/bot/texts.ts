@@ -51,6 +51,10 @@ export const T = {
   pickCompany: 'Qaysi ishxona uchun?',
   help:
     `<b>Qanday ishlaydi</b>\n\n${BTN.checkIn} — ishga kelganda: jonli joylashuv + dumaloq video.\n${BTN.checkOut} — ketayotganda: jonli joylashuv.\n${BTN.tasks} — sizga berilgan vazifalar: qabul qilish, «Bajardim» va hisobot.\n${BTN.addWork} — o'zingiz qilgan yoki rejalashtirgan ish.\n${BTN.leave} — ruxsat so'rash (kasal, ta'til, shaxsiy).\n${BTN.today} — bugungi holatingiz.\n\nMuammo bo'lsa rahbaringizga yozing.`,
+  memberContact: (company: string) =>
+    `Assalomu alaykum! Siz <b>${company}</b> rahbariyati sifatida ulanyapsiz.\n\nBu siz ekaningizni tasdiqlash uchun pastdagi «${BTN.contact}» tugmasini bosing — raqam paneldagi raqamingiz bilan solishtiriladi.`,
+  memberPhoneMismatch: "Bu raqam taklif qilingan rahbar raqamiga mos kelmadi. Havolani sizga yuborgan kishiga murojaat qiling.",
+  tenantInactive: "Bu ishxona hozir faol emas. Qo'llab-quvvatlashga murojaat qiling.",
   memberCredentials: (url: string, phone: string, password: string) =>
     `🔐 <b>Panelga kirish</b>\n${url.replace(/^https?:\/\//, '')}\nTelefon: ${phone}\nVaqtinchalik parol: <code>${password}</code>\n\nKirgach, Sozlamalar → Profilim'da parolni o'zgartiring. Bu xabarni hech kimga yubormang.`,
   memberLinked: (company: string) => `✅ Telegram ulandi. <b>${company}</b> bo'yicha bildirishnomalar (kechikkanlar, kelmaganlar, yangi xodimlar, vazifa hisobotlari) shu yerga keladi. Hisobotni shu yerdan tasdiqlash yoki qaytarish mumkin.`,

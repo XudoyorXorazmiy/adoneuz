@@ -49,14 +49,27 @@ export async function memberChats(
       const rows = await tx.select({ id: memberships.userId }).from(memberships).where(and(eq(memberships.isActive, true), inArray(memberships.role, top)));
       rows.forEach((r) => ids.add(r.id));
     }
-    if (roles.includes('manager') && departmentId) {
-      const [d] = await tx.select({ m: departments.managerUserId }).from(departments).where(eq(departments.id, departmentId)).limit(1);
-      if (d?.m) ids.add(d.m);
-      const scoped = await tx.select({ id: memberships.userId }).from(memberships)
-        .where(and(eq(memberships.isActive, true), eq(memberships.role, 'manager'), arrayContains(memberships.departmentIds, [departmentId])));
-      scoped.forEach((r) => ids.add(r.id));
+    if (roles.includes('manager')) {
+      if (departmentId) {
+        const [d] = await tx.select({ m: departments.managerUserId }).from(departments).where(eq(departments.id, departmentId)).limit(1);
+        if (d?.m) ids.add(d.m);
+        const scoped = await tx.select({ id: memberships.userId }).from(memberships)
+          .where(and(eq(memberships.isActive, true), eq(memberships.role, 'manager'), arrayContains(memberships.departmentIds, [departmentId])));
+        scoped.forEach((r) => ids.add(r.id));
+      } else {
+        // Bo'limsiz hodisa (kunlik ro'yxat, bo'limsiz xodim) — barcha faol bo'lim boshliqlari
+        const all = await tx.select({ id: memberships.userId }).from(memberships).where(and(eq(memberships.isActive, true), eq(memberships.role, 'manager')));
+        all.forEach((r) => ids.add(r.id));
+      }
     }
-    if (roles.includes('creator') && opts.creatorUserId) ids.add(opts.creatorUserId);
+    if (roles.includes('creator')) {
+      if (opts.creatorUserId) ids.add(opts.creatorUserId);
+      else if (!top.length) {
+        // Vazifani bergan rahbar yo'q (xodim o'zi qo'shgan ish) — egasi va adminlar
+        const rows = await tx.select({ id: memberships.userId }).from(memberships).where(and(eq(memberships.isActive, true), inArray(memberships.role, ['owner', 'admin'])));
+        rows.forEach((r) => ids.add(r.id));
+      }
+    }
     if (exclude) ids.delete(exclude);
     return [...ids];
   });

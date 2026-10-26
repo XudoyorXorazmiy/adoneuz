@@ -31,6 +31,9 @@ export function FormDrawer({
   defaultOpen?: boolean;
 }) {
   const [inner, setInner] = useState(defaultOpen);
+  // Portal faqat brauzerda: `defaultOpen` bilan SSR'da `document` yo'q (/vazifalar?ber=1 500 berardi)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const open = openProp ?? inner;
   const setOpen = (v: boolean) => (onOpenChange ? onOpenChange(v) : setInner(v));
   const [state, formAction, pending] = useActionState<FormState, FormData>(async (prev, form) => {
@@ -54,7 +57,7 @@ export function FormDrawer({
   return (
     <>
       {trigger && <button type="button" onClick={() => setOpen(true)} className={triggerClass}>{trigger}</button>}
-      {open && createPortal(
+      {open && mounted && createPortal(
         <div className="fixed inset-0 z-40 flex justify-end bg-navy/20 backdrop-blur-[1px]" onClick={() => setOpen(false)}>
           {/* `danger` (o'chirish/arxiv) o'z formasiga ega — asosiy formadan TASHQARIDA (ichma-ich form bo'lmaydi) */}
           <div onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-[520px] flex-col rounded-l-3xl bg-card shadow-[0_2px_6px_rgba(16,24,40,.06),0_24px_60px_rgba(16,24,40,.14)]">

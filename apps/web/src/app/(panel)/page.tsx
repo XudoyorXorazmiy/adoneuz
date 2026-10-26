@@ -35,10 +35,11 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
   const ws = weekStart(t);
   const prevWs = addDays(ws, -7);
   const from = [`${month}-01`, prevWs].sort()[0]!;
+  const monthEnd = monthDays(month).at(-1)!;
   const [setup, rows, agg, linked, pending, ot] = await Promise.all([
     setupState(user.tenantId),
     listDay(user, { date: t }),
-    dailyAgg(user, from, addDays(ws, 6) > `${month}-31` ? addDays(ws, 6) : `${month}-31`),
+    dailyAgg(user, from, addDays(ws, 6) > monthEnd ? addDays(ws, 6) : monthEnd),
     memberLinked(user.tenantId, user.id),
     pendingEmployees(user),
     onTimeStats(user, t.slice(0, 7), shiftMonthKey(t.slice(0, 7), -1)),

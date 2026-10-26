@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isUuid } from '@adone/core';
 import Link from 'next/link';
 import { tgCheckAction, tgGeoPreviewAction } from '@/lib/actions/miniapp';
 import type { CheckResult } from '@/server/checkin';
@@ -146,7 +147,7 @@ function deviceInfo(): { id: string; label: string } {
   let id = '';
   try {
     id = localStorage.getItem('adone_device') ?? '';
-    if (!/^[0-9a-f-]{36}$/.test(id)) { id = crypto.randomUUID(); localStorage.setItem('adone_device', id); }
+    if (!isUuid(id)) { id = crypto.randomUUID(); localStorage.setItem('adone_device', id); }
   } catch { id = crypto.randomUUID(); }
   const ua = navigator.userAgent;
   const label = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? (/Android[^;]*;\s*([^;)]+)/.exec(ua)?.[1]?.trim() ?? 'Android') : 'Kompyuter';

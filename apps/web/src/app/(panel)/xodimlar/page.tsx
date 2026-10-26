@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { EMPLOYEE_STATUSES, formatPhone, type EmployeeStatus } from '@adone/core';
+import { can, EMPLOYEE_STATUSES, formatPhone, type EmployeeStatus, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { employeeOptions, inviteLink, listEmployees } from '@/server/employees';
 import { listDepartments, listPanelMembers } from '@/server/structure';
@@ -28,7 +28,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
   const sp = await searchParams;
   const status = (EMPLOYEE_STATUSES as readonly string[]).includes(String(sp.holat)) ? (String(sp.holat) as EmployeeStatus) : 'all';
   const q = typeof sp.q === 'string' ? sp.q.trim().slice(0, 60) : '';
-  const departmentId = typeof sp.bolim === 'string' && /^[0-9a-f-]{36}$/.test(sp.bolim) ? sp.bolim : undefined;
+  const departmentId = isUuid(sp.bolim) ? sp.bolim : undefined;
   const [{ rows, counts, scope }, options, deps, members] = await Promise.all([
     listEmployees(user, { status, q, departmentId }),
     employeeOptions(user.tenantId),
@@ -48,7 +48,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
   };
   const addDrawer = (cls: string) => (
     <FormDrawer trigger={<><Icon name="add" />Xodim qo&apos;shish</>} triggerClass={cls} title="Yangi xodim" subtitle="Saqlangach taklif havolasi chiqadi" action={saveEmployeeAction} submitLabel="Qo'shish">
-      <EmployeeFields options={formOptions} />
+      <EmployeeFields options={formOptions} showPay={can(user.role, 'payroll')} />
       <p className="m-0 flex gap-2 rounded-xl bg-primary-soft px-3.5 py-3 text-[13px] text-[#1F2A5C]">
         <Icon name="info" size={18} className="shrink-0 text-primary" />
         <span>Saqlangach taklif havolasi chiqadi — uni xodimga Telegram&apos;da yuboring. Xodim botda raqamini ulashadi, rozilik beradi va dumaloq video yuboradi.</span>
@@ -76,7 +76,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
       ) : (
         <FormDrawer trigger={<Icon name="edit" size={16} />} triggerClass="flex size-8 items-center justify-center rounded-full border border-line bg-card hover:bg-page" title="Xodimni tahrirlash" subtitle={e.fullName} action={saveEmployeeAction}
           danger={<form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="disabled" /><button className="btn-ghost text-danger-text">Ishdan bo&apos;shatish</button></form>}>
-          <EmployeeFields e={e} options={formOptions} />
+          <EmployeeFields e={e} options={formOptions} showPay={can(user.role, 'payroll')} />
         </FormDrawer>
       )}
     </div>

@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { DAY_STATUS_LABELS, monthDays, MONTHS } from '@adone/core';
+import { DAY_STATUS_LABELS, monthDays, MONTHS, isUuid } from '@adone/core';
 import { can } from '@adone/core';
 import { currentUser, type TenantUser } from '@/lib/auth/session';
 import { monthGrid, monthTotals, today } from '@/server/attendance';
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(oy) ? oy : cur;
   const bolim = url.searchParams.get('bolim');
   const xodim = url.searchParams.get('xodim');
-  const grid = await monthGrid(u, month, bolim && /^[0-9a-f-]{36}$/.test(bolim) ? bolim : undefined);
+  const grid = await monthGrid(u, month, isUuid(bolim) ? bolim : undefined);
   // Bitta xodim (profil sahifasidan) — ro'yxat baribir bo'lim cheklovi bilan olingan, shu ichidan
   const emps = xodim ? grid.emps.filter((e) => e.id === xodim) : grid.emps;
   const { cells } = grid;

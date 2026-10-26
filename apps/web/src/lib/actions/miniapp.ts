@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { tasks, taskBatches, withTenant } from '@adone/db';
-import { faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision } from '@adone/core';
+import { faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
 import { assertTgUser } from '@/lib/tg/session';
 import { saveMedia } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
@@ -57,7 +57,7 @@ export async function tgCheckAction(f: FormData): Promise<CheckResult> {
   if (action === 'check_in') for (const p of photos(f).slice(0, 3)) { const img = await readImage(p); if (img) frames.push(img); }
   if (action === 'check_in' && frames.length === 0) return { ok: false, reason: 'no_photo', message: 'Selfi olinmadi — kamerani qayta yoqing' };
   const deviceId = String(f.get('deviceId') ?? '');
-  const device = /^[0-9a-f-]{36}$/.test(deviceId) ? { id: deviceId, label: String(f.get('deviceLabel') ?? '').slice(0, 60) || 'Telefon' } : null;
+  const device = isUuid(deviceId) ? { id: deviceId, label: String(f.get('deviceLabel') ?? '').slice(0, 60) || 'Telefon' } : null;
   let face: FaceDecision | undefined;
   if (action === 'check_in') {
     const fc = await withTenant(u.tenantId, (tx) => faceContext(tx, u.employeeId));
