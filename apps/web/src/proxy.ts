@@ -41,6 +41,8 @@ export default async function proxy(req: NextRequest) {
     case 'app': {
       if (INTERNAL.some((p) => under(pathname, p))) return notFound(req);
       if (pathname === '/kirish') return NextResponse.next(forward);
+      // Chiqish sessiya eskirgan bo'lsa ham ishlaydi — aks holda /kirish?next=/chiqish bo'lib, kirgandan keyin 405
+      if (pathname === '/chiqish') return NextResponse.next(forward);
       // Mini App: o'z sessiyasi (initData → adone_tg cookie), panel sessiyasi talab qilinmaydi
       if (under(pathname, '/tg')) return NextResponse.next(forward);
       const claims = await claimsFrom(req);

@@ -10,3 +10,6 @@ export async function POST(req: Request) {
   res.cookies.set(SESSION_COOKIE, '', { path: '/', maxAge: 0 });
   return res;
 }
+
+// Manzil qo'lda ochilsa yoki eski havoladan kelinsa — 405 o'rniga ham chiqib, /kirish ga
+export const GET = POST;

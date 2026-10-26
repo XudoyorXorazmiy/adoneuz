@@ -25,5 +25,8 @@ export async function loginAction(_prev: LoginState, form: FormData): Promise<Lo
   if (!res.ok) return { error: res.error, phone: raw };
   await setSessionCookie(res.claims);
   if (mode === 'platform') redirect('/');
-  redirect(next.startsWith('/') && !next.startsWith('//') ? next : homeFor(res.claims.role!));
+  // Faqat ichki sahifaga (// va /\ — boshqa sayt); kirish/chiqish'ning o'ziga qaytarilmaydi
+  const path = next.split('?')[0];
+  const safe = next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') && path !== '/kirish' && path !== '/chiqish';
+  redirect(safe ? next : homeFor(res.claims.role!));
 }
