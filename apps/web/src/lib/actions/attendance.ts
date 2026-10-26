@@ -1,12 +1,11 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { attendanceEvents, auditLog, dayEvents, employees, rebuildDay, withTenant } from '@adone/db';
-import { isValidDate, isValidTime, zonedTime, addDays, retimePlan, type CorrectionMeta } from '@adone/core';
+import { withTenant } from '@adone/db';
+import { isValidDate, isValidTime, zonedTime, addDays, type CorrectionMeta } from '@adone/core';
 import { assertArea } from '@/lib/auth/guard';
 import type { FormState } from '@/components/ui/form-drawer';
-import { departmentScope } from '@/server/scope';
+import { applyCorrections } from '@/server/attendance-correct';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
 
@@ -48,26 +47,7 @@ export async function correctAttendanceAction(_p: FormState, f: FormData): Promi
     if (!target.success) return { error: 'Hodisani tanlang' };
     metas = [{ action: action.data, target: target.data, reason }];
   }
-  const err = await withTenant(user.tenantId, async (tx) => {
-    const [e] = await tx.select().from(employees).where(eq(employees.id, employeeId.data)).limit(1);
-    if (!e) return 'Xodim topilmadi';
-    const scope = await departmentScope(tx, user);
-    if (scope && (!e.departmentId || !scope.includes(e.departmentId))) return "Faqat o'z bo'limingiz xodimlari";
-    const list = metas ?? retimePlan(await dayEvents(tx, e.id, workDate), want!).map((m) => ({ ...m, reason }));
-    if (list.length === 0) return "O'zgarish yo'q — vaqtlar bir xil";
-    for (const meta of list) {
-      if (metas && (meta.action === 'void' || meta.action === 'approve')) {
-        const [t] = await tx.select({ id: attendanceEvents.id }).from(attendanceEvents).where(and(eq(attendanceEvents.id, meta.target), eq(attendanceEvents.employeeId, e.id), eq(attendanceEvents.workDate, workDate))).limit(1);
-        if (!t) return 'Hodisa topilmadi';
-      }
-      const [ev] = await tx.insert(attendanceEvents).values({
-        tenantId: user.tenantId, employeeId: e.id, workDate, kind: 'correction', source: 'admin', meta, createdByUserId: user.id,
-      }).returning({ id: attendanceEvents.id });
-      await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: `attendance.${meta.action}`, entity: 'attendance_event', entityId: ev!.id, meta: { employeeId: e.id, workDate, ...meta } });
-    }
-    await rebuildDay(tx, { tenantId: user.tenantId, employeeId: e.id, workDate, tz: user.tenantTimezone });
-    return null;
-  });
+  const err = await withTenant(user.tenantId, (tx) => applyCorrections(tx, user, { employeeId: employeeId.data, workDate, metas, want, reason }));
   if (err) return { error: err };
   revalidatePath('/davomat');
   revalidatePath('/xodimlar/[id]', 'page');

@@ -297,6 +297,36 @@ try {
   assert.equal(self[0]!.t.status, 'submitted', "o'zi qo'shgan ish tasdiq kutadi");
   ok("savol va «Ish qo'shish»");
 
+  // 10a. Muddatni uzaytirish so'rovi: xodim «⏰ Muddatni uzaytirish» → +1 kun → sabab; rahbar Telegram'dan ruxsat beradi (begona — yo'q); muddat yangilanadi
+  const { deadlineRequests: dlT } = await import('@adone/db');
+  const { deadlineNotify } = await import('../src/server/deadline');
+  await cb(`tk:acc:${t2}`);
+  assert.ok(lastMarkup().includes(`tk:ext:${t2}`), '«Muddatni uzaytirish» tugmasi');
+  await cb(`tk:ext:${t2}`);
+  assert.match(lastText(), /Yangi muddatni tanlang/);
+  await processUpdate(msg({ text: 'ertaga qandaydir' }));
+  assert.match(lastText(), /28\.10 18:00/, 'format eslatmasi');
+  await cb(`dl:p:${t2}:1`);
+  assert.match(lastText(), /Yangi muddat/);
+  await processUpdate(msg({ text: 'Mahsulot ertaga keladi' }));
+  assert.match(lastText(), /rahbarga yuborildi/);
+  const [dl] = await withTenant(T, (tx) => tx.select().from(dlT).where(eq(dlT.taskId, t2!)));
+  assert.ok(dl && dl.status === 'pending' && dl.reason === 'Mahsulot ertaga keladi' && dl.currentDueAt === null, 'so‘rov yozildi');
+  calls.length = 0;
+  await deadlineNotify(T, dl!.id, 'created');
+  assert.ok(calls.some((c) => c.body.chat_id === OTHER && JSON.stringify(c.body.reply_markup).includes(`dl:ok:${dl!.id}`)), 'rahbarga tugmali xabar');
+  await cb(`dl:ok:${dl!.id}`, 990003);
+  assert.equal((await withTenant(T, (tx) => tx.select().from(dlT).where(eq(dlT.id, dl!.id))))[0]!.status, 'pending', 'begona ruxsat bera olmaydi');
+  await cb(`dl:ok:${dl!.id}`, OTHER);
+  const dl2 = (await withTenant(T, (tx) => tx.select().from(dlT).where(eq(dlT.id, dl!.id))))[0]!;
+  assert.equal(dl2.status, 'approved');
+  assert.equal((await taskOf(t2!)).dueAt?.getTime(), dl2.requestedDueAt.getTime(), 'vazifa muddati yangilandi');
+  const dlEv = await withTenant(T, (tx) => tx.select().from(taskEvents).where(eq(taskEvents.taskId, t2!)));
+  assert.ok(dlEv.some((e) => e.comment?.startsWith("⏰ Muddatni uzaytirish so'raldi")) && dlEv.some((e) => e.comment?.startsWith('✅ Muddat uzaytirildi')), 'tarixda so‘rov va qaror');
+  const dlJobs = await withPlatform((tx) => tx.select().from(jobs).where(and(eq(jobs.tenantId, T), eq(jobs.type, 'task_notify'))));
+  assert.ok(dlJobs.some((j) => j.dedupeKey === `tr:overdue:${t2}:${dl2.requestedDueAt.getTime()}`), 'eslatma yangi muddatga qayta rejalashtirildi');
+  ok("muddatni uzaytirish so'rovi: bot → rahbar ruxsati, muddat va eslatmalar yangilandi");
+
   // 11. Takrorlanuvchi vazifa: kuniga bir marta
   await withTenant(T, (tx) => tx.insert(taskTemplates).values({ tenantId: T, title: 'Sinov: har kuni', assigneeEmployeeIds: [empId], recurrence: { kind: 'daily', weekdays: [], monthDay: 1 }, dueTime: '23:59' }));
   const made1 = await withTenant(T, (tx) => runTaskTemplates(tx, T));
@@ -343,7 +373,7 @@ try {
   await odb.execute(sql`delete from invites where ref_id in (select id from users where phone = ${TEAM_PHONE})`);
   await odb.execute(sql`delete from users where phone = ${TEAM_PHONE}`);
   await odb.execute(sql`delete from invites where tenant_id = ${T} and (ref_id = ${empId} or code like 'testmem%')`);
-  await odb.execute(sql`delete from jobs where tenant_id = ${T} and type in ('notify_members', 'notify_employee', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify')`);
+  await odb.execute(sql`delete from jobs where tenant_id = ${T} and type in ('notify_members', 'notify_employee', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify', 'deadline_notify')`);
   await owner.end();
   await pool.end();
   server.close();

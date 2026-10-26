@@ -6,6 +6,7 @@ import { isOpenTask, isOverdue, kanbanColumn, localDate, onTime, type TaskPriori
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope } from './scope';
 import { actorRole, loadTask } from './tasks';
+import { pendingDeadlineFor } from './deadline';
 
 export type TaskView = 'berilgan' | 'ozi' | 'mening';
 export type TaskTab = 'all' | 'new' | 'progress' | 'review' | 'overdue' | 'done' | 'cancelled';
@@ -180,8 +181,9 @@ export async function taskDetail(user: TenantUser, id: string) {
         .from(employees).leftJoin(departments, eq(departments.id, employees.departmentId)).where(eq(employees.id, row.task.assigneeEmployeeId)).limit(1)
       : await tx.select({ name: users.name, position: sql<string | null>`null`, departmentName: sql<string | null>`null`, telegram: sql<string | null>`null` })
         .from(users).where(eq(users.id, row.task.assigneeUserId ?? '00000000-0000-0000-0000-000000000000')).limit(1);
+    const deadline = await pendingDeadlineFor(tx, id);
     return {
-      task: row.task, batch: row.batch, role, assignee: assignee ?? null, creator: creator[0]?.name ?? null, template: template[0] ?? null,
+      task: row.task, batch: row.batch, role, assignee: assignee ?? null, creator: creator[0]?.name ?? null, template: template[0] ?? null, deadline,
       copies: copies.map((c) => ({ ...c, name: c.empName ?? c.userName ?? '—' })),
       events: events.map((x) => ({ ...x.e, actor: x.userName ?? x.empName ?? 'Tizim' })),
       reports, mime: new Map(files.map((f) => [f.id, f.mime])),

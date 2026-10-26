@@ -2,16 +2,21 @@
 import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { tasks, taskBatches, withTenant } from '@adone/db';
+import { auditLog, employees, jobs, tasks, taskBatches, withTenant } from '@adone/db';
 import { can, faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
 import { assertTgMember, assertTgUser, memberAsTenantUser } from '@/lib/tg/session';
 import type { FormState } from '@/components/ui/form-drawer';
-import { setEmployeeStatus } from '@/server/employees';
+import { canTouch, inviteLink, setEmployeeStatus } from '@/server/employees';
+import { saveEmployeeFromForm } from '@/server/employees-form';
+import { resolveSuspicious } from '@/server/attendance-correct';
+import { createDeadlineRequest, decideDeadlineRequest } from '@/server/deadline';
+import { today } from '@/server/attendance';
+import { escHtml as esc } from '@/lib/task-text';
 import { saveMedia } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
 import { commentTask, createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
 import { createTaskFromForm } from '@/server/tasks-form';
-import { kick } from '@/server/jobs/enqueue';
+import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
 import { createLeave, decideLeave } from '@/server/leave';
 
@@ -238,4 +243,72 @@ export async function tgCreateTaskAction(_p: FormState, f: FormData): Promise<Fo
   const res = await createTaskFromForm(memberAsTenantUser(m), f);
   if ('ok' in res) refreshManager();
   return res;
+}
+
+/** Shubhali keldi-ketdi: tasdiqlash yoki rad etish (bosh sahifadagi kabi — `correction` hodisasi, sabab avtomatik). */
+export async function tgResolveSuspiciousAction(employeeId: string, workDate: string, target: string, approve: boolean): Promise<{ error?: string }> {
+  const m = await assertTgMember();
+  if (!isUuid(employeeId) || !isUuid(target) || !isValidDate(workDate)) return bad();
+  const err = await withTenant(m.tenantId, (tx) => resolveSuspicious(tx, memberAsTenantUser(m), { employeeId, workDate, target, approve: approve === true }));
+  if (err) return { error: err };
+  refreshManager();
+  return {};
+}
+
+/** Kelmagan xodimga bir bosishda eslatma (Telegram) — kuniga bir marta (`remind:<xodim>:<sana>`). */
+export async function tgRemindEmployeeAction(employeeId: string): Promise<{ error?: string }> {
+  const m = await assertTgMember();
+  if (!isUuid(employeeId)) return bad();
+  const tu = memberAsTenantUser(m);
+  const res = await withTenant(m.tenantId, async (tx): Promise<{ error?: string }> => {
+    if (!(await canTouch(tx, tu, employeeId, null))) return { error: "Faqat o'z bo'limingiz xodimlari" };
+    const [e] = await tx.select({ id: employees.id, name: employees.fullName, tg: employees.telegramUserId }).from(employees).where(and(eq(employees.id, employeeId), eq(employees.status, 'active'))).limit(1);
+    if (!e) return { error: 'Xodim topilmadi' };
+    if (!e.tg) return { error: 'Xodim botga ulanmagan — xabar bormaydi' };
+    const key = `remind:${employeeId}:${today(tu)}`;
+    const [dup] = await tx.select({ id: jobs.id }).from(jobs).where(eq(jobs.dedupeKey, key)).limit(1);
+    if (dup) return { error: 'Bugun eslatma allaqachon yuborilgan' };
+    const text = `⏰ <b>${esc(m.name)}</b> eslatma yubordi: bugun «Keldim» qayd etilmagan.\nIshga kelgan bo'lsangiz «✅ Keldim»ni bosing, kelolmasangiz rahbaringizga xabar bering yoki «📝 So'rov» yuboring.`;
+    await enqueue(tx, m.tenantId, 'notify_employee', { employeeId, text }, { maxAttempts: 2, dedupeKey: key });
+    await tx.insert(auditLog).values({ tenantId: m.tenantId, userId: m.userId, action: 'employee.remind', entity: 'employee', entityId: employeeId, meta: { date: today(tu) } });
+    return {};
+  });
+  if (res.error) return res;
+  kick();
+  return {};
+}
+
+export type EmployeeFormState = { error?: string; ok?: string; invite?: string | null } | undefined;
+
+/** «Xodim qo'shish» — panel formasi bilan bir xil tekshiruv (server/employees-form.ts); javobda taklif kodi. */
+export async function tgSaveEmployeeAction(_p: EmployeeFormState, f: FormData): Promise<EmployeeFormState> {
+  const m = await assertTgMember();
+  if (!can(m.role, 'employees')) return { error: 'Ruxsat yo‘q' };
+  const res = await saveEmployeeFromForm(memberAsTenantUser(m), f);
+  if ('error' in res) return res;
+  refreshManager();
+  return { ok: res.ok, invite: res.invite ? inviteLink(res.invite) : null };
+}
+
+/** Ijrochi: muddatni uzaytirish so'rovi (sana, vaqt — ishxona vaqt mintaqasida). */
+export async function tgDeadlineRequestAction(taskId: string, date: string, time: string, reason: string): Promise<{ error?: string }> {
+  const u = await assertTgUser();
+  if (!isUuid(taskId) || !isValidDate(date) || !isValidTime(time)) return { error: 'Sana yoki vaqt noto‘g‘ri' };
+  const res = await withTenant(u.tenantId, (tx) => createDeadlineRequest(tx, {
+    tenantId: u.tenantId, taskId, employeeId: u.employeeId, requestedDueAt: zonedTime(date, time, u.tz), reason: String(reason ?? '').slice(0, 500) || null,
+  }));
+  if ('error' in res) return { error: res.error };
+  revalidatePath('/tg', 'layout');
+  kick();
+  return {};
+}
+
+/** Rahbar: muddat so'roviga qaror. */
+export async function tgDecideDeadlineAction(id: string, to: 'approved' | 'rejected', comment: string): Promise<{ error?: string }> {
+  const m = await assertTgMember();
+  if (!isUuid(id) || (to !== 'approved' && to !== 'rejected')) return bad();
+  const res = await withTenant(m.tenantId, (tx) => decideDeadlineRequest(tx, { tenantId: m.tenantId, id, to, actor: { userId: m.userId, role: m.role }, comment: String(comment ?? '').slice(0, 500) || null }));
+  if ('error' in res) return { error: res.error };
+  refreshManager();
+  return {};
 }

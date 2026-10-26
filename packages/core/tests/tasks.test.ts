@@ -51,3 +51,19 @@ test('tungi tinchlik', () => {
   assert.equal(outsideQuietHours(zonedTime('2026-10-21', '15:00', tz), tz, { from: 10, to: 14 }).toISOString(), zonedTime('2026-10-21', '15:00', tz).toISOString());
   assert.equal(outsideQuietHours(zonedTime('2026-10-21', '03:00', tz), tz).toISOString(), zonedTime('2026-10-21', '08:00', tz).toISOString());
 });
+
+test('muddatni uzaytirish so‘rovi: qachon va qaysi muddatga', async () => {
+  const { canRequestDeadline, validDeadline } = await import('../src/index');
+  assert.equal(canRequestDeadline('in_progress'), true);
+  assert.equal(canRequestDeadline('revision'), true);
+  assert.equal(canRequestDeadline('submitted'), false, 'topshirilgan vazifada so‘rov yo‘q');
+  assert.equal(canRequestDeadline('approved'), false);
+  const now = new Date('2026-10-26T10:00:00Z');
+  const cur = new Date('2026-10-26T13:00:00Z');
+  assert.equal(validDeadline(new Date('2026-10-26T09:00:00Z'), now, cur), "Yangi muddat kelajakda bo'lsin");
+  assert.equal(validDeadline(new Date('2026-10-26T12:00:00Z'), now, cur), "Yangi muddat hozirgi muddatdan keyin bo'lsin");
+  assert.equal(validDeadline(new Date('2026-12-26T12:00:00Z'), now, cur), '30 kundan uzoqqa uzaytirilmaydi');
+  assert.equal(validDeadline(new Date('2026-10-27T13:00:00Z'), now, cur), null);
+  assert.equal(validDeadline(new Date('2026-10-27T13:00:00Z'), now, null), null, 'muddatsiz vazifaga ham so‘rash mumkin');
+  assert.equal(validDeadline(new Date('x'), now, null), "Sana noto'g'ri");
+});

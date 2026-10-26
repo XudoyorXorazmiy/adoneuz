@@ -9,7 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { dueText, minutesText, PRIORITY_DOT, STATUS_PILL } from '@/components/tasks/task-card';
 import { TgHeader } from './tg-shell';
-import { TaskCancel, TaskComment, TaskReview } from './manager-decisions';
+import { DeadlineDecision, TaskCancel, TaskComment, TaskReview } from './manager-decisions';
 
 const card = 'flex flex-col gap-3 rounded-[20px] bg-card p-4 shadow-[var(--shadow-card)]';
 const pill = 'flex h-6 items-center rounded-full px-2 text-xs font-semibold';
@@ -61,6 +61,18 @@ export async function ManagerTask({ m, id }: { m: TgMember; id: string }) {
             </div>
           )}
         </section>
+
+        {d.deadline && (
+          <section className={`${card} ring-1 ring-warning/40`}>
+            <h2 className="m-0 flex items-center gap-2 text-base font-bold"><Icon name="more_time" size={20} className="text-warning" />Muddatni uzaytirish so&apos;rovi</h2>
+            <div className="rounded-2xl bg-page px-3.5 py-3 text-sm">
+              <div className="flex flex-wrap items-center gap-x-2"><span className="text-muted">{d.deadline.currentDueAt ? dueText(d.deadline.currentDueAt, tz) : 'muddatsiz'}</span><Icon name="arrow_forward" size={16} className="text-muted" /><b className="tnum">{dueText(d.deadline.requestedDueAt, tz)}</b></div>
+              {d.deadline.reason && <div className="mt-1 text-[13px] text-ink-2">«{d.deadline.reason}»</div>}
+              <div className="mt-1 text-xs text-placeholder">{d.deadline.employeeName} · {formatDateTime(d.deadline.createdAt, tz)}</div>
+            </div>
+            {d.role === 'reviewer' && <DeadlineDecision id={d.deadline.id} />}
+          </section>
+        )}
 
         {(allowed.includes('approved') || allowed.includes('revision')) && (
           <section className={card}>

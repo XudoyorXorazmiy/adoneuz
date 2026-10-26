@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
-import { tgApproveEmployeeAction, tgCommentTaskAction, tgDecideLeaveAction, tgReviewTaskAction } from '@/lib/actions/miniapp';
+import { tgApproveEmployeeAction, tgCommentTaskAction, tgDecideDeadlineAction, tgDecideLeaveAction, tgRemindEmployeeAction, tgResolveSuspiciousAction, tgReviewTaskAction } from '@/lib/actions/miniapp';
 
 function useAct() {
   const router = useRouter();
@@ -140,6 +140,63 @@ export function TaskComment({ id }: { id: string }) {
         <button type="button" disabled={pending || !text.trim()} onClick={send} className="btn-primary size-11 shrink-0 rounded-full p-0 shadow-none" aria-label="Yuborish"><Icon name="send" size={20} /></button>
       </div>
       <Err text={error} />
+    </div>
+  );
+}
+
+/** Shubhali keldi-ketdi: tasdiqlash (hodisa «ok» bo'ladi) yoki rad etish (bekor). */
+export function SuspiciousDecision({ employeeId, workDate, target }: { employeeId: string; workDate: string; target: string }) {
+  const a = useAct();
+  if (a.done) return <Done text={a.done} />;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <button type="button" disabled={a.pending} onClick={() => a.run('Tasdiqlandi', () => tgResolveSuspiciousAction(employeeId, workDate, target, true))} className="btn-primary h-11 flex-1 text-sm shadow-none"><Icon name="verified" size={18} />Tasdiqlash</button>
+        <button type="button" disabled={a.pending} onClick={() => a.run('Rad etildi', () => tgResolveSuspiciousAction(employeeId, workDate, target, false))} className="btn-danger h-11 flex-1 text-sm"><Icon name="block" size={18} />Rad etish</button>
+      </div>
+      <Err text={a.error} />
+    </div>
+  );
+}
+
+/** Muddatni uzaytirish so'rovi: ruxsat / rad (ixtiyoriy izoh — xodimga boradi). */
+export function DeadlineDecision({ id }: { id: string }) {
+  const a = useAct();
+  const [reject, setReject] = useState(false);
+  const [comment, setComment] = useState('');
+  if (a.done) return <Done text={a.done} />;
+  return (
+    <div className="flex flex-col gap-2">
+      {reject ? (
+        <>
+          <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={500} placeholder="Sabab (ixtiyoriy) — xodimga yuboriladi" className="input h-auto py-2.5 text-sm" />
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setReject(false)} className="btn-secondary h-11 flex-1 text-sm">Bekor</button>
+            <button type="button" disabled={a.pending} onClick={() => a.run('Rad etildi', () => tgDecideDeadlineAction(id, 'rejected', comment))} className="btn h-11 flex-1 bg-danger text-sm text-white">Rad etish</button>
+          </div>
+        </>
+      ) : (
+        <div className="flex gap-2">
+          <button type="button" disabled={a.pending} onClick={() => a.run('Muddat uzaytirildi', () => tgDecideDeadlineAction(id, 'approved', ''))} className="btn-primary h-11 flex-1 text-sm shadow-none"><Icon name="event_available" size={18} />Ruxsat</button>
+          <button type="button" disabled={a.pending} onClick={() => setReject(true)} className="btn-danger h-11 flex-1 text-sm"><Icon name="close" size={18} />Rad etish</button>
+        </div>
+      )}
+      <Err text={a.error} />
+    </div>
+  );
+}
+
+/** Kelmagan xodimga bir bosishda eslatma (kuniga bir marta). `compact` — ro'yxat qatoridagi kichik tugma. */
+export function RemindButton({ employeeId, compact = false }: { employeeId: string; compact?: boolean }) {
+  const a = useAct();
+  if (a.done) return <span className="flex items-center gap-1 text-[12px] font-semibold text-success"><Icon name="check_circle" size={16} fill />Yuborildi</span>;
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button type="button" disabled={a.pending} onClick={() => a.run('Eslatma yuborildi', () => tgRemindEmployeeAction(employeeId))} title="Eslatma yuborish"
+        className={compact ? 'flex h-8 items-center gap-1 rounded-full bg-warning-tint px-2.5 text-[12px] font-bold text-warning' : 'btn-secondary h-11 w-full text-sm'}>
+        <Icon name="notifications_active" size={compact ? 16 : 18} />{compact ? 'Eslatma' : 'Eslatma yuborish'}
+      </button>
+      {a.error && <span className={`font-semibold text-danger-text ${compact ? 'max-w-[120px] text-right text-[10px] leading-tight' : 'text-[12px]'}`}>{compact ? a.error.replace('Bugun eslatma allaqachon yuborilgan', 'Bugun yuborilgan') : a.error}</span>}
     </div>
   );
 }

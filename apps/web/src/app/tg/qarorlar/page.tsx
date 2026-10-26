@@ -1,22 +1,36 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { formatDateTime, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, leaveDays } from '@adone/core';
+import { formatDate, formatDateTime, LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, leaveDays } from '@adone/core';
 import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { managerDecisions, managerShell } from '@/server/manager';
 import { leavePeriod } from '@/server/leave';
 import { TgPage } from '@/components/tg/tg-shell';
+import { TgProof } from '@/components/tg/tg-proof';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
-import { minutesText } from '@/components/tasks/task-card';
-import { ApproveEmployee, LeaveDecision, TaskReview } from '@/components/tg/manager-decisions';
+import { dueText, minutesText } from '@/components/tasks/task-card';
+import { ApproveEmployee, DeadlineDecision, LeaveDecision, SuspiciousDecision, TaskReview } from '@/components/tg/manager-decisions';
 
-/** Rahbar Mini App'i — «Qarorlar»: yangi xodimlar, ruxsat so'rovlari, tekshiruvdagi hisobotlar. */
+/** Rahbar Mini App'i — «Qarorlar»: shubhali keldi-ketdi, yangi xodimlar, ruxsat so'rovlari, muddat so'rovlari, tekshiruvdagi hisobotlar. */
 export default async function TgDecisionsPage() {
   const m = await currentTgMember();
   if (!m) return (await currentTgUser()) ? redirect('/tg') : null; // xodim sessiyasi — o'z bosh sahifasi
   const d = await managerDecisions(m);
   const tz = m.tz;
   const card = 'flex flex-col gap-3 rounded-[24px] bg-card p-[18px] shadow-[var(--shadow-card)]';
+  const who = (name: string, sub: string, href?: string) => {
+    const inner = (
+      <>
+        <Avatar name={name} size={40} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[15px] font-bold">{name}</div>
+          <div className="truncate text-xs text-muted">{sub}</div>
+        </div>
+        {href && <Icon name="chevron_right" className="text-placeholder" />}
+      </>
+    );
+    return href ? <Link href={href} className="flex items-center gap-3">{inner}</Link> : <div className="flex items-center gap-3">{inner}</div>;
+  };
   return (
     <TgPage manager={managerShell(m, d.total)}>
       <div className="flex flex-col gap-4 px-4 pt-4">
@@ -29,8 +43,21 @@ export default async function TgDecisionsPage() {
           <div className={`${card} items-center py-8 text-center`}>
             <span className="flex size-12 items-center justify-center rounded-full bg-success-tint text-success"><Icon name="task_alt" size={26} fill /></span>
             <p className="m-0 text-sm font-semibold">Hammasi hal qilingan</p>
-            <p className="m-0 text-[13px] text-muted">Yangi so&apos;rov yoki hisobot kelganda shu yerda chiqadi.</p>
+            <p className="m-0 text-[13px] text-muted">Yangi so&apos;rov, shubhali keldi-ketdi yoki hisobot kelganda shu yerda chiqadi.</p>
           </div>
+        )}
+
+        {d.suspicious.length > 0 && (
+          <section id="shubhali" className="flex flex-col gap-2.5">
+            <h2 className="m-0 text-sm font-bold text-muted">Shubhali keldi-ketdi · {d.suspicious.length}</h2>
+            {d.suspicious.map((s) => (
+              <div key={s.event.id} className={card}>
+                {who(s.employee.fullName, `${[s.employee.position, s.employee.departmentName].filter(Boolean).join(' · ') || s.employee.branchName || '—'} · ${formatDate(`${s.date}T12:00:00Z`)}`, `/tg/xodim/${s.employee.id}`)}
+                <TgProof e={s.event} tz={tz} radiusM={s.employee.branchRadiusM} />
+                <SuspiciousDecision employeeId={s.employee.id} workDate={s.date} target={s.event.id} />
+              </div>
+            ))}
+          </section>
         )}
 
         {d.employees.length > 0 && (
@@ -38,13 +65,7 @@ export default async function TgDecisionsPage() {
             <h2 className="m-0 text-sm font-bold text-muted">Yangi xodimlar · {d.employees.length}</h2>
             {d.employees.map((e) => (
               <div key={e.id} className={card}>
-                <div className="flex items-center gap-3">
-                  <Avatar name={e.fullName} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[15px] font-bold">{e.fullName}</div>
-                    <div className="truncate text-xs text-muted">{[e.position, e.branchName].filter(Boolean).join(' · ') || 'Botda ro‘yxatdan o‘tdi'}</div>
-                  </div>
-                </div>
+                {who(e.fullName, [e.position, e.branchName].filter(Boolean).join(' · ') || 'Botda ro‘yxatdan o‘tdi')}
                 <ApproveEmployee id={e.id} />
               </div>
             ))}
@@ -56,19 +77,33 @@ export default async function TgDecisionsPage() {
             <h2 className="m-0 text-sm font-bold text-muted">Ruxsat so&apos;rovlari · {d.leaves.length}</h2>
             {d.leaves.map((l) => (
               <div key={l.id} className={card}>
-                <div className="flex items-center gap-3">
-                  <Avatar name={l.name} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[15px] font-bold">{l.name}</div>
-                    <div className="truncate text-xs text-muted">{[l.position, l.departmentName].filter(Boolean).join(' · ') || '—'}</div>
-                  </div>
-                </div>
+                {who(l.name, [l.position, l.departmentName].filter(Boolean).join(' · ') || '—', `/tg/xodim/${l.employeeId}`)}
                 <div className="rounded-2xl bg-page px-3.5 py-3 text-sm">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><b>{LEAVE_KIND_ICONS[l.kind]} {LEAVE_KIND_LABELS[l.kind]}</b><span className="tnum font-semibold">{leavePeriod(l.from, l.to)}</span><span className="text-xs text-muted">{leaveDays(l.from, l.to)} kun</span></div>
                   {l.reason && <div className="mt-1 text-[13px] text-ink-2">«{l.reason}»</div>}
                   <div className="mt-1 text-xs text-placeholder">{formatDateTime(l.createdAt, tz)}</div>
                 </div>
                 <LeaveDecision id={l.id} />
+              </div>
+            ))}
+          </section>
+        )}
+
+        {d.deadlines.length > 0 && (
+          <section className="flex flex-col gap-2.5">
+            <h2 className="m-0 text-sm font-bold text-muted">Muddat so&apos;rovlari · {d.deadlines.length}</h2>
+            {d.deadlines.map((r) => (
+              <div key={r.id} className={card}>
+                {who(r.employeeName, r.departmentName ?? '—', `/tg/xodim/${r.employeeId}`)}
+                <Link href={`/tg/vazifa/${r.taskId}`} className="rounded-2xl bg-page px-3.5 py-3 text-sm">
+                  <div className="font-bold">{r.title}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[13px]">
+                    <span className="text-muted">{r.currentDueAt ? dueText(r.currentDueAt, tz) : 'muddatsiz'}</span><Icon name="arrow_forward" size={16} className="text-muted" /><b className="tnum">{dueText(r.requestedDueAt, tz)}</b>
+                  </div>
+                  {r.reason && <div className="mt-1 text-[13px] text-ink-2">«{r.reason}»</div>}
+                  <div className="mt-1 text-xs text-placeholder">{formatDateTime(r.createdAt, tz)}</div>
+                </Link>
+                <DeadlineDecision id={r.id} />
               </div>
             ))}
           </section>

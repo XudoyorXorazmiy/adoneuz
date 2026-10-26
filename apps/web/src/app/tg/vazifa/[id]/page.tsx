@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation';
-import { formatDateTime, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, isUuid } from '@adone/core';
+import { addDays, formatDateTime, localDate, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, isUuid } from '@adone/core';
 import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { myTask } from '@/server/miniapp';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { TgHeader } from '@/components/tg/tg-shell';
 import { TaskReport } from '@/components/tg/task-report';
+import { DeadlineRequest } from '@/components/tg/deadline-request';
 import { ManagerTask } from '@/components/tg/manager-task';
 import { dueText, minutesText, STATUS_PILL } from '@/components/tasks/task-card';
 
@@ -24,6 +25,8 @@ export default async function TgTaskPage({ params }: PageProps<'/tg/vazifa/[id]'
   if (!d) notFound();
   const { t, b } = d;
   const left = t.dueAt ? Math.round((t.dueAt.getTime() - Date.now()) / 60_000) : null;
+  const today = localDate(new Date(), u.tz);
+  const dl = d.deadline ? { status: d.deadline.status, requested: dueText(d.deadline.requestedDueAt, u.tz), current: d.deadline.currentDueAt ? dueText(d.deadline.currentDueAt, u.tz) : null, reason: d.deadline.reason, comment: d.deadline.decisionComment } : null;
   return (
     <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col bg-page">
       <TgHeader title="Vazifa" back="/tg/vazifalar" />
@@ -55,6 +58,7 @@ export default async function TgTaskPage({ params }: PageProps<'/tg/vazifa/[id]'
             {d.reports[0]?.mediaIds.length ? <div className="mt-2 text-xs text-muted">{d.reports[0].mediaIds.length} ta rasm yuborilgan</div> : null}
           </section>
         )}
+        <DeadlineRequest taskId={t.id} status={t.status} existing={dl} today={today} defaultDate={t.dueAt && localDate(t.dueAt, u.tz) >= today ? addDays(localDate(t.dueAt, u.tz), 1) : addDays(today, 1)} />
         <TaskReport taskId={t.id} status={t.status} checklist={b.checklist} checklistDone={t.checklistDone} proofs={b.proofs} />
       </div>
     </div>

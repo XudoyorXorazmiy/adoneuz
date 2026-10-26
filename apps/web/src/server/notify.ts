@@ -3,6 +3,7 @@ import { and, arrayContains, eq, inArray } from 'drizzle-orm';
 import { departments, memberships, tgLinks, withPlatform, withTenant, type Tx } from '@adone/db';
 import { notifyTargets, type NotifyEvent, type NotifyRole } from '@adone/core';
 import { readSettings } from '@/server/settings';
+import { publicApiOrigin } from '@/lib/host';
 import { send, type Keyboard } from '@/server/telegram/api';
 import { menuKeyboard } from '@/server/bot/texts';
 import { employeeChat } from '@/server/bot/links';
@@ -14,20 +15,32 @@ import type { JobOutcome } from '@/server/jobs/types';
  * `event` berilsa — kimga va yoqilganmi, Sozlamalar → Bildirishnomalar bo'yicha.
  * Navbat orqali (tranzaksiya ichidan enqueue, yuborish — ishchida).
  */
-export async function queueNotifyMembers(tx: Tx, tenantId: string, text: string, departmentId?: string | null, event?: NotifyEvent) {
-  await enqueue(tx, tenantId, 'notify_members', { text, departmentId: departmentId ?? null, event: event ?? null }, { maxAttempts: 3 });
+export async function queueNotifyMembers(tx: Tx, tenantId: string, text: string, departmentId?: string | null, event?: NotifyEvent, miniPath?: string) {
+  await enqueue(tx, tenantId, 'notify_members', { text, departmentId: departmentId ?? null, event: event ?? null, miniPath: miniPath ?? null }, { maxAttempts: 3 });
+}
+
+/** Rahbar Mini App'iga tugma qatori — Telegram faqat https qabul qiladi (dev'da bo'sh). */
+export function miniAppRow(path: string, text = 'Mini App’da ochish ↗'): Array<Array<{ text: string; web_app: { url: string } }>> {
+  const url = `${publicApiOrigin()}${path}`;
+  return url.startsWith('https://') ? [[{ text, web_app: { url } }]] : [];
+}
+
+export function miniAppKeyboard(path: string | null | undefined, text?: string): Keyboard | undefined {
+  if (!path) return undefined;
+  const rows = miniAppRow(path, text);
+  return rows.length ? { inline_keyboard: rows } : undefined;
 }
 
 export async function queueNotifyEmployee(tx: Tx, tenantId: string, employeeId: string, text: string) {
   await enqueue(tx, tenantId, 'notify_employee', { employeeId, text }, { maxAttempts: 3 });
 }
 
-export async function notifyMembers(tenantId: string, text: string, departmentId: string | null, event?: NotifyEvent | null): Promise<JobOutcome> {
+export async function notifyMembers(tenantId: string, text: string, departmentId: string | null, event?: NotifyEvent | null, keyboard?: Keyboard): Promise<JobOutcome> {
   const chats = await memberChats(tenantId, departmentId, null, { event });
   if (chats === null) return { skip: 'rahbar yo‘q' };
   if (chats.length === 0 && event) return { skip: 'sozlamada o‘chiq yoki rahbar Telegram ulamagan' };
   if (chats.length === 0) return { skip: 'rahbarlar Telegram ulamagan' };
-  for (const c of chats) await send(c.chatId, text);
+  for (const c of chats) await send(c.chatId, text, keyboard);
   return {};
 }
 

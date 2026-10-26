@@ -9,6 +9,7 @@ export type WebApp = {
   close(): void;
   setHeaderColor?(c: string): void;
   setBackgroundColor?(c: string): void;
+  openTelegramLink?(url: string): void;
   HapticFeedback?: Haptic;
   BackButton?: BackButton;
   LocationManager?: LocationManager;

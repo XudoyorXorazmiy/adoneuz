@@ -6,7 +6,8 @@ import 'server-only';
 import { processUpdate } from '@/server/bot';
 import type { TgUpdate } from '@/server/telegram/types';
 import { TelegramError } from '@/server/telegram/api';
-import { notifyEmployee, notifyMembers } from '@/server/notify';
+import { miniAppKeyboard, notifyEmployee, notifyMembers } from '@/server/notify';
+import { deadlineNotify } from '@/server/deadline';
 import { absentDigest, attendanceTick } from '@/server/ticks';
 import { taskNotify, type TaskNotifyKind } from '@/server/task-notify';
 import { enrollFace } from '@/server/face';
@@ -16,7 +17,7 @@ import type { NotifyEvent } from '@adone/core';
 
 export { PermanentError, type JobRow };
 
-export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify'] as const;
+export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify', 'deadline_notify'] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
 type Handler = (job: JobRow) => Promise<JobOutcome>;
@@ -42,7 +43,7 @@ export const HANDLERS: Record<JobType, Handler> = {
   async notify_members(job) {
     const text = str(job.payload.text);
     if (!text) throw new PermanentError('matn yo‘q');
-    return tgSafe(() => notifyMembers(needTenant(job), text, str(job.payload.departmentId), (str(job.payload.event) || null) as NotifyEvent | null));
+    return tgSafe(() => notifyMembers(needTenant(job), text, str(job.payload.departmentId), (str(job.payload.event) || null) as NotifyEvent | null, miniAppKeyboard(str(job.payload.miniPath))));
   },
   async notify_employee(job) {
     const text = str(job.payload.text);
@@ -70,6 +71,12 @@ export const HANDLERS: Record<JobType, Handler> = {
     const kind = str(job.payload.kind);
     if (!id || !kind) throw new PermanentError('payload noto‘g‘ri');
     return tgSafe(() => leaveNotify(needTenant(job), id, kind));
+  },
+  async deadline_notify(job) {
+    const id = str(job.payload.id);
+    const kind = str(job.payload.kind);
+    if (!id || !kind) throw new PermanentError('payload noto‘g‘ri');
+    return tgSafe(() => deadlineNotify(needTenant(job), id, kind));
   },
   async absent_digest(job) {
     const date = str(job.payload.date);

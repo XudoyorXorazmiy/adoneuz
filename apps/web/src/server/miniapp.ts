@@ -1,4 +1,5 @@
 import 'server-only';
+import { latestDeadlineFor } from './deadline';
 /** Mini App ko'rinishlari (xodim). Faqat o'z ma'lumoti: hamma so'rov employeeId bilan, tenant — Mini App sessiyasidan. */
 import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { attendanceDays, dayEvents, onLeave, employeeRule, taskBatches, taskEvents, taskReports, tasks, users, withTenant, workdayOf } from '@adone/db';
@@ -50,7 +51,8 @@ export async function myTask(u: TgUser, id: string) {
         .where(and(eq(taskEvents.taskId, id), eq(taskEvents.toStatus, 'revision'))).orderBy(desc(taskEvents.createdAt)).limit(1)
       : [];
     const reports = await tx.select().from(taskReports).where(eq(taskReports.taskId, id)).orderBy(desc(taskReports.createdAt)).limit(5);
-    return { ...r, revision: rev ?? null, reports };
+    const deadline = await latestDeadlineFor(tx, id, u.employeeId);
+    return { ...r, revision: rev ?? null, reports, deadline };
   });
 }
 

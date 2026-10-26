@@ -20,6 +20,7 @@ import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from '.
 import { employeeLinks, linkTelegram, type EmployeeLink } from './links';
 import { isTaskState, onTaskCallback, onTaskMessage, showMyTasks, startAddWork } from './tasks';
 import { isLeaveState, onLeaveCallback, onLeaveMessage, startLeave } from './leave';
+import { isDeadlineState, onDeadlineCallback, onDeadlineMessage } from './deadline';
 import { BTN, CONSENT_VERSION, consentKeyboard, contactKeyboard, menuKeyboard, removeKeyboard, T } from './texts';
 
 /** Jonli joylashuv xabari shundan eski bo'lsa — eskirgan (forward/qayta yuborish). */
@@ -52,6 +53,7 @@ export async function processUpdate(u: TgUpdate): Promise<JobOutcome> {
     const st = await getState(uid);
     if (isTaskState(st)) return onTaskMessage(msg, st);
     if (isLeaveState(st) && msg.text) return onLeaveMessage(msg, st);
+    if (isDeadlineState(st) && msg.text) return onDeadlineMessage(msg, st);
   }
   if (msg.location) return onLocation(msg);
   if (msg.video_note) return onVideoNote(msg);
@@ -159,6 +161,7 @@ async function onCallback(cb: TgCallback): Promise<JobOutcome> {
   }
   if (data.startsWith('tk:') || data.startsWith('wk:')) return onTaskCallback(cb);
   if (data.startsWith('lv:')) return onLeaveCallback(cb);
+  if (data.startsWith('dl:')) return onDeadlineCallback(cb);
   // Bir nechta ishxona: act:<check_in|check_out>:<tenantId>
   const m = new RegExp(`^act:(check_in|check_out):(${UUID_SRC})$`).exec(data);
   if (m) {
@@ -199,8 +202,8 @@ async function finishRegistration(msg: TgMessage, state: Extract<BotState, { ste
       tx, state.tenantId,
       autoApprove
         ? `👤 Yangi xodim ro'yxatdan o'tdi: <b>${esc(e.fullName)}</b>.`
-        : `👤 <b>${esc(e.fullName)}</b> botda ro'yxatdan o'tdi — panelda tasdiqlang: Xodimlar → «Tasdiq kutmoqda».`,
-      e.departmentId, 'new_employee',
+        : `👤 <b>${esc(e.fullName)}</b> botda ro'yxatdan o'tdi — tasdiqlang: Mini App → Qarorlar yoki panelda Xodimlar → «Tasdiq kutmoqda».`,
+      e.departmentId, 'new_employee', '/tg/qarorlar',
     );
     return { company: t.name, active: autoApprove };
   });
@@ -417,10 +420,10 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     });
     const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
     if (r.lateMinutes > 0) {
-      await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId, 'late');
+      await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId, 'late', '/tg');
     }
     if (verdict.status === 'suspicious') {
-      await queueNotifyMembers(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${verdict.reasons.join(', ')}). Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious');
+      await queueNotifyMembers(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${verdict.reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious', '/tg/qarorlar');
     }
     return { already: false as const, time: formatTime(r.firstIn ?? new Date(), t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious' };
   });

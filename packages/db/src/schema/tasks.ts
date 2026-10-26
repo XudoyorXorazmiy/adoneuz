@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { boolean, date, doublePrecision, index, integer, jsonb, pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import type { Recurrence } from '@adone/core';
 import { createdAt, id, updatedAt } from './columns';
-import { taskPriorityEnum, taskSourceEnum, taskStatusEnum } from './enums';
+import { deadlineStatusEnum, taskPriorityEnum, taskSourceEnum, taskStatusEnum } from './enums';
 import { tenants, users } from './platform';
 import { employees } from './tenant';
 
@@ -119,4 +119,28 @@ export const taskReports = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('task_reports_task_idx').on(t.tenantId, t.taskId)],
+);
+
+/**
+ * Muddatni uzaytirish so'rovi (§7): ijrochi so'raydi, rahbar hal qiladi; tasdiqlansa `tasks.due_at` yangilanadi va
+ * `task_events` ga izoh tushadi. So'rov o'chirilmaydi — `cancelled`/`rejected`. RLS — migrations/0016.
+ */
+export const deadlineRequests = pgTable(
+  'deadline_requests',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    taskId: uuid().notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+    employeeId: uuid().notNull().references(() => employees.id, { onDelete: 'cascade' }),
+    currentDueAt: timestamp({ withTimezone: true }),
+    requestedDueAt: timestamp({ withTimezone: true }).notNull(),
+    reason: text(),
+    status: deadlineStatusEnum().notNull().default('pending'),
+    decidedByUserId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    decidedAt: timestamp({ withTimezone: true }),
+    decisionComment: text(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index('deadline_requests_task_idx').on(t.tenantId, t.taskId), index('deadline_requests_status_idx').on(t.tenantId, t.status)],
 );

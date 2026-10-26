@@ -16,6 +16,8 @@ export type BotState =
   | { step: 'task_report'; tenantId: string; employeeId: string; taskId: string | null; title?: string; mediaIds: string[]; lat?: number; lng?: number; text?: string }
   | { step: 'task_ask'; tenantId: string; employeeId: string; taskId: string }
   | { step: 'task_revise'; tenantId: string; userId: string; taskId: string }
+  /** Muddatni uzaytirish so'rovi: `due` (ISO) tanlangach sabab kutiladi */
+  | { step: 'task_deadline'; tenantId: string; employeeId: string; taskId: string; due?: string }
   | { step: 'work_title'; tenantId: string; employeeId: string }
   | { step: 'work_mode'; tenantId: string; employeeId: string; title: string }
   | { step: 'face_resample'; tenantId: string; employeeId: string }

@@ -11,7 +11,7 @@ import { formatTime, isOverdue, localDate, TASK_STATUS_LABELS, type NotifyEvent,
 import { dueLabel, escHtml as esc, taskCardText } from '@/lib/task-text';
 import { appOrigin, publicApiOrigin, ROOT_DOMAIN } from '@/lib/host';
 import { sendFile, send, type Keyboard } from '@/server/telegram/api';
-import { memberChats, notifyEmployee } from '@/server/notify';
+import { memberChats, miniAppKeyboard, miniAppRow, notifyEmployee } from '@/server/notify';
 import { getSettings } from '@/server/settings';
 import { mediaRoot } from '@/server/media';
 import type { JobOutcome } from '@/server/jobs/types';
@@ -28,11 +28,15 @@ export const taskButtons = {
     return { inline_keyboard: rows };
   },
   work: (id: string, started: boolean): Keyboard => ({
-    inline_keyboard: [[started ? { text: '✅ Bajardim', callback_data: `tk:done:${id}` } : { text: '▶️ Boshladim', callback_data: `tk:go:${id}` }, { text: '❓ Savol', callback_data: `tk:ask:${id}` }]],
+    inline_keyboard: [
+      [started ? { text: '✅ Bajardim', callback_data: `tk:done:${id}` } : { text: '▶️ Boshladim', callback_data: `tk:go:${id}` }, { text: '❓ Savol', callback_data: `tk:ask:${id}` }],
+      [{ text: '⏰ Muddatni uzaytirish', callback_data: `tk:ext:${id}` }],
+    ],
   }),
   review: (id: string): Keyboard => {
-    const rows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [[{ text: '✅ Tasdiqlash', callback_data: `tk:ok:${id}` }, { text: '🔁 Qaytarish', callback_data: `tk:rev:${id}` }]];
-    // Telegram localhost havolasini qabul qilmaydi — faqat haqiqiy domen
+    const rows: Array<Array<{ text: string; callback_data?: string; url?: string; web_app?: { url: string } }>> = [[{ text: '✅ Tasdiqlash', callback_data: `tk:ok:${id}` }, { text: '🔁 Qaytarish', callback_data: `tk:rev:${id}` }]];
+    // Rahbar Mini App'i (faqat https) va panel; Telegram localhost havolasini qabul qilmaydi — faqat haqiqiy domen
+    rows.push(...miniAppRow(`/tg/vazifa/${id}`));
     if (!ROOT_DOMAIN.includes('localhost')) rows.push([{ text: 'Panelda ochish ↗', url: `${appOrigin()}/vazifalar/${id}` }]);
     return { inline_keyboard: rows };
   },
@@ -110,7 +114,7 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
     case 'comment':
       return toEmp(`💬 Vazifa bo‘yicha xabar: ${title}\n\n${esc(extra.comment ?? '')}`);
     case 'question':
-      return toMembers(`❓ <b>Savol</b> · ${esc(who)}\n${title}\n\n${esc(extra.comment ?? '')}`);
+      return toMembers(`❓ <b>Savol</b> · ${esc(who)}\n${title}\n\n${esc(extra.comment ?? '')}`, miniAppKeyboard(`/tg/vazifa/${t.id}`));
     case 'not_accepted':
       if (t.status !== 'new') return { skip: 'qabul qilingan' };
       return toEmp(`⏰ Sizga berilgan vazifa hali qabul qilinmadi: ${title}`, taskButtons.assigned(t.id));
@@ -121,7 +125,7 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
       if (!isOverdue({ status: t.status, dueAt: t.dueAt }, new Date())) return { skip: 'muddati o‘tmagan yoki topshirilgan' };
       await toEmp(`⚠️ Vazifa muddati o‘tdi: ${title}${due ? ` (${due})` : ''}\nIloji boricha tezroq bajaring.`, taskButtons.work(t.id, t.status !== 'new'));
       const chats = await memberChats(tenantId, data.deptId, null, { event: 'task_overdue', creatorUserId: b.createdByUserId });
-      for (const c of chats ?? []) await send(c.chatId, `⚠️ Muddati o‘tdi: ${title}\n👤 ${esc(who)}${due ? ` · ${due}` : ''}`);
+      for (const c of chats ?? []) await send(c.chatId, `⚠️ Muddati o‘tdi: ${title}\n👤 ${esc(who)}${due ? ` · ${due}` : ''}`, miniAppKeyboard(`/tg/vazifa/${t.id}`));
       return {};
     }
     case 'review_stale': {

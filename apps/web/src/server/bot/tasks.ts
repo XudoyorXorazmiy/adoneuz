@@ -18,6 +18,7 @@ import { dueLabel, escHtml as esc, proofText } from '@/lib/task-text';
 import { clearState, getState, setState, type BotState } from './session';
 import { employeeLinks, memberLinks, type EmployeeLink } from './links';
 import { menuKeyboard, T } from './texts';
+import { startDeadline } from './deadline';
 
 const OPEN: TaskStatus[] = ['new', 'accepted', 'in_progress', 'revision'];
 const ICON: Partial<Record<TaskStatus, string>> = { new: '🆕', accepted: '📌', in_progress: '▶️', revision: '🔁', submitted: '⏳' };
@@ -110,7 +111,7 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
     if (!link) return { skip: 'bog‘lanish yo‘q' };
     return askWorkTitle(uid, chat, link);
   }
-  const m = new RegExp(`^tk:(v|acc|go|done|ask|send|ok|rev|rt):(${UUID_SRC})(?::([1-5]))?$`).exec(data);
+  const m = new RegExp(`^tk:(v|acc|go|done|ask|send|ok|rev|rt|ext):(${UUID_SRC})(?::([1-5]))?$`).exec(data);
   if (!m) {
     await answerCallback(cb.id);
     return { skip: `noma'lum callback: ${data}` };
@@ -172,6 +173,10 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
     if ('error' in res) return { skip: res.error };
     await send(chat, act === 'acc' ? `✅ Qabul qilindi: <b>${esc(f.b.title)}</b>\nIshni boshlaganda «▶️ Boshladim», tugatgach «✅ Bajardim».` : `▶️ Boshlandi: <b>${esc(f.b.title)}</b>`, taskButtons.work(taskId, act === 'go'));
     return {};
+  }
+  if (act === 'ext') {
+    await answerCallback(cb.id);
+    return startDeadline(uid, chat, f.link, { id: taskId, title: f.b.title, status: f.t.status, dueAt: f.t.dueAt }, f.tz);
   }
   if (act === 'ask') {
     await answerCallback(cb.id);

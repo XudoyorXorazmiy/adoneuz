@@ -2,59 +2,23 @@
 import { revalidatePath } from 'next/cache';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { auditLog, branches, departments, employees, invites, schedules, tgLinks, withTenant, type Tx } from '@adone/db';
-import { can, normalizePhone, PAY_TYPES } from '@adone/core';
+import { auditLog, employees, invites, tgLinks, withTenant } from '@adone/db';
 import { assertArea } from '@/lib/auth/guard';
-import type { TenantUser } from '@/lib/auth/session';
 import type { FormState } from '@/components/ui/form-drawer';
 import { canTouch, createInvite, setEmployeeStatus } from '@/server/employees';
+import { saveEmployeeFromForm } from '@/server/employees-form';
 import { kick } from '@/server/jobs/enqueue';
 import { queueNotifyEmployee } from '@/server/notify';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
-const optUuid = (v: string) => (z.uuid().safeParse(v).success ? v : null);
 
-/** Formadan kelgan uuid shu ishxonaniki (RLS begona qatorni yashiradi, lekin FK uni qabul qiladi — boshqaruv-tizim §10). */
-async function owns(tx: Tx, table: typeof branches | typeof departments | typeof schedules, id: string | null) {
-  if (!id) return true;
-  const [r] = await tx.select({ id: table.id }).from(table).where(eq(table.id, id)).limit(1);
-  return !!r;
-}
-
+/** Xodim qo'shish / tahrirlash — forma tekshiruvi `server/employees-form.ts` da (rahbar Mini App'i bilan bir xil). */
 export async function saveEmployeeAction(_p: FormState, f: FormData): Promise<FormState> {
   const user = await assertArea('employees');
-  const id = optUuid(str(f, 'id'));
-  const fullName = str(f, 'fullName');
-  if (fullName.length < 3) return { error: 'Ism-familiyani kiriting' };
-  const rawPhone = str(f, 'phone');
-  const phone = rawPhone ? normalizePhone(rawPhone) : null;
-  if (rawPhone && !phone) return { error: "Telefon raqam noto'g'ri" };
-  // Stavka — faqat `payroll` ruxsati bilan (menejer formada ko'rmaydi; yuborsa ham yozilmaydi, §4)
-  const pay = can(user.role, 'payroll')
-    ? { payType: z.enum(PAY_TYPES).catch('monthly').parse(str(f, 'payType')), payRate: Math.max(0, Math.round(Number(str(f, 'payRate').replace(/\s/g, '') || 0))) }
-    : {};
-  const values = {
-    fullName, phone, position: str(f, 'position') || null,
-    departmentId: optUuid(str(f, 'departmentId')), branchId: optUuid(str(f, 'branchId')), scheduleId: optUuid(str(f, 'scheduleId')),
-    ...pay,
-  };
-  const err = await withTenant(user.tenantId, async (tx) => {
-    if (!(await owns(tx, departments, values.departmentId)) || !(await owns(tx, branches, values.branchId)) || !(await owns(tx, schedules, values.scheduleId))) return 'Tanlov topilmadi';
-    if (!(await canTouch(tx, user, id, values.departmentId))) return "Faqat o'z bo'limingiz xodimlari";
-    if (id) {
-      const [r] = await tx.update(employees).set(values).where(eq(employees.id, id)).returning({ id: employees.id });
-      if (!r) return 'Xodim topilmadi';
-      await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'employee.update', entity: 'employee', entityId: id, meta: values });
-    } else {
-      const [r] = await tx.insert(employees).values({ tenantId: user.tenantId, ...values, status: 'invited' }).returning({ id: employees.id });
-      await createInvite(tx, user.tenantId, r!.id);
-      await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'employee.create', entity: 'employee', entityId: r!.id, meta: { fullName } });
-    }
-    return null;
-  });
-  if (err) return { error: err };
+  const res = await saveEmployeeFromForm(user, f);
+  if ('error' in res) return res;
   revalidatePath('/xodimlar');
-  return { ok: id ? 'Saqlandi' : "Xodim qo'shildi — taklif havolasini unga yuboring" };
+  return { ok: res.ok };
 }
 
 /** Holat: tasdiqlash (pending → active), o'chirish (→ disabled), qayta yoqish — mantiq `server/employees.ts setEmployeeStatus`. */

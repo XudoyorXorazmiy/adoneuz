@@ -8,6 +8,7 @@ import { assertArea } from '@/lib/auth/guard';
 import type { FormState } from '@/components/ui/form-drawer';
 import { commentTask, createTasks, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
 import { createTaskFromForm } from '@/server/tasks-form';
+import { decideDeadlineRequest } from '@/server/deadline';
 import { departmentScope } from '@/server/scope';
 import { kick } from '@/server/jobs/enqueue';
 
@@ -103,4 +104,15 @@ export async function stopTemplateAction(f: FormData): Promise<void> {
     await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'task_template.stop', entity: 'task_template', entityId: id });
   });
   done();
+}
+
+/** Muddatni uzaytirish so'rovi — rahbar qarori (vazifa sahifasi). Ruxsat va CAS — server/deadline.ts. */
+export async function decideDeadlineAction(f: FormData): Promise<void> {
+  const user = await assertArea('tasks');
+  const id = str(f, 'id');
+  const to = str(f, 'to');
+  if (!isUuid(id) || (to !== 'approved' && to !== 'rejected')) throw new Error("Ma'lumot noto'g'ri");
+  const res = await withTenant(user.tenantId, (tx) => decideDeadlineRequest(tx, { tenantId: user.tenantId, id, to, actor: { userId: user.id, role: user.role }, comment: str(f, 'comment').slice(0, 500) || null }));
+  if ('error' in res) throw new Error(res.error);
+  done('/vazifalar/[id]');
 }

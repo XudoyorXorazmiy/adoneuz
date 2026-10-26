@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { formatDate, formatTime, isoWeekday, MEMBER_ROLE_LABELS, WEEKDAY_LONG } from '@adone/core';
+import { can, formatDate, formatTime, isoWeekday, MEMBER_ROLE_LABELS, WEEKDAY_LONG } from '@adone/core';
 import type { TgMember } from '@/lib/tg/session';
 import { managerDecisions, managerShell, managerTaskKpis, managerToday } from '@/server/manager';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { DayStatusBadge } from '@/components/attendance/badges';
+import { RemindButton } from './manager-decisions';
 import { TgPage } from './tg-shell';
 
 /** Rahbar Mini App'i — «Bugun»: davomat raqamlari, vazifalar nazorati, qaror kutayotganlar, xodimlar ro'yxati. Panel uslubida, Mini App o'lchamlarida. */
@@ -31,9 +32,11 @@ export async function ManagerHome({ m }: { m: TgMember }) {
           <span className="rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-primary">{MEMBER_ROLE_LABELS[m.role]}</span>
         </div>
 
-        <div className={`grid gap-2.5 ${shell.reports ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className="grid grid-cols-2 gap-2.5">
           <Link href="/tg/vazifa-berish" className="btn-primary h-12 text-sm shadow-none"><Icon name="add_task" size={20} />Vazifa berish</Link>
+          {can(m.role, 'employees') && <Link href="/tg/xodim-qoshish" className="btn-secondary h-12 text-sm"><Icon name="person_add" size={20} className="text-primary" />Xodim qo&apos;shish</Link>}
           {shell.reports && <Link href="/tg/hisobot" className="btn-secondary h-12 text-sm"><Icon name="bar_chart" size={20} className="text-primary" />Hisobot</Link>}
+          {can(m.role, 'payroll') && <Link href="/tg/ish-haqi" className="btn-secondary h-12 text-sm"><Icon name="payments" size={20} className="text-primary" />Ish haqi</Link>}
         </div>
 
         <section className="flex flex-col gap-3 rounded-[24px] bg-card p-[18px] shadow-[var(--shadow-card)]">
@@ -50,7 +53,7 @@ export async function ManagerHome({ m }: { m: TgMember }) {
             ))}
           </div>
           {c.suspicious > 0 && (
-            <p className="m-0 flex items-center gap-2 rounded-2xl bg-warning-tint px-3.5 py-2.5 text-[13px] font-semibold text-warning-text"><Icon name="gpp_maybe" size={18} />Shubhali keldi-ketdi: {c.suspicious} — panelda «Davomat → Shubhali»</p>
+            <Link href="/tg/qarorlar#shubhali" className="m-0 flex items-center gap-2 rounded-2xl bg-warning-tint px-3.5 py-2.5 text-[13px] font-semibold text-warning-text"><Icon name="gpp_maybe" size={18} />Shubhali keldi-ketdi: {c.suspicious} — ko&apos;rish va qaror<Icon name="chevron_right" size={16} className="ml-auto" /></Link>
           )}
         </section>
 
@@ -94,20 +97,25 @@ export async function ManagerHome({ m }: { m: TgMember }) {
             <div className="flex flex-col divide-y divide-line-soft">
               {rows.map((r) => {
                 const res = r.result;
+                // Smena boshlangan, hali kelmagan (ruxsatda emas) — bir bosishda eslatma
+                const remind = !res.firstIn && !!r.shift && Date.now() > r.shift.start.getTime() && res.status !== 'leave' && res.status !== 'holiday';
                 return (
-                  <div key={r.id} className="flex items-center gap-3 px-[18px] py-2.5">
-                    <Avatar name={r.fullName} size={36} online={res.open} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-bold">{r.fullName}</div>
-                      <div className="truncate text-xs text-muted">{[r.position, r.departmentName].filter(Boolean).join(' · ') || r.branchName || '—'}</div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className={`tnum text-[13px] font-semibold ${res.lateMinutes > 0 ? 'text-warning' : res.firstIn ? '' : 'text-placeholder'}`}>
-                        {res.firstIn ? formatTime(res.firstIn, tz) : r.shift ? `${formatTime(r.shift.start, tz)} kutilmoqda` : '—'}
-                        {res.lateMinutes > 0 && <span className="ml-1 text-[11px]">+{res.lateMinutes} daq</span>}
-                      </span>
-                      <DayStatusBadge status={res.status} open={res.open} early={res.earlyLeaveMinutes > 0} waiting={!!r.shift && !res.firstIn} />
-                    </div>
+                  <div key={r.id} className="flex items-center gap-2 px-[18px] py-2.5">
+                    <Link href={`/tg/xodim/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                      <Avatar name={r.fullName} size={36} online={res.open} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-bold">{r.fullName}</div>
+                        <div className="truncate text-xs text-muted">{[r.position, r.departmentName].filter(Boolean).join(' · ') || r.branchName || '—'}</div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`tnum text-[13px] font-semibold ${res.lateMinutes > 0 ? 'text-warning' : res.firstIn ? '' : 'text-placeholder'}`}>
+                          {res.firstIn ? formatTime(res.firstIn, tz) : r.shift ? `${formatTime(r.shift.start, tz)} kutilmoqda` : '—'}
+                          {res.lateMinutes > 0 && <span className="ml-1 text-[11px]">+{res.lateMinutes} daq</span>}
+                        </span>
+                        <DayStatusBadge status={res.status} open={res.open} early={res.earlyLeaveMinutes > 0} waiting={!!r.shift && !res.firstIn} />
+                      </div>
+                    </Link>
+                    {remind && <RemindButton employeeId={r.id} compact />}
                   </div>
                 );
               })}

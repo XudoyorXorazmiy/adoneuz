@@ -66,10 +66,10 @@ export async function recordCheck(tx: Tx, input: {
   await tx.insert(attendanceEvents).values({ ...base, kind: input.action, checkStatus, reasons, faceScore: input.face?.score ?? null, livenessScore: input.face?.liveness ?? null });
   const r = await rebuildDay(tx, { tenantId: input.tenantId, employeeId: e.id, workDate: wd.date, tz });
   if (input.action === 'check_in' && r.lateMinutes > 0) {
-    await queueNotifyMembers(tx, input.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, tz)}, Mini App).`, e.departmentId, 'late');
+    await queueNotifyMembers(tx, input.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, tz)}, Mini App).`, e.departmentId, 'late', '/tg');
   }
   if (checkStatus === 'suspicious') {
-    await queueNotifyMembers(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious');
+    await queueNotifyMembers(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious', '/tg/qarorlar');
   }
   return {
     ok: true, time: formatTime(new Date(), tz), lateMinutes: input.action === 'check_in' ? r.lateMinutes : 0, workedMinutes: r.workedMinutes, distanceM: g.distanceM, branchName: b.name,

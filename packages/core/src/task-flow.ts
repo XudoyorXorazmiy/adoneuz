@@ -135,3 +135,23 @@ export function outsideQuietHours(at: Date, tz: string, quiet: { from: number; t
   // Tugash soati bugun hali oldinda bo'lsa — bugun, aks holda ertaga
   return zonedTime(h < quiet.to ? day : addDays(day, 1), end, tz);
 }
+
+// ---------- Muddatni uzaytirish so'rovi (§7, deadline_requests) ----------
+
+export const DEADLINE_STATUSES = ['pending', 'approved', 'rejected', 'cancelled'] as const;
+export type DeadlineStatus = (typeof DEADLINE_STATUSES)[number];
+export const DEADLINE_STATUS_LABELS: Record<DeadlineStatus, string> = { pending: 'Kutilmoqda', approved: 'Uzaytirildi', rejected: 'Rad etildi', cancelled: 'Bekor qilindi' };
+
+/** So'rov faqat ochiq, hali topshirilmagan vazifada. */
+export const canRequestDeadline = (s: TaskStatus) => s === 'new' || s === 'accepted' || s === 'in_progress' || s === 'revision';
+
+export const MAX_DEADLINE_DAYS = 30;
+
+/** Yangi muddat: kelajakda (kamida 5 daqiqa), hozirgi muddatdan keyin, 30 kundan uzoq emas. Xato matni yoki null. */
+export function validDeadline(requested: Date, now: Date, current: Date | null): string | null {
+  if (!Number.isFinite(requested.getTime())) return "Sana noto'g'ri";
+  if (requested.getTime() < now.getTime() + 5 * 60_000) return "Yangi muddat kelajakda bo'lsin";
+  if (current && requested.getTime() <= current.getTime()) return "Yangi muddat hozirgi muddatdan keyin bo'lsin";
+  if (requested.getTime() > now.getTime() + MAX_DEADLINE_DAYS * 86_400_000) return `${MAX_DEADLINE_DAYS} kundan uzoqqa uzaytirilmaydi`;
+  return null;
+}

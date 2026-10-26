@@ -1,6 +1,6 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 import {
-  ATTENDANCE_EVENT_KINDS, ATTENDANCE_SOURCES, CHECK_STATUSES, DAY_STATUSES, EMPLOYEE_STATUSES, JOB_STATUSES, MEDIA_KINDS, MEMBER_ROLES,
+  ATTENDANCE_EVENT_KINDS, ATTENDANCE_SOURCES, CHECK_STATUSES, DAY_STATUSES, DEADLINE_STATUSES, EMPLOYEE_STATUSES, JOB_STATUSES, MEDIA_KINDS, MEMBER_ROLES,
   LEAVE_KINDS, LEAVE_STATUSES, PAY_TYPES, PAYROLL_STATUSES, SCHEDULE_KINDS, SUBSCRIPTION_STATUSES, TASK_PRIORITIES, TASK_SOURCES, TASK_STATUSES, TENANT_STATUSES,
 } from '@adone/core';
 
@@ -23,3 +23,4 @@ export const taskPriorityEnum = pgEnum('task_priority', TASK_PRIORITIES);
 export const leaveKindEnum = pgEnum('leave_kind', LEAVE_KINDS);
 export const leaveStatusEnum = pgEnum('leave_status', LEAVE_STATUSES);
 export const payrollStatusEnum = pgEnum('payroll_status', PAYROLL_STATUSES);
+export const deadlineStatusEnum = pgEnum('deadline_status', DEADLINE_STATUSES);

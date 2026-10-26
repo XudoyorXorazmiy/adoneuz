@@ -10,7 +10,7 @@ import { attendanceEvents, employees, onLeave, rebuildDay, tenants, withPlatform
 import { addDays, computeDay, formatTime, localDate, shiftFor, tenantSettings, zonedParts } from '@adone/core';
 import { esc } from '@/server/telegram/api';
 import { enqueue } from '@/server/jobs/enqueue';
-import { notifyMembers, queueNotifyEmployee, queueNotifyMembers } from '@/server/notify';
+import { miniAppKeyboard, notifyMembers, queueNotifyEmployee, queueNotifyMembers } from '@/server/notify';
 import type { JobOutcome } from '@/server/jobs/types';
 import { runTaskTemplates } from '@/server/tasks';
 
@@ -45,7 +45,7 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
             const at = shift ? shift.end : closeAt;
             await tx.insert(attendanceEvents).values({ tenantId, employeeId: e.id, workDate: date, kind: 'auto_close', serverAt: at, source: 'admin', checkStatus: 'ok', reasons: ['forgot_checkout'] });
             await queueNotifyEmployee(tx, tenantId, e.id, `ℹ️ ${date.split('-').reverse().join('.')} kuni «Ketdim» bosilmadi — tizim ${formatTime(at, tz)} da avtomatik yopdi. Xato bo'lsa rahbaringizga ayting.`);
-            await queueNotifyMembers(tx, tenantId, `ℹ️ <b>${esc(e.fullName)}</b> «Ketdim» bosmagan — ${formatTime(at, tz)} da avto-yopildi.`, e.departmentId);
+            await queueNotifyMembers(tx, tenantId, `ℹ️ <b>${esc(e.fullName)}</b> «Ketdim» bosmagan — ${formatTime(at, tz)} da avto-yopildi.`, e.departmentId, undefined, '/tg');
             closed++;
           }
         }
@@ -84,5 +84,5 @@ export async function absentDigest(tenantId: string, date: string): Promise<JobO
     ].join('\n');
   });
   if (!text) return { skip: 'hamma joyida' };
-  return notifyMembers(tenantId, text, null, 'absent');
+  return notifyMembers(tenantId, text, null, 'absent', miniAppKeyboard('/tg'));
 }

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { describeRecurrence, formatDateTime, isOverdue, nextStatuses, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, type TaskProof, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { taskDetail } from '@/server/task-queries';
-import { quickTransitionAction, stopTemplateAction, transitionTaskAction } from '@/lib/actions/tasks';
+import { decideDeadlineAction, quickTransitionAction, stopTemplateAction, transitionTaskAction } from '@/lib/actions/tasks';
 import { CardHead, PageHeader } from '@/components/ui/page-header';
 import { Field, FormDrawer } from '@/components/ui/form-drawer';
 import { Avatar } from '@/components/ui/avatar';
@@ -109,6 +109,28 @@ export default async function TaskPage({ params }: PageProps<'/vazifalar/[id]'>)
               </div>
             )}
           </section>
+
+          {d.deadline && (
+            <section className="card flex flex-col gap-4 border border-warning/40 p-6 max-sm:p-4">
+              <CardHead icon={<Icon name="more_time" size={18} fill />} title="Muddatni uzaytirish so'rovi" badge={<span className="badge bg-warning-tint text-warning">Kutilmoqda</span>} />
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">
+                <b>{d.deadline.employeeName}</b>
+                <span className="text-muted">{d.deadline.currentDueAt ? dueText(d.deadline.currentDueAt, tz) : 'muddatsiz'}</span><Icon name="arrow_forward" size={16} className="text-muted" /><b className="tnum">{dueText(d.deadline.requestedDueAt, tz)}</b>
+                <span className="text-xs text-placeholder">· {formatDateTime(d.deadline.createdAt, tz)}</span>
+              </div>
+              {d.deadline.reason && <p className="m-0 w-fit rounded-xl bg-page px-3 py-2 text-sm">«{d.deadline.reason}»</p>}
+              {d.role === 'reviewer' && (
+                <div className="flex flex-wrap items-end gap-2.5">
+                  <form action={decideDeadlineAction}><input type="hidden" name="id" value={d.deadline.id} /><input type="hidden" name="to" value="approved" /><button className="btn-primary"><Icon name="event_available" size={18} />Ruxsat berish</button></form>
+                  <form action={decideDeadlineAction} className="flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="id" value={d.deadline.id} /><input type="hidden" name="to" value="rejected" />
+                    <input name="comment" maxLength={500} placeholder="Rad etish sababi (ixtiyoriy)" className="input w-64" />
+                    <button className="btn-danger"><Icon name="close" size={18} />Rad etish</button>
+                  </form>
+                </div>
+              )}
+            </section>
+          )}
 
           {d.reports.length > 0 && (
             <section className="card flex flex-col gap-4 p-6 max-sm:p-4">

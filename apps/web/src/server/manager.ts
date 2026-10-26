@@ -1,17 +1,23 @@
 import 'server-only';
 /**
  * Rahbar Mini App'i (egasi, admin, bo'lim boshlig'i — xodim yozuvi bo'lmaganlar): bugungi davomat, kutilayotgan qarorlar,
- * vazifalar nazorati va berish, hisobot. Hammasi panelning o'sha server funksiyalari orqali (`TenantUser` ko'rinishida) —
- * rol va bo'lim cheklovi bir xil.
+ * vazifalar nazorati va berish, xodim kartasi, hisobot, ish haqi. Hammasi panelning o'sha server funksiyalari orqali
+ * (`TenantUser` ko'rinishida) — rol va bo'lim cheklovi bir xil.
  */
-import { can, reportPeriod } from '@adone/core';
+import { withTenant } from '@adone/db';
+import { addDays, can, reportPeriod } from '@adone/core';
 import { appOrigin } from '@/lib/host';
 import { memberAsTenantUser, type TgMember } from '@/lib/tg/session';
-import { listDay, summarize, today } from './attendance';
+import { listDay, summarize, today, type DayRow } from './attendance';
 import { pendingEmployees } from './dashboard';
+import { listDeadlineRequests } from './deadline';
+import { employeeOptions } from './employees';
 import { listLeaves } from './leave';
+import { payrollView } from './payroll';
+import { employeeProfile } from './profile';
 import { buildReport } from './reports';
-import { assignOptions, listTasks, taskDetail, taskKpis, type TaskTab, type TaskView } from './task-queries';
+import { departmentScope } from './scope';
+import { assignOptions, employeeJournal, listTasks, taskDetail, taskKpis, type TaskTab, type TaskView } from './task-queries';
 
 export async function managerToday(m: TgMember) {
   const tu = memberAsTenantUser(m);
@@ -20,16 +26,40 @@ export async function managerToday(m: TgMember) {
   return { date, rows, counts: summarize(rows) };
 }
 
+export interface SuspiciousItem { date: string; employee: Pick<DayRow, 'id' | 'fullName' | 'position' | 'departmentName' | 'branchName' | 'branchRadiusM'>; event: DayRow['events'][number] }
+
+/** Hal qilinmagan shubhali keldi-ketdi (bugun va kecha): tuzatish (approve/void) qilinmagan hodisalar. */
+export async function managerSuspicious(m: TgMember): Promise<SuspiciousItem[]> {
+  const tu = memberAsTenantUser(m);
+  const t = today(tu);
+  const out: SuspiciousItem[] = [];
+  for (const date of [addDays(t, -1), t]) {
+    for (const r of await listDay(tu, { date })) {
+      const resolved = new Set(r.events.filter((e) => e.kind === 'correction').map((e) => (e.meta as { target?: string } | null)?.target).filter(Boolean));
+      for (const e of r.events) {
+        if (e.checkStatus !== 'suspicious' || resolved.has(e.id)) continue;
+        out.push({ date, employee: { id: r.id, fullName: r.fullName, position: r.position, departmentName: r.departmentName, branchName: r.branchName, branchRadiusM: r.branchRadiusM }, event: e });
+      }
+    }
+  }
+  return out.sort((a, b) => b.event.at.getTime() - a.event.at.getTime());
+}
+
 export async function managerDecisions(m: TgMember) {
   const tu = memberAsTenantUser(m);
-  const [employees, leaves, assigned, self] = await Promise.all([
+  const [employees, leaves, assigned, self, suspicious, deadlines] = await Promise.all([
     pendingEmployees(tu, 50),
     listLeaves(tu, 'pending'),
     listTasks(tu, { view: 'berilgan', tab: 'review' }),
     listTasks(tu, { view: 'ozi', tab: 'review' }),
+    managerSuspicious(m),
+    listDeadlineRequests(tu, 'pending'),
   ]);
   const tasks = [...assigned.rows, ...self.rows].sort((a, b) => (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0));
-  return { employees, leaves: leaves.rows, tasks, total: employees.length + leaves.rows.length + tasks.length };
+  return {
+    employees, leaves: leaves.rows, tasks, suspicious, deadlines,
+    total: employees.length + leaves.rows.length + tasks.length + suspicious.length + deadlines.length,
+  };
 }
 
 /** Pastki menyu uchun: panel manzili, kutilayotgan qarorlar soni, «Hisobot» tabi (faqat `reports` — egasi, admin). */
@@ -60,7 +90,24 @@ export async function managerAssignOptions(m: TgMember) {
   return assignOptions(memberAsTenantUser(m));
 }
 
-// ---------- Hisobot ----------
+// ---------- Xodim ----------
+
+/** Xodim kartasi: profil (oy tabeli, bugun jonli), ish jurnali, bugungi qator (isbotlar). Menejer — faqat o'z bo'limi (employeeProfile null). */
+export async function managerEmployee(m: TgMember, id: string, month: string) {
+  const tu = memberAsTenantUser(m);
+  const [p, journal, rows] = await Promise.all([employeeProfile(tu, id, month), employeeJournal(tu, id, month), listDay(tu, { date: today(tu) })]);
+  if (!p) return null;
+  return { p, journal, todayRow: rows.find((r) => r.id === id) ?? null };
+}
+
+/** «Xodim qo'shish» formasi tanlovlari — menejerga faqat o'z bo'limlari. */
+export async function managerFormOptions(m: TgMember) {
+  const tu = memberAsTenantUser(m);
+  const [o, scope] = await Promise.all([employeeOptions(m.tenantId), withTenant(m.tenantId, (tx) => departmentScope(tx, tu))]);
+  return { ...o, departments: scope ? o.departments.filter((d) => scope.includes(d.id)) : o.departments };
+}
+
+// ---------- Hisobot, ish haqi ----------
 
 /** Davr bo'yicha yig'ma (panel /hisobotlar bilan bir xil hisob). Faqat `reports` huquqi bo'lsa. */
 export async function managerReport(m: TgMember, preset: string | undefined) {
@@ -69,4 +116,10 @@ export async function managerReport(m: TgMember, preset: string | undefined) {
   const t = today(tu);
   const period = reportPeriod(preset, t);
   return { today: t, period, report: await buildReport(tu, { period }) };
+}
+
+/** Oylik vedomost (qoralama avtomatik qayta hisoblanadi, yopilgan oy o'zgarmaydi). Faqat `payroll` (egasi, admin). */
+export async function managerPayroll(m: TgMember, month: string) {
+  if (!can(m.role, 'payroll')) return null;
+  return payrollView(m.tenantId, month);
 }

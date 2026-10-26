@@ -5,8 +5,8 @@ import 'server-only';
  *   - bitta vazifa N ijrochiga — task_batches + N ta tasks;
  *   - bildirishnomalar navbat orqali (`task_notify`), Telegram'ga yuborish tranzaksiyadan tashqarida.
  */
-import { and, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
-import { employees, media, memberships, taskBatches, taskEvents, taskReports, taskTemplates, tasks, tenants, type Tx } from '@adone/db';
+import { and, eq, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
+import { employees, jobs, media, memberships, taskBatches, taskEvents, taskReports, taskTemplates, tasks, tenants, type Tx } from '@adone/db';
 import {
   canTransition, initialStatus, localDate, missingProofs, needsComment, occursOn, outsideQuietHours, TASK_PROOF_LABELS, zonedTime,
   type MemberRole, type TaskActor, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus,
@@ -104,18 +104,27 @@ async function insertReport(tx: Tx, tenantId: string, taskId: string, r: ReportI
  * Eslatmalar (§7, Sozlamalar → Vazifalar): N daqiqada qabul qilinmasa, muddatga 1 soat qolganda, muddat o'tganda.
  * Tinch vaqtda (standart 22:00–08:00) — ertalabga.
  */
-async function scheduleReminders(tx: Tx, tenantId: string, taskId: string, dueAt: Date | null, tz: string) {
+async function scheduleReminders(tx: Tx, tenantId: string, taskId: string, dueAt: Date | null, tz: string, opts: { onlyDue?: boolean; keySuffix?: string } = {}) {
   const { reminders: r, quietHours } = await readSettings(tx);
   const now = Date.now();
   const at = (d: Date, kind: string) => {
     const when = outsideQuietHours(d, tz, quietHours).getTime();
-    return enqueue(tx, tenantId, 'task_notify', { taskId, kind }, { delaySec: Math.max(0, Math.round((when - now) / 1000)), maxAttempts: 2, dedupeKey: `tr:${kind}:${taskId}` });
+    return enqueue(tx, tenantId, 'task_notify', { taskId, kind }, { delaySec: Math.max(0, Math.round((when - now) / 1000)), maxAttempts: 2, dedupeKey: `tr:${kind}:${taskId}${opts.keySuffix ?? ''}` });
   };
-  if (r.notAccepted) await at(new Date(now + r.notAcceptedMin * MINUTE), 'not_accepted');
+  if (r.notAccepted && !opts.onlyDue) await at(new Date(now + r.notAcceptedMin * MINUTE), 'not_accepted');
   if (dueAt) {
     if (r.dueSoon && dueAt.getTime() - 60 * MINUTE > now + 5 * MINUTE) await at(new Date(dueAt.getTime() - 60 * MINUTE), 'due_soon');
     if (r.overdue) await at(new Date(Math.max(dueAt.getTime() + MINUTE, now + MINUTE)), 'overdue');
   }
+}
+
+/**
+ * Muddat o'zgarganda (muddatni uzaytirish so'rovi tasdiqlandi): eski navbatdagi «1 soat qoldi» / «muddat o'tdi» eslatmalari
+ * olib tashlanadi, yangilari yangi vaqtga (dedupe kaliti muddat bilan — eski `done` yozuv to'sib qo'ymaydi).
+ */
+export async function rescheduleReminders(tx: Tx, tenantId: string, taskId: string, dueAt: Date, tz: string) {
+  await tx.delete(jobs).where(and(eq(jobs.status, 'queued'), eq(jobs.type, 'task_notify'), like(jobs.dedupeKey, `tr:%:${taskId}%`), sql`${jobs.payload}->>'kind' in ('due_soon','overdue')`));
+  await scheduleReminders(tx, tenantId, taskId, dueAt, tz, { onlyDue: true, keySuffix: `:${dueAt.getTime()}` });
 }
 
 /** Hisobot 24 soat tekshirilmasa — rahbarlarga eslatma (Sozlamalar → Vazifalar → Eslatmalar). Har topshirishda qayta. */
