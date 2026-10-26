@@ -1,6 +1,7 @@
 import { LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_STATUS_LABELS, leaveDays, localDate } from '@adone/core';
+import { redirect } from 'next/navigation';
 import { withTenant } from '@adone/db';
-import { currentTgUser } from '@/lib/tg/session';
+import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { leavePeriod, myLeaves } from '@/server/leave';
 import { TgHeader } from '@/components/tg/tg-shell';
 import { CancelLeave, LeaveForm } from '@/components/tg/leave-form';
@@ -9,7 +10,7 @@ const TONE = { pending: 'bg-warning-tint text-warning', approved: 'bg-success-ti
 
 export default async function TgLeavePage() {
   const u = await currentTgUser();
-  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
+  if (!u) return (await currentTgMember()) ? redirect('/tg') : null; // rahbar sessiyasi — Bugun ekrani; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
   const list = await withTenant(u.tenantId, (tx) => myLeaves(tx, u.employeeId));
   return (
     <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col bg-page pb-6">

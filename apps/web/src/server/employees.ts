@@ -1,10 +1,14 @@
 import 'server-only';
 import { randomBytes } from 'node:crypto';
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
-import { branches, departments, employees, invites, schedules, withTenant, type Tx } from '@adone/db';
+import { auditLog, branches, departments, employees, invites, schedules, tgLinks, withTenant, type Tx } from '@adone/db';
 import type { EmployeeStatus } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope, inScope } from './scope';
+import { queueNotifyEmployee } from './notify';
+import { deleteBiometrics } from './face';
+import { T } from './bot/texts';
+import { esc } from './telegram/api';
 
 export const BOT_USERNAME = process.env.PLATFORM_BOT_USERNAME || 'adoneuz_bot';
 export const INVITE_DAYS = 14;
@@ -69,3 +73,41 @@ export async function employeeOptions(tenantId: string) {
   }));
 }
 
+
+/** Menejer faqat o'z bo'limidagi xodimni o'zgartiradi (`departmentId` — formada tanlangan yangi bo'lim). */
+export async function canTouch(tx: Tx, user: TenantUser, employeeId: string | null, departmentId: string | null) {
+  const scope = await departmentScope(tx, user);
+  if (scope === null) return true;
+  if (departmentId && !scope.includes(departmentId)) return false;
+  if (employeeId) {
+    const [e] = await tx.select({ d: employees.departmentId }).from(employees).where(eq(employees.id, employeeId)).limit(1);
+    return !!e?.d && scope.includes(e.d);
+  }
+  return !!departmentId;
+}
+
+/**
+ * Holat: tasdiqlash (pending → active), o'chirish (→ disabled), qayta yoqish. Panel action'i va rahbar Mini App'i shu yerdan.
+ * Xato matni yoki null.
+ */
+export async function setEmployeeStatus(tx: Tx, user: TenantUser, id: string, status: 'active' | 'disabled'): Promise<string | null> {
+  if (!(await canTouch(tx, user, id, null))) return "Ruxsat yo'q";
+  const [e] = await tx.select().from(employees).where(eq(employees.id, id)).limit(1);
+  if (!e) return 'Xodim topilmadi';
+  if (status === 'active' && !e.telegramUserId) return "Xodim hali botda ro'yxatdan o'tmagan";
+  await tx.update(employees).set({ status, joinedAt: status === 'active' && !e.joinedAt ? new Date() : e.joinedAt }).where(eq(employees.id, id));
+  // O'chirilgan xodim botdan uziladi; biometrika (yuz vektorlari va namuna videolari) o'chiriladi (§1.4)
+  if (status === 'disabled') {
+    await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
+    await deleteBiometrics(tx, id);
+    await tx.update(employees).set({ deviceId: null, deviceLabel: null, deviceBoundAt: null }).where(eq(employees.id, id));
+  }
+  if (status === 'active' && e.status === 'disabled') {
+    // Qayta yoqilgan xodim botga qayta bog'lanadi (shaxsiy chatda chat id = Telegram user id)
+    await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
+    await tx.insert(tgLinks).values({ telegramUserId: e.telegramUserId!, chatId: e.telegramUserId!, tenantId: user.tenantId, kind: 'employee', refId: id });
+  }
+  if (status === 'active' && e.status !== 'active') await queueNotifyEmployee(tx, user.tenantId, id, T.approved(esc(user.tenantName)));
+  await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: `employee.${status}`, entity: 'employee', entityId: id });
+  return null;
+}

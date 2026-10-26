@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
-import { currentTgUser } from '@/lib/tg/session';
+import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { TgAuth } from '@/components/tg/tg-auth';
 import { TgReady } from '@/components/tg/tg-shell';
 
@@ -13,11 +13,12 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, maxi
  */
 export default async function TgLayout({ children }: LayoutProps<'/tg'>) {
   const user = await currentTgUser();
+  const member = user ? null : await currentTgMember();
   return (
     <>
       <Script src="https://telegram.org/js/telegram-web-app.js?59" strategy="afterInteractive" />
       <TgReady />
-      {user ? children : <TgAuth />}
+      {user || member ? children : <TgAuth />}
     </>
   );
 }

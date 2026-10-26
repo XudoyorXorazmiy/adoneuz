@@ -7,13 +7,9 @@ import { can, normalizePhone, PAY_TYPES } from '@adone/core';
 import { assertArea } from '@/lib/auth/guard';
 import type { TenantUser } from '@/lib/auth/session';
 import type { FormState } from '@/components/ui/form-drawer';
-import { createInvite } from '@/server/employees';
-import { queueNotifyEmployee } from '@/server/notify';
+import { canTouch, createInvite, setEmployeeStatus } from '@/server/employees';
 import { kick } from '@/server/jobs/enqueue';
-import { T } from '@/server/bot/texts';
-import { esc } from '@/server/telegram/api';
-import { departmentScope } from '@/server/scope';
-import { deleteBiometrics } from '@/server/face';
+import { queueNotifyEmployee } from '@/server/notify';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
 const optUuid = (v: string) => (z.uuid().safeParse(v).success ? v : null);
@@ -23,18 +19,6 @@ async function owns(tx: Tx, table: typeof branches | typeof departments | typeof
   if (!id) return true;
   const [r] = await tx.select({ id: table.id }).from(table).where(eq(table.id, id)).limit(1);
   return !!r;
-}
-
-/** Menejer faqat o'z bo'limidagi xodimni o'zgartiradi. */
-async function canTouch(tx: Tx, user: TenantUser, employeeId: string | null, departmentId: string | null) {
-  const scope = await departmentScope(tx, user);
-  if (scope === null) return true;
-  if (departmentId && !scope.includes(departmentId)) return false;
-  if (employeeId) {
-    const [e] = await tx.select({ d: employees.departmentId }).from(employees).where(eq(employees.id, employeeId)).limit(1);
-    return !!e?.d && scope.includes(e.d);
-  }
-  return !!departmentId;
 }
 
 export async function saveEmployeeAction(_p: FormState, f: FormData): Promise<FormState> {
@@ -73,31 +57,13 @@ export async function saveEmployeeAction(_p: FormState, f: FormData): Promise<Fo
   return { ok: id ? 'Saqlandi' : "Xodim qo'shildi — taklif havolasini unga yuboring" };
 }
 
-/** Holat: tasdiqlash (pending → active), o'chirish (→ disabled), qayta yoqish. */
+/** Holat: tasdiqlash (pending → active), o'chirish (→ disabled), qayta yoqish — mantiq `server/employees.ts setEmployeeStatus`. */
 export async function setEmployeeStatusAction(f: FormData): Promise<void> {
   const user = await assertArea('employees');
   const id = z.uuid().parse(f.get('id'));
   const status = z.enum(['active', 'disabled']).parse(f.get('status'));
-  await withTenant(user.tenantId, async (tx) => {
-    if (!(await canTouch(tx, user, id, null))) throw new Error("Ruxsat yo'q");
-    const [e] = await tx.select().from(employees).where(eq(employees.id, id)).limit(1);
-    if (!e) throw new Error('Xodim topilmadi');
-    if (status === 'active' && !e.telegramUserId) throw new Error("Xodim hali botda ro'yxatdan o'tmagan");
-    await tx.update(employees).set({ status, joinedAt: status === 'active' && !e.joinedAt ? new Date() : e.joinedAt }).where(eq(employees.id, id));
-    // O'chirilgan xodim botdan uziladi; biometrika (yuz vektorlari va namuna videolari) o'chiriladi (§1.4)
-    if (status === 'disabled') {
-      await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
-      await deleteBiometrics(tx, id);
-      await tx.update(employees).set({ deviceId: null, deviceLabel: null, deviceBoundAt: null }).where(eq(employees.id, id));
-    }
-    if (status === 'active' && e.status === 'disabled') {
-      // Qayta yoqilgan xodim botga qayta bog'lanadi (shaxsiy chatda chat id = Telegram user id)
-      await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
-      await tx.insert(tgLinks).values({ telegramUserId: e.telegramUserId!, chatId: e.telegramUserId!, tenantId: user.tenantId, kind: 'employee', refId: id });
-    }
-    if (status === 'active' && e.status !== 'active') await queueNotifyEmployee(tx, user.tenantId, id, T.approved(esc(user.tenantName)));
-    await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: `employee.${status}`, entity: 'employee', entityId: id });
-  });
+  const err = await withTenant(user.tenantId, (tx) => setEmployeeStatus(tx, user, id, status));
+  if (err) throw new Error(err);
   kick();
   revalidatePath('/xodimlar');
 }

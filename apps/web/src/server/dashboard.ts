@@ -61,7 +61,7 @@ export async function memberLinked(tenantId: string, userId: string) {
 }
 
 /** Tasdiq kutayotgan xodimlar (botda ro'yxatdan o'tgan). */
-export async function pendingEmployees(user: TenantUser) {
+export async function pendingEmployees(user: TenantUser, limit = 6) {
   return withTenant(user.tenantId, async (tx) => {
     const scope = await departmentScope(tx, user);
     return tx
@@ -69,6 +69,6 @@ export async function pendingEmployees(user: TenantUser) {
       .from(employees)
       .leftJoin(branches, eq(branches.id, employees.branchId))
       .where(and(eq(employees.status, 'pending'), inScope(employees.departmentId, scope)))
-      .limit(6);
+      .limit(limit);
   });
 }

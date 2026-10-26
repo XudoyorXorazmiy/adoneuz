@@ -1,6 +1,7 @@
 import { formatDate, formatTime, isoWeekday, localDate, MONTHS, WEEKDAY_SHORT } from '@adone/core';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { currentTgUser } from '@/lib/tg/session';
+import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { myMonth } from '@/server/miniapp';
 import { TgPage } from '@/components/tg/tg-shell';
 import { DayStatusBadge } from '@/components/attendance/badges';
@@ -9,7 +10,7 @@ const hm = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0
 
 export default async function TgHistoryPage() {
   const u = await currentTgUser();
-  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
+  if (!u) return (await currentTgMember()) ? redirect('/tg') : null; // rahbar sessiyasi — Bugun ekrani; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
   const month = localDate(new Date(), u.tz).slice(0, 7);
   const m = await myMonth(u, month);
   const [y, mo] = month.split('-').map(Number) as [number, number];

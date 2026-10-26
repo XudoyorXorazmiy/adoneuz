@@ -32,13 +32,13 @@ export async function employeeChat(tenantId: string, employeeId: string): Promis
   return r?.chatId ?? null;
 }
 
-export interface MemberLink { tenantId: string; userId: string; chatId: number }
+export interface MemberLink { tenantId: string; tenantName: string; userId: string; chatId: number }
 
 /** Rahbar (panel foydalanuvchisi) Telegram bog'lanishlari — vazifani Telegram'dan tasdiqlash uchun. */
 export async function memberLinks(tgUserId: number): Promise<MemberLink[]> {
   const rows = await withPlatform((tx) =>
     tx
-      .select({ tenantId: tgLinks.tenantId, userId: tgLinks.refId, chatId: tgLinks.chatId, status: tenants.status })
+      .select({ tenantId: tgLinks.tenantId, tenantName: tenants.name, userId: tgLinks.refId, chatId: tgLinks.chatId, status: tenants.status })
       .from(tgLinks)
       .innerJoin(tenants, eq(tenants.id, tgLinks.tenantId))
       .where(and(eq(tgLinks.telegramUserId, tgUserId), eq(tgLinks.kind, 'member'))),

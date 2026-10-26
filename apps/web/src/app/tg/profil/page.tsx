@@ -1,5 +1,6 @@
 import { formatPhone, formatSom, localDate, MONTHS } from '@adone/core';
-import { currentTgUser } from '@/lib/tg/session';
+import { redirect } from 'next/navigation';
+import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { myMonth } from '@/server/miniapp';
 import { ownPay } from '@/server/payroll';
 import { Avatar } from '@/components/ui/avatar';
@@ -7,7 +8,7 @@ import { TgPage } from '@/components/tg/tg-shell';
 
 export default async function TgProfilePage() {
   const u = await currentTgUser();
-  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
+  if (!u) return (await currentTgMember()) ? redirect('/tg') : null; // rahbar sessiyasi — Bugun ekrani; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
   const month = localDate(new Date(), u.tz).slice(0, 7);
   const [m, pay] = await Promise.all([myMonth(u, month), ownPay(u.tenantId, u.employeeId, month)]);
   const mo = MONTHS[Number(month.slice(5)) - 1];

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { currentTgUser } from '@/lib/tg/session';
+import { redirect } from 'next/navigation';
+import { currentTgMember, currentTgUser } from '@/lib/tg/session';
 import { myTasks } from '@/server/miniapp';
 import { Icon } from '@/components/ui/icon';
 import { TgPage } from '@/components/tg/tg-shell';
@@ -7,7 +8,7 @@ import { TaskRow } from '@/components/tg/task-row';
 
 export default async function TgTasksPage({ searchParams }: PageProps<'/tg/vazifalar'>) {
   const u = await currentTgUser();
-  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
+  if (!u) return (await currentTgMember()) ? redirect('/tg') : null; // rahbar sessiyasi — Bugun ekrani; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
   const sp = await searchParams;
   const rows = await myTasks(u);
   const groups: Array<[string, typeof rows]> = [

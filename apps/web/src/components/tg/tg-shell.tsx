@@ -5,11 +5,18 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
 import { webApp } from './webapp';
 
-const NAV = [
+type NavItem = { href: string; label: string; icon: string; count?: number; external?: boolean };
+const NAV: NavItem[] = [
   { href: '/tg', label: 'Bosh', icon: 'home' },
   { href: '/tg/vazifalar', label: 'Vazifalar', icon: 'task_alt' },
   { href: '/tg/tarix', label: 'Tarix', icon: 'history' },
   { href: '/tg/profil', label: 'Profil', icon: 'person' },
+];
+/** Rahbar (egasi, admin, bo'lim boshlig'i): Bugun · Qarorlar · Panel (tashqi havola). */
+export const managerNav = (panelUrl: string, pending: number): NavItem[] => [
+  { href: '/tg', label: 'Bugun', icon: 'how_to_reg' },
+  { href: '/tg/qarorlar', label: 'Qarorlar', icon: 'fact_check', count: pending },
+  { href: panelUrl, label: 'Panel', icon: 'open_in_new', external: true },
 ];
 
 /** Telegram'ga tayyorlik: ready + to'liq balandlik + rangi (sahifa ochilganda bir marta). */
@@ -25,19 +32,24 @@ export function TgReady() {
   return null;
 }
 
-/** Pastki menyu (dizayn): Bosh · Vazifalar · Tarix · Profil. */
-export function TgNav() {
+/** Pastki menyu (dizayn): Bosh · Vazifalar · Tarix · Profil (xodim) yoki rahbar menyusi. */
+export function TgNav({ items = NAV }: { items?: NavItem[] }) {
   const path = usePathname();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-card/95 pb-[max(env(safe-area-inset-bottom),6px)] backdrop-blur">
-      <div className="mx-auto grid max-w-[520px] grid-cols-4">
-        {NAV.map((n) => {
-          const on = n.href === '/tg' ? path === '/tg' : path.startsWith(n.href);
-          return (
-            <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-0.5 pt-2 pb-1 text-[11px] font-semibold ${on ? 'text-primary' : 'text-placeholder'}`}>
-              <Icon name={n.icon} size={24} fill={on} />{n.label}
-            </Link>
+      <div className="mx-auto grid max-w-[520px]" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+        {items.map((n) => {
+          const on = !n.external && (n.href === '/tg' ? path === '/tg' : path.startsWith(n.href));
+          const cls = `flex flex-col items-center gap-0.5 pt-2 pb-1 text-[11px] font-semibold ${on ? 'text-primary' : 'text-placeholder'}`;
+          const inner = (
+            <>
+              <span className="relative"><Icon name={n.icon} size={24} fill={on} />{!!n.count && <span className="tnum absolute -top-1 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{n.count}</span>}</span>
+              {n.label}
+            </>
           );
+          return n.external
+            ? <a key={n.href} href={n.href} target="_blank" rel="noreferrer" className={cls}>{inner}</a>
+            : <Link key={n.href} href={n.href} className={cls}>{inner}</Link>;
         })}
       </div>
     </nav>
@@ -69,6 +81,11 @@ export function TgHeader({ title, sub, back = '/tg', dark }: { title: string; su
   );
 }
 
-export function TgPage({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
-  return <div className={`mx-auto flex min-h-dvh max-w-[520px] flex-col bg-page ${nav ? 'pb-24' : ''}`}>{children}{nav && <TgNav />}</div>;
+export function TgPage({ children, nav = true, manager }: { children: ReactNode; nav?: boolean; manager?: { panelUrl: string; pending: number } }) {
+  return (
+    <div className={`mx-auto flex min-h-dvh max-w-[520px] flex-col bg-page ${nav ? 'pb-24' : ''}`}>
+      {children}
+      {nav && <TgNav items={manager ? managerNav(manager.panelUrl, manager.pending) : undefined} />}
+    </div>
+  );
 }

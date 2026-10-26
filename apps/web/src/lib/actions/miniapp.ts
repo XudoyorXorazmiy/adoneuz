@@ -4,7 +4,8 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { tasks, taskBatches, withTenant } from '@adone/db';
 import { faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
-import { assertTgUser } from '@/lib/tg/session';
+import { assertTgMember, assertTgUser, memberAsTenantUser } from '@/lib/tg/session';
+import { setEmployeeStatus } from '@/server/employees';
 import { saveMedia } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
 import { createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
@@ -175,4 +176,43 @@ export async function tgCancelLeaveAction(id: string): Promise<{ ok?: boolean; e
   const res = await withTenant(u.tenantId, (tx) => decideLeave(tx, { tenantId: u.tenantId, id, to: 'cancelled', actor: { employeeId: u.employeeId } }));
   revalidatePath('/tg', 'layout');
   return 'error' in res ? { error: res.error } : { ok: true };
+}
+
+// ---------- Rahbar Mini App'i (tg_links kind=member): kim — sessiyadan, rol va bo'lim cheklovi — panel funksiyalaridan ----------
+
+const bad = (): { error: string } => ({ error: "Ma'lumot noto'g'ri" });
+function refreshManager() {
+  kick();
+  revalidatePath('/tg');
+  revalidatePath('/tg/qarorlar');
+}
+
+export async function tgApproveEmployeeAction(id: string): Promise<{ error?: string }> {
+  const m = await assertTgMember();
+  if (!isUuid(id)) return bad();
+  const err = await withTenant(m.tenantId, (tx) => setEmployeeStatus(tx, memberAsTenantUser(m), id, 'active'));
+  if (err) return { error: err };
+  refreshManager();
+  return {};
+}
+
+export async function tgDecideLeaveAction(id: string, to: 'approved' | 'rejected', comment: string): Promise<{ error?: string }> {
+  const m = await assertTgMember();
+  if (!isUuid(id) || (to !== 'approved' && to !== 'rejected')) return bad();
+  const res = await withTenant(m.tenantId, (tx) => decideLeave(tx, { tenantId: m.tenantId, id, to, actor: { userId: m.userId, role: m.role }, comment: String(comment ?? '').slice(0, 500) }));
+  if ('error' in res) return { error: res.error };
+  refreshManager();
+  return {};
+}
+
+export async function tgReviewTaskAction(taskId: string, to: 'approved' | 'revision', rating: number | null, comment: string): Promise<{ error?: string }> {
+  const m = await assertTgMember();
+  if (!isUuid(taskId) || (to !== 'approved' && to !== 'revision')) return bad();
+  const res = await withTenant(m.tenantId, (tx) => transitionTask(tx, {
+    tenantId: m.tenantId, taskId, to, actor: { userId: m.userId, role: m.role },
+    comment: String(comment ?? '').slice(0, 1000) || null, rating: rating && rating >= 1 && rating <= 5 ? Math.round(rating) : null,
+  }));
+  if ('error' in res) return { error: res.error };
+  refreshManager();
+  return {};
 }

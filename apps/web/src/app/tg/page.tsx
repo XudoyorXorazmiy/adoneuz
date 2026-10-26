@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { formatDate, formatMinutes, formatTime, isoWeekday, localDate, WEEKDAY_LONG } from '@adone/core';
-import { currentTgUser } from '@/lib/tg/session';
+import { currentTgMember, currentTgUser } from '@/lib/tg/session';
+import { ManagerHome } from '@/components/tg/manager-home';
 import { homeData, myMonth } from '@/server/miniapp';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
@@ -11,7 +12,11 @@ import { TaskRow } from '@/components/tg/task-row';
 /** Mini App bosh sahifasi (dizayn: «Kelishdan oldin» / «Check-in dan keyin»). */
 export default async function TgHome() {
   const u = await currentTgUser();
-  if (!u) return null; // sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi (layout va page parallel render qilinadi)
+  if (!u) {
+    // Rahbar (xodim yozuvi yo'q): bugungi davomat va qarorlar; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
+    const m = await currentTgMember();
+    return m ? <ManagerHome m={m} /> : null;
+  }
   const [h, m] = await Promise.all([homeData(u), myMonth(u, localDate(new Date(), u.tz).slice(0, 7))]);
   const tz = u.tz;
   const first = u.name.split(' ')[0];
