@@ -6,9 +6,9 @@ import 'server-only';
  *   - bildirishnomalar navbat orqali (`task_notify`), Telegram'ga yuborish tranzaksiyadan tashqarida.
  */
 import { and, eq, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
-import { employees, jobs, media, memberships, taskBatches, taskEvents, taskReports, taskTemplates, tasks, tenants, type Tx } from '@adone/db';
+import { departments, employees, jobs, media, memberships, taskBatches, taskEvents, taskReports, taskTemplates, tasks, tenants, type Tx } from '@adone/db';
 import {
-  canTransition, initialStatus, localDate, missingProofs, needsComment, occursOn, outsideQuietHours, TASK_PROOF_LABELS, zonedTime,
+  canReviewMemberTask, canTransition, initialStatus, localDate, missingProofs, needsComment, occursOn, outsideQuietHours, TASK_PROOF_LABELS, zonedTime,
   type MemberRole, type TaskActor, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus,
 } from '@adone/core';
 import { enqueue } from '@/server/jobs/enqueue';
@@ -80,7 +80,8 @@ export async function createTasks(tx: Tx, input: CreateInput): Promise<{ batchId
       fromStatus: null, toStatus: status, comment: input.report?.text?.trim() || null,
     });
     if (input.report) await insertReport(tx, input.tenantId, id, input.report);
-    if (input.source === 'assigned' && 'employeeId' in a) {
+    // Berilgan vazifa — ijrochiga (xodim yoki panel a'zosi) Telegram xabari va eslatmalar
+    if (input.source === 'assigned') {
       await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'assigned' }, { maxAttempts: 3 });
       await scheduleReminders(tx, input.tenantId, id, input.dueAt, tz);
     }
@@ -153,17 +154,27 @@ export async function loadTask(tx: Tx, taskId: string): Promise<TaskRow | null> 
 
 /**
  * Amal qiluvchining shu vazifadagi o'rni. Ijrochi — o'z vazifasi; tasdiqlovchi — egasi/admin hamma vazifada,
- * bo'lim boshlig'i faqat o'z bo'limi xodimlarida. O'z ishini o'zi tasdiqlay olmaydi (ijrochi birinchi tekshiriladi).
+ * bo'lim boshlig'i faqat o'z bo'limi xodimlarida (yoki o'zi bergan vazifada). Panel a'zosiga berilgan vazifa —
+ * egasi, bergan rahbar, admin (bo'lim boshlig'inikini) — core `canReviewMemberTask`. O'z ishini o'zi tasdiqlay olmaydi
+ * (ijrochi birinchi tekshiriladi).
  */
 export async function actorRole(tx: Tx, actor: ActorRef, row: TaskRow): Promise<TaskActor | null> {
   const t = row.task;
   if (actor.employeeId && t.assigneeEmployeeId === actor.employeeId) return 'assignee';
   if (actor.userId && (t.assigneeUserId === actor.userId || (row.assigneeUserLinkedId && row.assigneeUserLinkedId === actor.userId))) return 'assignee';
   if (!actor.userId || !('role' in actor)) return null;
+  if (t.assigneeUserId && row.batch.source === 'assigned') {
+    const [m] = await tx.select({ role: memberships.role }).from(memberships).where(eq(memberships.userId, t.assigneeUserId)).limit(1);
+    return canReviewMemberTask({ role: actor.role, userId: actor.userId }, { assigneeRole: m?.role ?? null, createdByUserId: row.batch.createdByUserId }) ? 'reviewer' : null;
+  }
   if (actor.role === 'owner' || actor.role === 'admin') return 'reviewer';
+  if (row.batch.source === 'assigned' && row.batch.createdByUserId === actor.userId) return 'reviewer';
   if (actor.role !== 'manager' || !row.departmentId) return null;
   const [m] = await tx.select({ ids: memberships.departmentIds }).from(memberships).where(eq(memberships.userId, actor.userId)).limit(1);
   if (m?.ids?.includes(row.departmentId)) return 'reviewer';
+  // Bo'lim boshlig'i (departments.manager_user_id) — scope.ts departmentScope bilan bir xil
+  const [head] = await tx.select({ id: departments.id }).from(departments).where(and(eq(departments.id, row.departmentId), eq(departments.managerUserId, actor.userId))).limit(1);
+  if (head) return 'reviewer';
   const { rows } = await tx.execute<{ ok: number }>(sql`select 1 as ok from departments where id = ${row.departmentId}::uuid and manager_user_id = ${actor.userId}::uuid`);
   return rows.length ? 'reviewer' : null;
 }
@@ -219,7 +230,7 @@ export async function transitionTask(tx: Tx, input: {
     await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'submitted', by: input.actor.userId ?? null }, { maxAttempts: 3 });
     await scheduleReviewReminder(tx, input.tenantId, row.task.id);
   }
-  if ((input.to === 'approved' || input.to === 'revision' || input.to === 'cancelled') && row.task.assigneeEmployeeId && role === 'reviewer') {
+  if ((input.to === 'approved' || input.to === 'revision' || input.to === 'cancelled') && (row.task.assigneeEmployeeId || row.batch.source === 'assigned') && role === 'reviewer') {
     await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: input.to }, { maxAttempts: 3 });
   }
   return { ok: true, status: input.to };
@@ -238,7 +249,7 @@ export async function commentTask(tx: Tx, input: { tenantId: string; taskId: str
     fromStatus: row.task.status, toStatus: row.task.status, comment,
   });
   if (role === 'assignee') await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'question', comment, by: input.actor.userId ?? null }, { maxAttempts: 3 });
-  else if (row.task.assigneeEmployeeId) await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'comment', comment }, { maxAttempts: 3 });
+  else if (row.task.assigneeEmployeeId || row.batch.source === 'assigned') await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'comment', comment }, { maxAttempts: 3 });
   return { ok: true, status: row.task.status };
 }
 

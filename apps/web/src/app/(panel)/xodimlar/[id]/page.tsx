@@ -11,7 +11,8 @@ import { employeeOptions } from '@/server/employees';
 import { today } from '@/server/attendance';
 import { employeeJournal } from '@/server/task-queries';
 import { StatusPill, minutesText } from '@/components/tasks/task-card';
-import { requestFaceResampleAction, saveEmployeeAction, setEmployeeStatusAction, unbindDeviceAction } from '@/lib/actions/employees';
+import { appointHeadAction, removeHeadAction, requestFaceResampleAction, saveEmployeeAction, setEmployeeStatusAction, unbindDeviceAction } from '@/lib/actions/employees';
+import { headsByUser } from '@/server/department-head';
 import { EmptyState, PageHeader } from '@/components/ui/page-header';
 import { Field, FormDrawer } from '@/components/ui/form-drawer';
 import { decideLeaveAction, quickDecideLeaveAction } from '@/lib/actions/leave';
@@ -43,13 +44,16 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
   // Ish haqi — faqat `payroll` ruxsati bilan (menejer ko'rmaydi: tab ham, so'rov ham yo'q)
   const TABS = ALL_TABS.filter(([k]) => k !== 'ish-haqi' || can(user.role, 'payroll'));
   const tab: Tab = (TABS.map((t) => t[0]) as string[]).includes(String(sp.tab)) ? (String(sp.tab) as Tab) : 'tabel';
-  const [p, options, journal] = await Promise.all([employeeProfile(user, id, month), employeeOptions(user.tenantId), employeeJournal(user, id, month)]);
+  const [p, options, journal, heads] = await Promise.all([employeeProfile(user, id, month), employeeOptions(user.tenantId), employeeJournal(user, id, month), headsByUser(user.tenantId)]);
   if (!p) notFound();
   const [leaves, pay] = await Promise.all([
     tab === 'sorovlar' ? withTenant(user.tenantId, (tx) => myLeaves(tx, id)) : null,
     tab === 'ish-haqi' ? withTenant(user.tenantId, (tx) => employeePay(tx, id, month)) : null,
   ]);
   const { e } = p;
+  // Bo'lim boshlig'i (server/department-head.ts): qaysi bo'limlarga; tayinlash — egasi va admin
+  const headOf = e.userId ? heads.get(e.userId) ?? [] : [];
+  const canHead = (user.role === 'owner' || user.role === 'admin') && e.status === 'active';
   const tot = profileTotals(p.days, p.today);
   const todayRow = p.days.find((d) => d.date === p.today);
   const scheduleText = p.schedule ? describeSchedule(toRule(p.schedule)) : 'Jadval biriktirilmagan';
@@ -88,7 +92,17 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
             {todayRow?.open && <span className="absolute right-0.5 bottom-0.5 size-4 rounded-full border-[3px] border-white bg-success" title="Hozir ishda" />}
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <div className="flex flex-wrap items-center gap-2.5"><h1 className="m-0 text-[26px] leading-8 font-bold tracking-[-0.02em]">{e.fullName}</h1><EmployeeStatusBadge status={e.status} /></div>
+            <div className="flex flex-wrap items-center gap-2.5"><h1 className="m-0 text-[26px] leading-8 font-bold tracking-[-0.02em]">{e.fullName}</h1><EmployeeStatusBadge status={e.status} />
+              {headOf.map((d) => (
+                <span key={d.id} className="badge gap-1 bg-primary-tint pr-1 text-primary"><Icon name="workspace_premium" size={14} fill />Bo&apos;lim boshlig&apos;i · {d.name}
+                  {(user.role === 'owner' || user.role === 'admin') && (
+                    <form action={removeHeadAction} className="contents"><input type="hidden" name="departmentId" value={d.id} /><input type="hidden" name="employeeId" value={e.id} />
+                      <button className="flex size-5 items-center justify-center rounded-full hover:bg-primary/15" title="Boshliqlikdan olish"><Icon name="close" size={13} /></button>
+                    </form>
+                  )}
+                </span>
+              ))}
+            </div>
             <div className="text-sm text-ink-2">{[e.position, p.departmentName, p.branchName].filter(Boolean).join(' · ') || '—'}</div>
             <div className="flex flex-wrap gap-x-[18px] gap-y-1 text-[13px] text-muted">
               {e.phone && <a href={`tel:+${e.phone}`} className="tnum flex items-center gap-1.5 hover:text-ink"><Icon name="call" size={16} />{formatPhone(e.phone)}</a>}
@@ -98,6 +112,22 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
           </div>
           <div className="flex items-center gap-2.5">
             {e.status === 'active' && <Link href={`/vazifalar?ijrochi=${e.id}`} className="btn-primary h-11 pr-[22px] pl-[18px] text-sm"><Icon name="add" />Vazifa berish</Link>}
+            {canHead && (
+              <FormDrawer trigger={<><Icon name="workspace_premium" size={18} className="text-primary" /><span className="max-xl:sr-only">{headOf.length ? 'Yana bo‘limga boshliq' : 'Bo‘lim boshlig‘i qilish'}</span></>} triggerClass="btn-secondary h-11 px-4 text-sm max-xl:w-11 max-xl:px-0"
+                title="Bo'lim boshlig'i qilish" subtitle={e.fullName} action={appointHeadAction} submitLabel="Tayinlash">
+                <input type="hidden" name="employeeId" value={e.id} />
+                <Field label="Bo'lim" required>
+                  <select name="departmentId" defaultValue={e.departmentId ?? ''} className="input" required>
+                    <option value="" disabled>— tanlang —</option>
+                    {options.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                </Field>
+                <p className="m-0 flex gap-2 rounded-xl bg-primary-soft px-3.5 py-3 text-[13px] text-[#1F2A5C]">
+                  <Icon name="info" size={18} className="shrink-0 text-primary" />
+                  <span>Xodim o&apos;z davomatini avvalgidek qiladi, qo&apos;shimcha ravishda bo&apos;lim xodimlariga vazifa beradi, hisobotlarni tasdiqlaydi, ruxsat so&apos;rovlarini hal qiladi — Mini App «Rahbar» rejimida va bot tugmalari orqali. Ish haqi va stavkalar unga ko&apos;rinmaydi. Panelga kirishi kerak bo&apos;lsa — Sozlamalar → Jamoa → «Parolni tiklash». Bo&apos;limda boshqa boshliq bo&apos;lsa, almashtiriladi.</span>
+                </p>
+              </FormDrawer>
+            )}
             {e.status !== 'disabled' && (
               <FormDrawer trigger={<Icon name="edit" />} triggerClass="btn-icon size-11" title="Xodimni tahrirlash" subtitle={e.fullName} action={saveEmployeeAction}
                 danger={<form action={setEmployeeStatusAction}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="status" value="disabled" /><button className="btn-ghost text-danger">Ishdan bo&apos;shatish</button></form>}>

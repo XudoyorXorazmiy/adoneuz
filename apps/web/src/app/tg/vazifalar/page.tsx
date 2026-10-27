@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { currentTgMember, currentTgUser } from '@/lib/tg/session';
+import { tgView } from '@/lib/tg/session';
 import { myTasks } from '@/server/miniapp';
 import { Icon } from '@/components/ui/icon';
 import { TgPage } from '@/components/tg/tg-shell';
@@ -7,13 +7,11 @@ import { TaskRow } from '@/components/tg/task-row';
 import { ManagerTasks } from '@/components/tg/manager-tasks';
 
 export default async function TgTasksPage({ searchParams }: PageProps<'/tg/vazifalar'>) {
-  const u = await currentTgUser();
-  const sp = await searchParams;
-  if (!u) {
-    // Rahbar sessiyasi — vazifalar nazorati; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
-    const m = await currentTgMember();
-    return m ? <ManagerTasks m={m} sp={sp} /> : null;
-  }
+  const [v, sp] = await Promise.all([tgView(), searchParams]);
+  // Rahbar (rejimi) — vazifalar nazorati; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
+  if (v.manager && v.m) return <ManagerTasks m={v.m} sp={sp} />;
+  const u = v.u;
+  if (!u) return null;
   const rows = await myTasks(u);
   const groups: Array<[string, typeof rows]> = [
     ['Ochiq', rows.filter((r) => ['new', 'accepted', 'in_progress', 'revision'].includes(r.status))],

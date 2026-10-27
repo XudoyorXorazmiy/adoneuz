@@ -7,6 +7,7 @@ import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope, inScope } from './scope';
 import { queueNotifyEmployee } from './notify';
 import { deleteBiometrics } from './face';
+import { releaseAllHeadships } from './department-head';
 import { T } from './bot/texts';
 import { esc } from './telegram/api';
 
@@ -48,7 +49,7 @@ export async function listEmployees(user: TenantUser, f: EmployeeFilter) {
     const status = f.status && f.status !== 'all' ? f.status : undefined;
     const rows = await tx
       .select({
-        id: employees.id, fullName: employees.fullName, phone: employees.phone, position: employees.position, status: employees.status,
+        id: employees.id, fullName: employees.fullName, phone: employees.phone, position: employees.position, status: employees.status, userId: employees.userId,
         departmentId: employees.departmentId, branchId: employees.branchId, scheduleId: employees.scheduleId,
         payType: employees.payType, payRate: employees.payRate, telegramUserId: employees.telegramUserId, telegramUsername: employees.telegramUsername,
         departmentName: departments.name, branchName: branches.name, scheduleName: schedules.name,
@@ -99,6 +100,7 @@ export async function setEmployeeStatus(tx: Tx, user: TenantUser, id: string, st
   // O'chirilgan xodim botdan uziladi; biometrika (yuz vektorlari va namuna videolari) o'chiriladi (§1.4)
   if (status === 'disabled') {
     await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, id)));
+    if (e.userId) await releaseAllHeadships(tx, e.userId);
     await deleteBiometrics(tx, id);
     await tx.update(employees).set({ deviceId: null, deviceLabel: null, deviceBoundAt: null }).where(eq(employees.id, id));
   }

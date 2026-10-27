@@ -90,7 +90,9 @@ Platforma (`adone_platform`) ishxona ichki jadvallariga huquq olmaydi — kerak 
 | `employee` | Xodim | Faqat bot/Mini App: keldi/ketdi, o'z tarixi, vazifalari, so'rovlari, o'z ish haqi (tenant sozlamasi ruxsat bersa) |
 
 Tekshiruv markazlashgan `can(role, area)`; sahifada qo'lda emas. Ruxsat — maydonni yashirish emas, so'rovdan olib tashlash (boshqaruv-tizim §10).
-Vazifa berish: `owner/admin` → hammaga; `manager` → faqat o'z bo'limidagilarga (`departments.manager_id` ierarxiyasi).
+Vazifa berish: `owner/admin` → hammaga; `manager` → faqat o'z bo'limidagilarga. **Rahbarlarga ham (2026-10-27):** egasi → administrator va bo'lim boshliqlariga, admin → bo'lim boshliqlariga (core `assignableMemberRoles`; xodim yozuvi yo'q a'zo — `tasks.assignee_user_id`, «Kimga»da `u:<userId>`, xodim yozuvi bor a'zo — xodim sifatida). A'zo vazifasini tasdiqlash — core `canReviewMemberTask` (egasi, bergan rahbar, admin — bo'lim boshlig'inikini). A'zo vazifani botda (`tk:*`, `memberLinks`), rahbar Mini App «Vazifalar → Menga» va panel «Mening ishlarim»da ko'radi va topshiradi.
+
+**Bo'lim boshlig'i — bitta tushuncha (2026-10-27):** `manager` a'zoligi (`memberships.department_ids`) + `departments.manager_user_id`; yozish faqat `server/department-head.ts` (`setDepartmentHead`, `releaseHead`, `syncHeads` — Jamoa bilan sinxron). Boshliq jamoa a'zosi yoki **xodim** bo'ladi: Xodimlar → bo'lim formasi «Bo'lim boshlig'i» (`e:<xodim>`/`u:<a'zo>`) yoki xodim profili «Bo'lim boshlig'i qilish» → telefon bo'yicha hisob (parol tasodifiy; panel uchun Jamoa → «Parolni tiklash»), menejer a'zoligi, `employees.user_id`, xodimga bot xabari (Mini App «Rahbar rejimi» tugmasi). Olinsa — boshqa bo'limi qolmasa a'zolik nofaol. Ishdan bo'shatilsa — boshliqlik ham olinadi. Xodim-boshliq: Mini App ikki rejimli (`tgView`, `TG_MODE_COOKIE`, `/tg/rejim?to=rahbar|xodim`; rahbar tomoni xodim sessiyasidan har so'rovda — `currentTgMember`), bot rahbar tugmalari va bildirishnomalar xodim chatiga (`memberLinks`, `userChatsFor`).
 
 ## 5. Ma'lumotlar modeli (reja)
 

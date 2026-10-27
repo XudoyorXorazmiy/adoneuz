@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { can, EMPLOYEE_STATUSES, formatPhone, type EmployeeStatus, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { employeeOptions, inviteLink, listEmployees } from '@/server/employees';
-import { listDepartments, listPanelMembers } from '@/server/structure';
+import { listDepartments } from '@/server/structure';
+import { headCandidates, headsByUser } from '@/server/department-head';
 import { regenerateInviteAction, saveEmployeeAction, setEmployeeStatusAction } from '@/lib/actions/employees';
 import { archiveDepartmentAction, saveDepartmentAction } from '@/lib/actions/structure';
 import { EmptyState, PageHeader } from '@/components/ui/page-header';
@@ -29,12 +30,38 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
   const status = (EMPLOYEE_STATUSES as readonly string[]).includes(String(sp.holat)) ? (String(sp.holat) as EmployeeStatus) : 'all';
   const q = typeof sp.q === 'string' ? sp.q.trim().slice(0, 60) : '';
   const departmentId = isUuid(sp.bolim) ? sp.bolim : undefined;
-  const [{ rows, counts, scope }, options, deps, members] = await Promise.all([
+  const [{ rows, counts, scope }, options, deps, candidates, heads] = await Promise.all([
     listEmployees(user, { status, q, departmentId }),
     employeeOptions(user.tenantId),
     listDepartments(user.tenantId),
-    listPanelMembers(user.tenantId),
+    headCandidates(user.tenantId),
+    headsByUser(user.tenantId),
   ]);
+  // Bo'lim boshlig'i tanlovi: «e:<xodim>» (shu bo'lim xodimlari oldin) yoki «u:<jamoa a'zosi>» — server/department-head.ts
+  const headValue = (d: { managerUserId: string | null }) => {
+    if (!d.managerUserId) return '';
+    const e = candidates.employees.find((x) => x.userId === d.managerUserId);
+    return e ? `e:${e.id}` : `u:${d.managerUserId}`;
+  };
+  const headSelect = (d?: { id: string; managerUserId: string | null }) => {
+    const own = d ? candidates.employees.filter((e) => e.departmentId === d.id) : [];
+    const rest = candidates.employees.filter((e) => !own.includes(e));
+    const memberOpts = candidates.members.filter((m) => !candidates.employees.some((e) => e.userId === m.id));
+    return (
+      <Field label="Bo'lim boshlig'i" hint="Xodimni tanlasangiz — u o'z davomatini xodim sifatida qiladi va Mini App «Rahbar» rejimida bo'lim xodimlariga vazifa beradi, hisobot va so'rovlarni hal qiladi. Ish haqi ko'rinmaydi.">
+        <select name="head" defaultValue={d ? headValue(d) : ''} className="input">
+          <option value="">— yo&apos;q —</option>
+          {own.length > 0 && <optgroup label="Shu bo'lim xodimlari">{own.map((e) => <option key={e.id} value={`e:${e.id}`}>{e.name}</option>)}</optgroup>}
+          {rest.length > 0 && <optgroup label={own.length ? 'Boshqa xodimlar' : 'Xodimlar'}>{rest.map((e) => <option key={e.id} value={`e:${e.id}`}>{e.name}</option>)}</optgroup>}
+          {memberOpts.length > 0 && <optgroup label="Jamoa (panel)">{memberOpts.map((m) => <option key={m.id} value={`u:${m.id}`}>{m.name}</option>)}</optgroup>}
+        </select>
+      </Field>
+    );
+  };
+  const headBadge = (e: Row) => {
+    const of = e.userId ? heads.get(e.userId) : undefined;
+    return of?.length ? <span className="flex shrink-0 text-primary" title={`Bo'lim boshlig'i: ${of.map((d) => d.name).join(', ')}`} aria-label="Bo'lim boshlig'i"><Icon name="workspace_premium" size={16} fill /></span> : null;
+  };
   const visibleDeps = scope ? deps.filter((d) => scope.includes(d.id)) : deps;
   const formOptions = { ...options, departments: scope ? options.departments.filter((d) => scope.includes(d.id)) : options.departments };
   const total = (counts.active ?? 0) + (counts.pending ?? 0) + (counts.invited ?? 0);
@@ -122,7 +149,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
                     <Link href={`/xodimlar/${e.id}`} className="group flex min-w-0 items-center gap-2.5">
                       <Avatar name={e.fullName} size={34} />
                       <span className="min-w-0">
-                        <span className="block truncate font-bold group-hover:text-primary">{e.fullName}</span>
+                        <span className="flex min-w-0 items-center gap-1.5"><span className="truncate font-bold group-hover:text-primary">{e.fullName}</span>{headBadge(e)}</span>
                         <span className="tnum block truncate text-xs text-muted">{[e.position, e.phone ? formatPhone(e.phone) : null].filter(Boolean).join(' · ') || '—'}</span>
                       </span>
                     </Link>
@@ -142,7 +169,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
                   <div key={e.id} className="flex flex-col gap-2.5 rounded-[20px] border border-line p-3.5">
                     <Link href={`/xodimlar/${e.id}`} className="flex items-center gap-2.5">
                       <Avatar name={e.fullName} size={40} />
-                      <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-bold">{e.fullName}</span><span className="block truncate text-xs text-muted">{[e.position, e.departmentName].filter(Boolean).join(' · ') || '—'}</span></span>
+                      <span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-1.5"><span className="truncate text-[15px] font-bold">{e.fullName}</span>{headBadge(e)}</span><span className="block truncate text-xs text-muted">{[e.position, e.departmentName].filter(Boolean).join(' · ') || '—'}</span></span>
                       <EmployeeStatusBadge status={e.status} />
                     </Link>
                     <div className="flex items-center justify-between gap-2">{telegram(e)}{actions(e)}</div>
@@ -161,9 +188,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
             {user.role !== 'manager' && (
               <FormDrawer trigger={<><Icon name="add" size={16} />Qo&apos;shish</>} triggerClass="btn-ghost btn-sm h-8 px-3 text-primary" title="Yangi bo'lim" action={saveDepartmentAction}>
                 <Field label="Nomi"><input name="name" placeholder="Sotuv zali" className="input" required /></Field>
-                <Field label="Bo'lim boshlig'i" hint="Shu bo'lim xodimlarini ko'radi, vazifa beradi, so'rovlarni hal qiladi.">
-                  <select name="managerUserId" className="input"><option value="">— yo&apos;q —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
-                </Field>
+                {headSelect()}
               </FormDrawer>
             )}
           </div>
@@ -178,9 +203,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
                   danger={d.employees === 0 ? <form action={archiveDepartmentAction}><input type="hidden" name="id" value={d.id} /><button className="btn-ghost text-danger-text">O&apos;chirish</button></form> : undefined}>
                   <input type="hidden" name="id" value={d.id} />
                   <Field label="Nomi"><input name="name" defaultValue={d.name} className="input" required /></Field>
-                  <Field label="Bo'lim boshlig'i">
-                    <select name="managerUserId" defaultValue={d.managerUserId ?? ''} className="input"><option value="">— yo&apos;q —</option>{members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
-                  </Field>
+                  {headSelect(d)}
                 </FormDrawer>
               )}
             </div>

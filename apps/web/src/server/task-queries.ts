@@ -2,11 +2,12 @@ import 'server-only';
 /** Vazifalar — panel ko'rinishlari (o'qish). Yozish — server/tasks.ts. Menejer faqat o'z bo'limi + o'zi bergan / o'z ishlari. */
 import { aliasedTable, and, asc, desc, eq, gte, inArray, or, sql } from 'drizzle-orm';
 import { departments, employees, media, taskBatches, taskEvents, taskReports, taskTemplates, tasks, users, withTenant, type Tx } from '@adone/db';
-import { isOpenTask, isOverdue, kanbanColumn, localDate, onTime, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus } from '@adone/core';
+import { assignableMemberRoles, isOpenTask, isOverdue, kanbanColumn, localDate, MEMBER_ROLE_LABELS, onTime, type MemberRole, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { departmentScope } from './scope';
 import { actorRole, loadTask } from './tasks';
 import { pendingDeadlineFor } from './deadline';
+import type { AssignOption } from '@/components/tasks/assign-fields';
 
 export type TaskView = 'berilgan' | 'ozi' | 'mening';
 export type TaskTab = 'all' | 'new' | 'progress' | 'review' | 'overdue' | 'done' | 'cancelled';
@@ -28,6 +29,7 @@ export interface TaskListRow {
   spentMinutes: number | null;
   recurring: boolean;
   assigneeEmployeeId: string | null;
+  assigneeUserId: string | null;
   assigneeName: string;
   departmentId: string | null;
   departmentName: string | null;
@@ -77,7 +79,7 @@ function toRow(r: Awaited<ReturnType<typeof scopedRows>>[number], now: Date): Ta
   return {
     id: r.t.id, batchId: r.b.id, title: r.b.title, source: r.b.source, priority: r.b.priority, proofs: r.b.proofs as TaskProof[], checklist: r.b.checklist.length,
     status: r.t.status, dueAt: r.t.dueAt, submittedAt: r.t.submittedAt, approvedAt: r.t.approvedAt, createdAt: r.t.createdAt, rating: r.t.rating,
-    spentMinutes: r.t.spentMinutes, recurring: !!r.b.templateId, assigneeEmployeeId: r.t.assigneeEmployeeId,
+    spentMinutes: r.t.spentMinutes, recurring: !!r.b.templateId, assigneeEmployeeId: r.t.assigneeEmployeeId, assigneeUserId: r.t.assigneeUserId,
     assigneeName: r.empName ?? r.userName ?? '—', departmentId: r.departmentId, departmentName: r.departmentName,
     overdue: isOverdue({ status: r.t.status, dueAt: r.t.dueAt }, now),
   };
@@ -99,7 +101,7 @@ export async function listTasks(user: TenantUser, f: TaskFilter) {
     const all = (await scopedRows(tx, user, f.view)).map((r) => toRow(r, now));
     const q = f.q?.toLowerCase();
     const filtered = all.filter((r) => {
-      if (f.assignee && r.assigneeEmployeeId !== f.assignee) return false;
+      if (f.assignee && (f.assignee.startsWith('u:') ? r.assigneeUserId !== f.assignee.slice(2) : r.assigneeEmployeeId !== f.assignee)) return false;
       if (f.department && r.departmentId !== f.department) return false;
       if (f.priority && r.priority !== f.priority) return false;
       if (q && !r.title.toLowerCase().includes(q) && !r.assigneeName.toLowerCase().includes(q)) return false;
@@ -191,19 +193,33 @@ export async function taskDetail(user: TenantUser, id: string) {
   });
 }
 
-/** «Kimga» tanlovi: faol xodimlar (menejer — faqat o'z bo'limi) + bo'lim va filial nomlari. */
+/**
+ * «Kimga» tanlovi: faol xodimlar (menejer — faqat o'z bo'limi) + bo'lim va filial nomlari, rahbar xodim — rol yorlig'i bilan.
+ * Egasi/admin uchun xodim yozuvi bo'lmagan panel a'zolari ham (`u:<userId>`, core assignableMemberRoles; o'zi emas).
+ */
 export async function assignOptions(user: TenantUser) {
   return withTenant(user.tenantId, async (tx) => {
     const scope = await departmentScope(tx, user);
-    const rows = await tx.execute<{ id: string; name: string; department_id: string | null; department: string | null; branch_id: string | null; branch: string | null; linked: boolean }>(sql`
-      select e.id, e.full_name as name, e.department_id, d.name as department, e.branch_id, b.name as branch, (e.telegram_user_id is not null) as linked
+    const rows = await tx.execute<{ id: string; name: string; department_id: string | null; department: string | null; branch_id: string | null; branch: string | null; linked: boolean; role: MemberRole | null }>(sql`
+      select e.id, e.full_name as name, e.department_id, d.name as department, e.branch_id, b.name as branch, (e.telegram_user_id is not null) as linked,
+        (select m.role from memberships m where m.user_id = e.user_id and m.is_active and m.role <> 'employee' limit 1) as role
       from employees e left join departments d on d.id = e.department_id left join branches b on b.id = e.branch_id
       where e.status = 'active' order by e.full_name`);
     const list = rows.rows.filter((r) => scope === null || (r.department_id && scope.includes(r.department_id)));
-    return list.map((r) => ({ id: r.id, name: r.name, departmentId: r.department_id, department: r.department, branchId: r.branch_id, branch: r.branch, linked: r.linked }));
+    const out: AssignOption[] = list.map((r) => ({ id: r.id, name: r.name, departmentId: r.department_id, department: r.department, branchId: r.branch_id, branch: r.branch, linked: r.linked, role: r.role ? MEMBER_ROLE_LABELS[r.role] : null }));
+    const roles = assignableMemberRoles(user.role);
+    if (roles.length) {
+      const members = await tx.execute<{ id: string; name: string; role: MemberRole; linked: boolean }>(sql`
+        select u.id, u.name, m.role, exists(select 1 from tg_links l where l.ref_id = u.id and l.kind = 'member') as linked
+        from memberships m join users u on u.id = m.user_id
+        where m.is_active and m.role in (${sql.join(roles.map((r) => sql`${r}`), sql`, `)}) and m.user_id <> ${user.id}::uuid
+          and not exists (select 1 from employees e where e.user_id = m.user_id and e.status = 'active')
+        order by u.name`);
+      for (const m of members.rows) out.push({ id: `u:${m.id}`, name: m.name, departmentId: null, department: null, branchId: null, branch: null, linked: m.linked, role: MEMBER_ROLE_LABELS[m.role] });
+    }
+    return out;
   });
 }
-
 
 /** Xodim ish jurnali (profil → Vazifalar, §7a): oydagi barcha ishlari kun bo'yicha + o'z vaqtida %. */
 export async function employeeJournal(user: TenantUser, employeeId: string, month: string) {

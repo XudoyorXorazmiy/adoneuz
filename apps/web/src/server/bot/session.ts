@@ -13,8 +13,9 @@ export type BotState =
       loc: { lat: number; lng: number; accuracyM: number | null; distanceM: number; branchId: string; live: boolean; at: number };
     }
   /** Vazifa hisoboti (yoki yangi «Ish qo'shish» — taskId null, title bor): fayllar, lokatsiya, izoh yig'iladi. */
-  | { step: 'task_report'; tenantId: string; employeeId: string; taskId: string | null; title?: string; mediaIds: string[]; lat?: number; lng?: number; text?: string }
-  | { step: 'task_ask'; tenantId: string; employeeId: string; taskId: string }
+  /** `userId` — ijrochi panel a'zosi (xodim yozuvi yo'q, `employeeId` null); «Ish qo'shish» — faqat xodim. */
+  | { step: 'task_report'; tenantId: string; employeeId: string | null; userId?: string; taskId: string | null; title?: string; mediaIds: string[]; lat?: number; lng?: number; text?: string }
+  | { step: 'task_ask'; tenantId: string; employeeId: string | null; userId?: string; taskId: string }
   | { step: 'task_revise'; tenantId: string; userId: string; taskId: string }
   /** Muddatni uzaytirish so'rovi: `due` (ISO) tanlangach sabab kutiladi */
   | { step: 'task_deadline'; tenantId: string; employeeId: string; taskId: string; due?: string }

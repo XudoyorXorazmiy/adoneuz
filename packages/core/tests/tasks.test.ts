@@ -67,3 +67,20 @@ test('muddatni uzaytirish so‘rovi: qachon va qaysi muddatga', async () => {
   assert.equal(validDeadline(new Date('2026-10-27T13:00:00Z'), now, null), null, 'muddatsiz vazifaga ham so‘rash mumkin');
   assert.equal(validDeadline(new Date('x'), now, null), "Sana noto'g'ri");
 });
+
+test('panel a’zosiga vazifa: kim kimga beradi va kim tasdiqlaydi', async () => {
+  const { assignableMemberRoles, canReviewMemberTask } = await import('../src/index');
+  assert.deepEqual(assignableMemberRoles('owner'), ['admin', 'manager']);
+  assert.deepEqual(assignableMemberRoles('admin'), ['manager'], 'admin — faqat bo‘lim boshliqlariga');
+  assert.deepEqual(assignableMemberRoles('manager'), [], 'bo‘lim boshlig‘i — faqat o‘z xodimlariga');
+  assert.deepEqual(assignableMemberRoles('employee'), []);
+  const owner = { role: 'owner' as const, userId: 'o' };
+  const admin = { role: 'admin' as const, userId: 'a' };
+  const admin2 = { role: 'admin' as const, userId: 'a2' };
+  const mgr = { role: 'manager' as const, userId: 'm' };
+  assert.equal(canReviewMemberTask(owner, { assigneeRole: 'admin', createdByUserId: 'o' }), true);
+  assert.equal(canReviewMemberTask(admin2, { assigneeRole: 'admin', createdByUserId: 'o' }), false, 'boshqa admin admin vazifasini tasdiqlamaydi');
+  assert.equal(canReviewMemberTask(admin, { assigneeRole: 'manager', createdByUserId: 'o' }), true);
+  assert.equal(canReviewMemberTask(admin, { assigneeRole: 'manager', createdByUserId: 'a' }), true, 'bergan admin');
+  assert.equal(canReviewMemberTask(mgr, { assigneeRole: 'manager', createdByUserId: 'o' }), false, 'boshqa bo‘lim boshlig‘i');
+});

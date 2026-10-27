@@ -13,6 +13,7 @@ import { auditLog, branches, departments, employees, invites, memberships, tgLin
 import { hashPassword } from '@adone/db/password';
 import type { MemberRole } from '@adone/core';
 import { BOT_USERNAME } from '@/server/employees';
+import { syncHeads } from '@/server/department-head';
 
 export type TeamRole = 'admin' | 'manager';
 
@@ -137,6 +138,7 @@ export async function addMember(actor: Actor, input: AddMemberInput): Promise<Ad
       await tx.insert(users).values({ id: userId, phone: input.phone, name: input.name, passwordHash: await hashPassword(password), mustChangePassword: true });
     }
     const [m] = await tx.insert(memberships).values({ userId, tenantId: actor.tenantId, role: input.role, departmentIds, branchIds }).returning({ id: memberships.id });
+    if (input.role === 'manager') await syncHeads(tx, userId, departmentIds);
     await audit(tx, actor, 'member.create', m!.id, { name: input.name, phone: input.phone, role: input.role, departmentIds, branchIds, existing: !!found, method: input.method });
     // Telegram usuli: parol ko'rsatilmaydi — bot bog'lagach yangisini o'zi yuboradi (mavjud hisobda faqat bog'lash)
     const telegramUrl = input.method === 'telegram' ? await memberInvite(tx, actor.tenantId, userId, !found) : null;
@@ -162,6 +164,7 @@ export async function updateMember(actor: Actor, input: UpdateMemberInput): Prom
     const branchIds = input.role === 'manager' ? await ownIds(tx, branches, input.branchIds) : [];
     if (input.role === 'manager' && !departmentIds.length && !branchIds.length) return { ok: false as const, error: "Bo'lim boshlig'i uchun kamida bitta bo'lim yoki filial tanlang" };
     await tx.update(memberships).set({ role: input.role, departmentIds, branchIds }).where(eq(memberships.id, m.id));
+    if (input.role === 'manager') await syncHeads(tx, m.userId, departmentIds);
     // Ismni faqat shu ishxonaga tegishli hisobda o'zgartiramiz
     if (input.name && (await onlyHere(m.userId, actor.tenantId))) await tx.update(users).set({ name: input.name }).where(eq(users.id, m.userId));
     await audit(tx, actor, 'member.update', m.id, { role: input.role, departmentIds, branchIds, before: { role: m.role, departmentIds: m.departmentIds, branchIds: m.branchIds } });
@@ -192,7 +195,10 @@ export async function setMemberActive(actor: Actor, membershipId: string, active
     if (m.userId === actor.userId) return { ok: false as const, error: "O'zingizni o'chira olmaysiz" };
     if (!canManage(actor, m.role)) return { ok: false as const, error: "Ruxsat yo'q" };
     await tx.update(memberships).set({ isActive: active }).where(eq(memberships.id, m.id));
-    if (!active) await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'member'), eq(tgLinks.refId, m.userId)));
+    if (!active) {
+      await tx.delete(tgLinks).where(and(eq(tgLinks.kind, 'member'), eq(tgLinks.refId, m.userId)));
+      await tx.update(departments).set({ managerUserId: null }).where(eq(departments.managerUserId, m.userId));
+    }
     await audit(tx, actor, active ? 'member.activate' : 'member.deactivate', m.id);
     return { ok: true as const };
   });

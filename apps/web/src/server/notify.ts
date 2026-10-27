@@ -1,6 +1,6 @@
 import 'server-only';
-import { and, arrayContains, eq, inArray } from 'drizzle-orm';
-import { departments, memberships, tgLinks, withPlatform, withTenant, type Tx } from '@adone/db';
+import { and, arrayContains, eq, inArray, ne } from 'drizzle-orm';
+import { departments, employees, memberships, tgLinks, withPlatform, withTenant, type Tx } from '@adone/db';
 import { notifyTargets, type NotifyEvent, type NotifyRole } from '@adone/core';
 import { readSettings } from '@/server/settings';
 import { publicApiOrigin } from '@/lib/host';
@@ -88,14 +88,63 @@ export async function memberChats(
   });
   if (userIds === 'off') return [];
   if (userIds.length === 0) return null;
-  return withPlatform((tx) =>
+  return userChatsFor(tenantId, userIds);
+}
+
+/**
+ * Rahbar hisoblari → Telegram chatlari: o'z rahbar bog'lanishi (kind=member), bo'lmasa — shu hisobga bog'langan xodimning chati
+ * (xodimdan tayinlangan bo'lim boshlig'i). Bir chatga bir marta.
+ */
+export async function userChatsFor(tenantId: string, userIds: string[]): Promise<Array<{ chatId: number; userId: string }>> {
+  if (!userIds.length) return [];
+  const own = await withPlatform((tx) =>
     tx.select({ chatId: tgLinks.chatId, userId: tgLinks.refId }).from(tgLinks).where(and(eq(tgLinks.tenantId, tenantId), eq(tgLinks.kind, 'member'), inArray(tgLinks.refId, userIds))),
   );
+  const missing = userIds.filter((id) => !own.some((o) => o.userId === id));
+  const viaEmp = missing.length
+    ? await withTenant(tenantId, (tx) => tx.select({ id: employees.id, userId: employees.userId }).from(employees).where(and(inArray(employees.userId, missing), eq(employees.status, 'active'))))
+    : [];
+  const empChats = viaEmp.length
+    ? await withPlatform((tx) => tx.select({ chatId: tgLinks.chatId, employeeId: tgLinks.refId }).from(tgLinks)
+      .where(and(eq(tgLinks.tenantId, tenantId), eq(tgLinks.kind, 'employee'), inArray(tgLinks.refId, viaEmp.map((e) => e.id)))))
+    : [];
+  const out = [...own];
+  for (const c of empChats) {
+    const userId = viaEmp.find((e) => e.id === c.employeeId)?.userId;
+    if (userId && !out.some((o) => o.chatId === c.chatId)) out.push({ chatId: c.chatId, userId });
+  }
+  return out;
 }
 
 export async function notifyEmployee(tenantId: string, employeeId: string, text: string, keyboard: Keyboard = menuKeyboard): Promise<JobOutcome> {
   const chatId = await employeeChat(tenantId, employeeId);
   if (!chatId) return { skip: 'xodim botga ulanmagan' };
   await send(chatId, text, keyboard);
+  return {};
+}
+
+/**
+ * Panel a'zosiga berilgan vazifa bo'yicha tasdiqlovchilar (core `canReviewMemberTask` bilan mos): bergan rahbar; u bo'lmasa yoki
+ * ijrochining o'zi bo'lsa — egasi (ijrochi administrator bo'lmasa — administratorlar ham). Ijrochining o'zi chiqariladi.
+ * `event` o'chiq bo'lsa — hech kim.
+ */
+export async function memberTaskReviewerChats(tenantId: string, t: { assigneeUserId: string; createdByUserId: string | null }, event?: NotifyEvent | null) {
+  const ids = await withTenant(tenantId, async (tx) => {
+    if (event && notifyTargets(await readSettings(tx), event).length === 0) return [];
+    if (t.createdByUserId && t.createdByUserId !== t.assigneeUserId) return [t.createdByUserId];
+    const [me] = await tx.select({ role: memberships.role }).from(memberships).where(eq(memberships.userId, t.assigneeUserId)).limit(1);
+    const roles: Array<'owner' | 'admin'> = me?.role === 'admin' || me?.role === 'owner' ? ['owner'] : ['owner', 'admin'];
+    const rows = await tx.select({ id: memberships.userId }).from(memberships)
+      .where(and(eq(memberships.isActive, true), inArray(memberships.role, roles), ne(memberships.userId, t.assigneeUserId)));
+    return rows.map((r) => r.id);
+  });
+  return userChatsFor(tenantId, ids);
+}
+
+/** Panel a'zosiga (vazifa ijrochisi) shaxsiy xabar — Telegram'ini ulagan bo'lsa (yoki xodim chati orqali). */
+export async function notifyUser(tenantId: string, userId: string, text: string, keyboard?: Keyboard): Promise<JobOutcome> {
+  const chats = await userChatsFor(tenantId, [userId]);
+  if (!chats.length) return { skip: 'a’zo Telegram ulamagan' };
+  for (const c of chats) await send(c.chatId, text, keyboard);
   return {};
 }

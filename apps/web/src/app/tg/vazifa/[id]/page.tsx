@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { addDays, formatDateTime, localDate, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, isUuid } from '@adone/core';
-import { currentTgMember, currentTgUser } from '@/lib/tg/session';
+import { tgView } from '@/lib/tg/session';
 import { myTask } from '@/server/miniapp';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
@@ -13,16 +13,14 @@ import { dueText, minutesText, STATUS_PILL } from '@/components/tasks/task-card'
 const PRI = { low: 'bg-subtle text-muted', medium: 'bg-warning-tint text-warning', high: 'bg-danger-tint text-danger' } as const;
 
 export default async function TgTaskPage({ params }: PageProps<'/tg/vazifa/[id]'>) {
-  const u = await currentTgUser();
-  const { id } = await params;
+  const [v, { id }] = await Promise.all([tgView(), params]);
   if (!isUuid(id)) notFound();
-  if (!u) {
-    // Rahbar sessiyasi — vazifa sahifasi (qaror, hisobot fayllari, yozishma); sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
-    const m = await currentTgMember();
-    return m ? <ManagerTask m={m} id={id} /> : null;
-  }
-  const d = await myTask(u, id);
-  if (!d) notFound();
+  const u = v.u;
+  // Rahbar sessiyasi — vazifa sahifasi (qaror, hisobot fayllari, yozishma; o'ziga berilgan bo'lsa — hisobot); sessiya yo'q —
+  // layout avtorizatsiya ekranini ko'rsatadi. Ikki rejimli boshliq: o'z vazifasi — xodim ko'rinishida, bo'limnikilar — rahbar
+  const own = u ? await myTask(u, id) : null;
+  if (!own || !u) return v.m ? <ManagerTask m={v.m} id={id} /> : u ? notFound() : null;
+  const d = own;
   const { t, b } = d;
   const left = t.dueAt ? Math.round((t.dueAt.getTime() - Date.now()) / 60_000) : null;
   const today = localDate(new Date(), u.tz);

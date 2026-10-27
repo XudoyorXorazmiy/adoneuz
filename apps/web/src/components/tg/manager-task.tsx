@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/icon';
 import { dueText, minutesText, PRIORITY_DOT, STATUS_PILL } from '@/components/tasks/task-card';
 import { TgHeader } from './tg-shell';
 import { DeadlineDecision, TaskCancel, TaskComment, TaskReview } from './manager-decisions';
+import { TaskReport } from './task-report';
 
 const card = 'flex flex-col gap-3 rounded-[20px] bg-card p-4 shadow-[var(--shadow-card)]';
 const pill = 'flex h-6 items-center rounded-full px-2 text-xs font-semibold';
@@ -29,7 +30,7 @@ export async function ManagerTask({ m, id }: { m: TgMember; id: string }) {
   const others = d.copies.filter((c) => c.id !== t.id);
   return (
     <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col bg-page pb-8">
-      <TgHeader title="Vazifa" sub={d.assignee?.name} back="/tg/vazifalar" />
+      <TgHeader title="Vazifa" sub={d.role === 'assignee' ? 'Sizga berilgan' : d.assignee?.name} back={d.role === 'assignee' ? '/tg/vazifalar?kor=mening' : '/tg/vazifalar'} />
       <div className="flex flex-col gap-3 px-4 pt-3">
         <section className={card}>
           <div className="flex flex-wrap gap-1.5">
@@ -79,6 +80,10 @@ export async function ManagerTask({ m, id }: { m: TgMember; id: string }) {
             <h2 className="m-0 text-base font-bold">{t.status === 'submitted' ? 'Hisobot tekshiruvda' : 'Qaror'}</h2>
             <TaskReview id={t.id} />
           </section>
+        )}
+
+        {d.role === 'assignee' && (t.status === 'submitted' || t.status === 'approved') && (
+          <section className={`${card} text-sm`}><b>{t.status === 'submitted' ? '⏳ Tekshirilmoqda' : `✅ Tasdiqlandi${t.rating ? ` · ${'★'.repeat(t.rating)}` : ''}`}</b></section>
         )}
 
         {d.reports.length > 0 && (
@@ -147,6 +152,10 @@ export async function ManagerTask({ m, id }: { m: TgMember; id: string }) {
         </section>
 
         {allowed.includes('cancelled') && <TaskCancel id={t.id} />}
+        {/* Panel a'zosiga berilgan vazifa (egasi → admin, admin → bo'lim boshlig'i): qabul, boshlash, hisobot — xodim ekrani bilan bir xil */}
+        {d.role === 'assignee' && (
+          <TaskReport taskId={t.id} status={t.status} checklist={b.checklist} checklistDone={t.checklistDone} proofs={b.proofs} doneHref="/tg/vazifalar?kor=mening&yuborildi=1" />
+        )}
       </div>
     </div>
   );

@@ -6,7 +6,8 @@ import { Icon } from '@/components/ui/icon';
 import { avatarColors } from '@/components/ui/avatar';
 import { dueLabel, taskCardText } from '@/lib/task-text';
 
-export type AssignOption = { id: string; name: string; departmentId: string | null; department: string | null; branchId: string | null; branch: string | null; linked: boolean };
+/** `id` — xodim uuid yoki panel a'zosi `u:<userId>`; `role` — rahbar yorlig'i («Administrator», «Bo'lim boshlig'i»). */
+export type AssignOption = { id: string; name: string; departmentId: string | null; department: string | null; branchId: string | null; branch: string | null; linked: boolean; role?: string | null };
 
 const PROOF_ICON: Record<TaskProof, string> = { button: 'touch_app', photo: 'photo_camera', video: 'videocam', location: 'location_on' };
 const PRIORITY_DOT: Record<TaskPriority, string> = { low: 'bg-placeholder', medium: 'bg-warning', high: 'bg-danger' };
@@ -45,7 +46,7 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
   const [kind, setKind] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5, 6]);
   const byId = useMemo(() => new Map(options.map((o) => [o.id, o])), [options]);
-  const found = q ? options.filter((o) => !picked.includes(o.id) && `${o.name} ${o.department ?? ''} ${o.branch ?? ''}`.toLowerCase().includes(q.toLowerCase())).slice(0, 8) : [];
+  const found = q ? options.filter((o) => !picked.includes(o.id) && `${o.name} ${o.department ?? ''} ${o.branch ?? ''} ${o.role ?? ''}`.toLowerCase().includes(q.toLowerCase())).slice(0, 8) : [];
   const groups = useMemo(() => {
     const deps = new Map<string, { label: string; ids: string[] }>();
     const brs = new Map<string, { label: string; ids: string[] }>();
@@ -53,7 +54,8 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
       if (o.departmentId) { const g = deps.get(o.departmentId) ?? { label: `Bo'lim: ${o.department}`, ids: [] }; g.ids.push(o.id); deps.set(o.departmentId, g); }
       if (o.branchId) { const g = brs.get(o.branchId) ?? { label: `Filial: ${o.branch}`, ids: [] }; g.ids.push(o.id); brs.set(o.branchId, g); }
     }
-    return [...deps.values(), ...brs.values()];
+    const heads = options.filter((o) => o.id.startsWith('u:')).map((o) => o.id);
+    return [...(heads.length > 1 ? [{ label: 'Rahbarlar', ids: heads }] : []), ...deps.values(), ...brs.values()];
   }, [options]);
   const add = (ids: string[]) => setPicked((p) => [...new Set([...p, ...ids])]);
   const toggleProof = (p: TaskProof) => {
@@ -83,7 +85,7 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
             return (
               <span key={id} className="flex h-8 items-center gap-1.5 rounded-full bg-subtle pr-2 pl-1 text-[13px] font-semibold">
                 <span className="flex size-6 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: bg, color: fg }}>{initials(o.name)}</span>
-                {o.name}
+                {o.name}{o.role && <span className="text-xs font-medium text-muted">· {o.role}</span>}
                 <button type="button" onClick={() => setPicked((p) => p.filter((x) => x !== id))} className="text-placeholder hover:text-ink" title="Olib tashlash"><Icon name="close" size={16} /></button>
               </span>
             );
@@ -95,7 +97,7 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
               <div className="absolute top-9 left-0 z-10 w-full min-w-[260px] rounded-xl bg-card p-1 shadow-[0_8px_30px_rgba(16,24,40,.14)]">
                 {found.map((o) => (
                   <button key={o.id} type="button" onClick={() => { add([o.id]); setQ(''); }} className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] hover:bg-primary-soft">
-                    <span className="font-semibold">{o.name}</span><span className="truncate text-xs text-muted">{o.department ?? o.branch ?? ''}</span>
+                    <span className="font-semibold">{o.name}</span><span className="truncate text-xs text-muted">{[o.role, o.department ?? o.branch].filter(Boolean).join(' · ')}</span>
                   </button>
                 ))}
               </div>
@@ -111,7 +113,7 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
             ))}
           </div>
         )}
-        <span className="flex items-center gap-1.5 text-xs text-muted"><Icon name="info" size={15} />Har bir xodimga alohida nusxa yaratiladi{unlinked ? ` · ${unlinked} kishi botga ulanmagan — xabar bormaydi` : ''}</span>
+        <span className="flex items-center gap-1.5 text-xs text-muted"><Icon name="info" size={15} />Har bir kishiga alohida nusxa yaratiladi{unlinked ? ` · ${unlinked} kishi botga ulanmagan — xabar bormaydi` : ''}</span>
       </div>
 
       <Field label="Sarlavha" required>

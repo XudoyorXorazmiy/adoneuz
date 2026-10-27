@@ -7,9 +7,10 @@ import { Icon } from '@/components/ui/icon';
 import { DayStatusBadge } from '@/components/attendance/badges';
 import { RemindButton } from './manager-decisions';
 import { TgPage } from './tg-shell';
+import { ModeLink } from './mode-switch';
 
 /** Rahbar Mini App'i — «Bugun»: davomat raqamlari, vazifalar nazorati, qaror kutayotganlar, xodimlar ro'yxati. Panel uslubida, Mini App o'lchamlarida. */
-export async function ManagerHome({ m }: { m: TgMember }) {
+export async function ManagerHome({ m, dual = false }: { m: TgMember; dual?: boolean }) {
   const [t, d, k] = await Promise.all([managerToday(m), managerDecisions(m), managerTaskKpis(m)]);
   const tz = m.tz;
   const c = t.counts;
@@ -29,7 +30,7 @@ export async function ManagerHome({ m }: { m: TgMember }) {
             <div className="text-[13px] text-muted">{WEEKDAY_LONG[isoWeekday(t.date) - 1]}, {formatDate(`${t.date}T12:00:00Z`)}</div>
             <div className="truncate text-xl font-bold tracking-[-0.02em]">{m.tenantName}</div>
           </div>
-          <span className="rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-primary">{MEMBER_ROLE_LABELS[m.role]}</span>
+          {dual ? <ModeLink to="xodim" /> : <span className="rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-primary">{MEMBER_ROLE_LABELS[m.role]}</span>}
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">

@@ -1,7 +1,7 @@
 import 'server-only';
 /** Ishxona tuzilmasi: filiallar, bo'limlar, jadvallar. Hammasi withTenant ichida (RLS). */
 import { and, asc, count, eq, sql } from 'drizzle-orm';
-import { branches, departments, employees, memberships, schedules, users, withTenant } from '@adone/db';
+import { branches, departments, employees, schedules, users, withTenant } from '@adone/db';
 
 export async function listBranches(tenantId: string) {
   return withTenant(tenantId, (tx) =>
@@ -38,14 +38,3 @@ export async function listSchedules(tenantId: string) {
   });
 }
 
-/** Bo'lim boshlig'i tanlovi uchun: panelga kira oladigan a'zolar. */
-export async function listPanelMembers(tenantId: string) {
-  return withTenant(tenantId, (tx) =>
-    tx
-      .select({ id: users.id, name: users.name, role: memberships.role })
-      .from(memberships)
-      .innerJoin(users, eq(users.id, memberships.userId))
-      .where(and(eq(memberships.isActive, true), sql`${memberships.role} <> 'employee'`))
-      .orderBy(asc(users.name)),
-  );
-}

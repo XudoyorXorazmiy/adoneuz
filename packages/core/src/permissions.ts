@@ -30,3 +30,23 @@ export function canUsePanel(role: MemberRole | null | undefined): boolean {
 export function homeFor(_role: MemberRole): string {
   return '/';
 }
+
+/**
+ * Panel a'zosiga (xodim yozuvi bo'lmagan rahbarga) vazifa berish: egasi — administrator va bo'lim boshliqlariga,
+ * administrator — bo'lim boshliqlariga. Bo'lim boshlig'i — faqat o'z bo'limi xodimlariga (a'zolarga emas).
+ */
+export function assignableMemberRoles(role: MemberRole | null | undefined): MemberRole[] {
+  if (role === 'owner') return ['admin', 'manager'];
+  if (role === 'admin') return ['manager'];
+  return [];
+}
+
+/**
+ * A'zoga berilgan vazifani kim tasdiqlaydi: egasi, vazifani bergan rahbar; administrator — bo'lim boshlig'ining vazifasini ham
+ * (administratorning o'z vazifasini — faqat egasi yoki bergan). Ijrochining o'zi emas (bu tekshiruv chaqiruvchida).
+ */
+export function canReviewMemberTask(actor: { role: MemberRole; userId: string }, task: { assigneeRole: MemberRole | null; createdByUserId: string | null }): boolean {
+  if (actor.role === 'owner') return true;
+  if (task.createdByUserId && task.createdByUserId === actor.userId && actor.role !== 'employee') return true;
+  return actor.role === 'admin' && task.assigneeRole !== 'admin' && task.assigneeRole !== 'owner';
+}

@@ -5,7 +5,7 @@ import 'server-only';
  * Holat o'zgarishi faqat server/tasks.ts orqali (CAS, task_events). Telegram'ga so'rovlar tranzaksiyadan tashqarida.
  */
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import { memberships, taskBatches, tasks, tenants, withTenant } from '@adone/db';
+import { memberships, taskBatches, tasks, tenants, withTenant, type Tx } from '@adone/db';
 import { formatTime, localDate, TASK_PROOF_LABELS, TASK_STATUS_LABELS, type TaskProof, type TaskStatus, UUID_SRC } from '@adone/core';
 import { answerCallback, downloadFile, editMarkup, send, type Keyboard } from '@/server/telegram/api';
 import type { TgCallback, TgMessage } from '@/server/telegram/types';
@@ -30,18 +30,24 @@ const sendKb = (id: string | null): Keyboard => ({ inline_keyboard: [[{ text: '�
 
 export async function showMyTasks(uid: number, chat: number): Promise<JobOutcome> {
   const links = await employeeLinks(uid);
-  if (links.length === 0) {
+  // Panel a'zosi (admin, bo'lim boshlig'i) — unga berilgan vazifalar ham (xodim yozuvi bo'lmasa ham)
+  const members = await memberLinks(uid);
+  if (links.length === 0 && members.length === 0) {
     await send(chat, T.noInvite);
     return { skip: 'bog‘lanmagan' };
   }
+  const owners: Array<{ tenantId: string; cond: ReturnType<typeof eq> }> = [
+    ...links.map((l) => ({ tenantId: l.tenantId, cond: eq(tasks.assigneeEmployeeId, l.employeeId) })),
+    ...members.map((m) => ({ tenantId: m.tenantId, cond: eq(tasks.assigneeUserId, m.userId) })),
+  ];
   const buttons: Array<Array<{ text: string; callback_data: string }>> = [];
   let review = 0;
-  for (const l of links) {
-    const rows = await withTenant(l.tenantId, async (tx) => {
+  for (const o of owners) {
+    const rows = await withTenant(o.tenantId, async (tx) => {
       const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
       const list = await tx.select({ id: tasks.id, status: tasks.status, dueAt: tasks.dueAt, title: taskBatches.title })
         .from(tasks).innerJoin(taskBatches, eq(taskBatches.id, tasks.batchId))
-        .where(and(eq(tasks.assigneeEmployeeId, l.employeeId), inArray(tasks.status, [...OPEN, 'submitted'])))
+        .where(and(o.cond, inArray(tasks.status, [...OPEN, 'submitted'])))
         .orderBy(asc(tasks.dueAt)).limit(15);
       return list.map((x) => ({ ...x, tz: t!.tz }));
     });
@@ -52,13 +58,13 @@ export async function showMyTasks(uid: number, chat: number): Promise<JobOutcome
     }
   }
   const head = buttons.length ? `📋 <b>Ochiq vazifalaringiz: ${buttons.length}</b>\nBirini tanlang:` : '📋 Ochiq vazifa yo‘q.';
-  await send(chat, `${head}${review ? `\n\n⏳ Tekshiruvda: ${review}` : ''}`, buttons.length ? { inline_keyboard: buttons.slice(0, 20) } : menuKeyboard);
+  await send(chat, `${head}${review ? `\n\n⏳ Tekshiruvda: ${review}` : ''}`, buttons.length ? { inline_keyboard: buttons.slice(0, 20) } : links.length ? menuKeyboard : undefined);
   return {};
 }
 
 // ---------------- Callback'lar ----------------
 
-/** Xodimning shu vazifasi (bir nechta ishxonadan qidiradi). */
+/** Ijrochi sifatida (xodim yoki panel a'zosi): shu vazifa (bir nechta ishxonadan qidiradi). */
 async function findAsEmployee(uid: number, taskId: string) {
   for (const l of await employeeLinks(uid)) {
     const row = await withTenant(l.tenantId, async (tx) => {
@@ -67,9 +73,26 @@ async function findAsEmployee(uid: number, taskId: string) {
         .where(and(eq(tasks.id, taskId), eq(tasks.assigneeEmployeeId, l.employeeId))).limit(1);
       return r;
     });
-    if (row) return { link: l, ...row };
+    if (row) return { link: { tenantId: l.tenantId, employeeId: l.employeeId as string | null, userId: undefined as string | undefined }, ...row };
+  }
+  for (const m of await memberLinks(uid)) {
+    const row = await withTenant(m.tenantId, async (tx) => {
+      const [r] = await tx.select({ t: tasks, b: taskBatches, tz: tenants.timezone }).from(tasks)
+        .innerJoin(taskBatches, eq(taskBatches.id, tasks.batchId)).innerJoin(tenants, eq(tenants.id, tasks.tenantId))
+        .where(and(eq(tasks.id, taskId), eq(tasks.assigneeUserId, m.userId))).limit(1);
+      return r;
+    });
+    if (row) return { link: { tenantId: m.tenantId, employeeId: null, userId: m.userId as string | undefined }, ...row };
   }
   return null;
+}
+
+/** Bot holatidagi ijrochi → `ActorRef` (panel a'zosining roli har safar bazadan). */
+async function stateActor(tx: Tx, s: { employeeId: string | null; userId?: string }): Promise<ActorRef | null> {
+  if (s.employeeId) return { employeeId: s.employeeId };
+  if (!s.userId) return null;
+  const [m] = await tx.select({ role: memberships.role, active: memberships.isActive }).from(memberships).where(eq(memberships.userId, s.userId)).limit(1);
+  return m?.active ? { userId: s.userId, role: m.role } : null;
 }
 
 /** Rahbar sifatida: vazifa qaysi ishxonada va uning roli. */
@@ -154,33 +177,41 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
     await answerCallback(cb.id, 'Vazifa topilmadi');
     return { skip: 'vazifa topilmadi' };
   }
-  const actor: ActorRef = { employeeId: f.link.employeeId };
+  const member = !f.link.employeeId;
   if (act === 'v') {
     await answerCallback(cb.id);
     const today = localDate(new Date(), f.tz);
     const due = f.t.dueAt ? dueLabel(localDate(f.t.dueAt, f.tz), formatTime(f.t.dueAt, f.tz), today) : null;
     const text = [`📋 <b>${esc(f.b.title)}</b>`, f.b.description ? esc(f.b.description) : '', `Holat: ${TASK_STATUS_LABELS[f.t.status]}`, due ? `⏰ Muddat: ${due}` : '', `📷 Hisobot: ${proofText(f.b.proofs as TaskProof[])}`,
       f.b.checklist.length ? `☑️ ${f.b.checklist.map(esc).join(' · ')}` : ''].filter(Boolean).join('\n');
-    const kb = f.t.status === 'new' ? taskButtons.assigned(f.t.id) : OPEN.includes(f.t.status) ? taskButtons.work(f.t.id, f.t.status === 'in_progress' || f.t.status === 'revision') : undefined;
+    const kb = f.t.status === 'new' ? taskButtons.assigned(f.t.id) : OPEN.includes(f.t.status) ? taskButtons.work(f.t.id, f.t.status === 'in_progress' || f.t.status === 'revision', !member) : undefined;
     await send(chat, text, kb);
     return {};
   }
   if (act === 'acc' || act === 'go') {
     const to: TaskStatus = act === 'acc' ? 'accepted' : 'in_progress';
-    const res = await withTenant(f.link.tenantId, (tx) => transitionTask(tx, { tenantId: f.link.tenantId, taskId, to, actor }));
+    const res = await withTenant(f.link.tenantId, async (tx) => {
+      const actor = await stateActor(tx, f.link);
+      return actor ? transitionTask(tx, { tenantId: f.link.tenantId, taskId, to, actor }) : { error: 'Ruxsat yo‘q' };
+    });
     await answerCallback(cb.id, 'error' in res ? res.error : act === 'acc' ? 'Qabul qilindi' : 'Boshlandi');
     if (cb.message) await editMarkup(chat, cb.message.message_id);
     if ('error' in res) return { skip: res.error };
-    await send(chat, act === 'acc' ? `✅ Qabul qilindi: <b>${esc(f.b.title)}</b>\nIshni boshlaganda «▶️ Boshladim», tugatgach «✅ Bajardim».` : `▶️ Boshlandi: <b>${esc(f.b.title)}</b>`, taskButtons.work(taskId, act === 'go'));
+    await send(chat, act === 'acc' ? `✅ Qabul qilindi: <b>${esc(f.b.title)}</b>\nIshni boshlaganda «▶️ Boshladim», tugatgach «✅ Bajardim».` : `▶️ Boshlandi: <b>${esc(f.b.title)}</b>`, taskButtons.work(taskId, act === 'go', !member));
     return {};
   }
   if (act === 'ext') {
     await answerCallback(cb.id);
-    return startDeadline(uid, chat, f.link, { id: taskId, title: f.b.title, status: f.t.status, dueAt: f.t.dueAt }, f.tz);
+    const link = f.link.employeeId ? (await employeeLinks(uid)).find((l) => l.tenantId === f.link.tenantId && l.employeeId === f.link.employeeId) : null;
+    if (!link) {
+      await send(chat, 'Muddatni vazifa bergan rahbar bilan kelishing — «❓ Savol» orqali yozing.');
+      return { skip: 'a’zo — muddat so‘rovi yo‘q' };
+    }
+    return startDeadline(uid, chat, link, { id: taskId, title: f.b.title, status: f.t.status, dueAt: f.t.dueAt }, f.tz);
   }
   if (act === 'ask') {
     await answerCallback(cb.id);
-    await setState(uid, { step: 'task_ask', tenantId: f.link.tenantId, employeeId: f.link.employeeId, taskId });
+    await setState(uid, { step: 'task_ask', tenantId: f.link.tenantId, employeeId: f.link.employeeId, userId: f.link.userId, taskId });
     await send(chat, '❓ Savolingizni yozing — rahbaringizga yuboriladi:');
     return {};
   }
@@ -190,7 +221,7 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
       await send(chat, `Bu vazifa holati: ${TASK_STATUS_LABELS[f.t.status]}.`, menuKeyboard);
       return { skip: 'ochiq emas' };
     }
-    await setState(uid, { step: 'task_report', tenantId: f.link.tenantId, employeeId: f.link.employeeId, taskId, mediaIds: [] });
+    await setState(uid, { step: 'task_report', tenantId: f.link.tenantId, employeeId: f.link.employeeId, userId: f.link.userId, taskId, mediaIds: [] });
     const need = (f.b.proofs as TaskProof[]).filter((p) => p !== 'button');
     await send(chat, [
       `✅ <b>Hisobot</b>: ${esc(f.b.title)}`,
@@ -216,10 +247,13 @@ export async function onTaskMessage(msg: TgMessage, state: BotState): Promise<Jo
   const text = (msg.text ?? msg.caption ?? '').trim();
   if (state.step === 'task_ask') {
     if (!text) { await send(chat, 'Savolni matn bilan yozing.'); return { skip: 'matn yo‘q' }; }
-    const res = await withTenant(state.tenantId, (tx) => commentTask(tx, { tenantId: state.tenantId, taskId: state.taskId, actor: { employeeId: state.employeeId }, comment: text }));
+    const res = await withTenant(state.tenantId, async (tx) => {
+      const actor = await stateActor(tx, state);
+      return actor ? commentTask(tx, { tenantId: state.tenantId, taskId: state.taskId, actor, comment: text }) : { error: 'Ruxsat yo‘q' };
+    });
     await clearState(uid);
     kick();
-    await send(chat, 'error' in res ? `⚠️ ${esc(res.error)}` : '📨 Savolingiz rahbarga yuborildi.', menuKeyboard);
+    await send(chat, 'error' in res ? `⚠️ ${esc(res.error)}` : '📨 Savolingiz rahbarga yuborildi.', state.employeeId ? menuKeyboard : undefined);
     return {};
   }
   if (state.step === 'task_revise') {
@@ -287,6 +321,7 @@ async function finishReport(uid: number, chat: number): Promise<JobOutcome> {
     const got = await proofFlags(tx, state.mediaIds, state.lat != null);
     const report = { text: state.text ?? null, mediaIds: state.mediaIds, lat: state.lat ?? null, lng: state.lng ?? null, source: 'bot' as const, got };
     if (!state.taskId) {
+      if (!state.employeeId) return { error: 'Ish qo‘shish — xodimlar uchun' };
       const needs = await selfTasksNeedApproval(tx);
       await createTasks(tx, {
         tenantId: state.tenantId, source: 'self_done', title: state.title ?? 'Ish', priority: 'medium', proofs: ['button'], checklist: [], dueAt: null,
@@ -294,7 +329,9 @@ async function finishReport(uid: number, chat: number): Promise<JobOutcome> {
       });
       return { ok: true as const, self: true, needs };
     }
-    const r = await transitionTask(tx, { tenantId: state.tenantId, taskId: state.taskId, to: 'submitted', actor: { employeeId: state.employeeId }, report, comment: state.text ?? null });
+    const actor = await stateActor(tx, state);
+    if (!actor) return { error: 'Ruxsat yo‘q' };
+    const r = await transitionTask(tx, { tenantId: state.tenantId, taskId: state.taskId, to: 'submitted', actor, report, comment: state.text ?? null });
     return 'error' in r ? r : { ok: true as const, self: false, needs: true };
   });
   if ('error' in res) {
@@ -303,7 +340,7 @@ async function finishReport(uid: number, chat: number): Promise<JobOutcome> {
   }
   await clearState(uid);
   kick();
-  await send(chat, res.self ? (res.needs ? '✅ Ish qayd etildi — rahbaringiz tasdiqlaydi.' : '✅ Ish qayd etildi.') : '✅ Hisobot yuborildi — rahbar tekshiradi. Natija shu yerga keladi.', menuKeyboard);
+  await send(chat, res.self ? (res.needs ? '✅ Ish qayd etildi — rahbaringiz tasdiqlaydi.' : '✅ Ish qayd etildi.') : '✅ Hisobot yuborildi — rahbar tekshiradi. Natija shu yerga keladi.', state.employeeId ? menuKeyboard : undefined);
   return {};
 }
 

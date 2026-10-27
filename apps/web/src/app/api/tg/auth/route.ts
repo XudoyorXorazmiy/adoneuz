@@ -18,6 +18,7 @@ export async function POST(req: Request) {
   if (links.length > 0) {
     const link = body.tenantId ? links.find((l) => l.tenantId === body.tenantId) : links.length === 1 ? links[0] : null;
     if (!link) return NextResponse.json({ pick: links.map((l) => ({ tenantId: l.tenantId, name: l.tenantName })) });
+    // Bo'lim boshlig'i bo'lsa rahbar rejimi ham ochiladi — sessiyadan har so'rovda hisoblanadi (lib/tg/session.ts)
     res.cookies.set(TG_COOKIE, await signTgSession({ tg: v.user.id, tenantId: link.tenantId, employeeId: link.employeeId }), tgCookieOptions());
     return res;
   }

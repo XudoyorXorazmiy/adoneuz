@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { formatDate, formatMinutes, formatTime, isoWeekday, localDate, WEEKDAY_LONG } from '@adone/core';
-import { currentTgMember, currentTgUser } from '@/lib/tg/session';
+import { tgView } from '@/lib/tg/session';
+import { ModeLink } from '@/components/tg/mode-switch';
 import { ManagerHome } from '@/components/tg/manager-home';
 import { homeData, myMonth } from '@/server/miniapp';
 import { Avatar } from '@/components/ui/avatar';
@@ -11,12 +12,11 @@ import { TaskRow } from '@/components/tg/task-row';
 
 /** Mini App bosh sahifasi (dizayn: «Kelishdan oldin» / «Check-in dan keyin»). */
 export default async function TgHome() {
-  const u = await currentTgUser();
-  if (!u) {
-    // Rahbar (xodim yozuvi yo'q): bugungi davomat va qarorlar; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
-    const m = await currentTgMember();
-    return m ? <ManagerHome m={m} /> : null;
-  }
+  const v = await tgView();
+  // Rahbar (yoki rahbar rejimidagi bo'lim boshlig'i): bugungi davomat va qarorlar; sessiya yo'q — layout avtorizatsiya ekranini ko'rsatadi
+  if (v.manager && v.m) return <ManagerHome m={v.m} dual={v.dual} />;
+  const u = v.u;
+  if (!u) return null;
   const [h, m] = await Promise.all([homeData(u), myMonth(u, localDate(new Date(), u.tz).slice(0, 7))]);
   const tz = u.tz;
   const first = u.name.split(' ')[0];
@@ -26,10 +26,11 @@ export default async function TgHome() {
       <div className="flex flex-col gap-4 px-4 pt-4">
         <div className="flex items-center gap-3">
           <Avatar name={u.name} size={48} />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-[13px] text-muted">{WEEKDAY_LONG[isoWeekday(h.date) - 1]}, {formatDate(`${h.date}T12:00:00Z`)}</div>
             <div className="truncate text-xl font-bold tracking-[-0.02em]">Assalomu alaykum, {first}</div>
           </div>
+          {v.dual && <ModeLink to="rahbar" />}
         </div>
 
         <section className="flex flex-col gap-4 rounded-[24px] bg-card p-[18px] shadow-[var(--shadow-card)]">

@@ -1,6 +1,7 @@
 import 'server-only';
 import { and, desc, eq } from 'drizzle-orm';
-import { tenants, tgLinks, withPlatform } from '@adone/db';
+import { employees, memberships, tenants, tgLinks, withPlatform, withTenant } from '@adone/db';
+import { canUsePanel } from '@adone/core';
 
 export interface EmployeeLink { tenantId: string; tenantName: string; employeeId: string; chatId: number }
 
@@ -34,7 +35,19 @@ export async function employeeChat(tenantId: string, employeeId: string): Promis
 
 export interface MemberLink { tenantId: string; tenantName: string; userId: string; chatId: number }
 
-/** Rahbar (panel foydalanuvchisi) Telegram bog'lanishlari — vazifani Telegram'dan tasdiqlash uchun. */
+/** Xodimga bog'langan faol rahbar hisobi (bo'lim boshlig'i bo'lgan xodim) — userId yoki null. */
+export async function employeeHead(tenantId: string, employeeId: string): Promise<string | null> {
+  return withTenant(tenantId, async (tx) => {
+    const [r] = await tx.select({ userId: employees.userId, role: memberships.role, active: memberships.isActive, status: employees.status }).from(employees)
+      .innerJoin(memberships, eq(memberships.userId, employees.userId)).where(eq(employees.id, employeeId)).limit(1);
+    return r && r.active && r.status === 'active' && canUsePanel(r.role) ? r.userId : null;
+  });
+}
+
+/**
+ * Rahbar (panel foydalanuvchisi) Telegram bog'lanishlari — vazifa/so'rovni Telegram'dan tasdiqlash uchun. Rahbarning o'z
+ * bog'lanishi (kind=member) va bo'lim boshlig'i bo'lgan xodimning xodim bog'lanishi (employees.user_id → faol a'zolik).
+ */
 export async function memberLinks(tgUserId: number): Promise<MemberLink[]> {
   const rows = await withPlatform((tx) =>
     tx
@@ -43,5 +56,11 @@ export async function memberLinks(tgUserId: number): Promise<MemberLink[]> {
       .innerJoin(tenants, eq(tenants.id, tgLinks.tenantId))
       .where(and(eq(tgLinks.telegramUserId, tgUserId), eq(tgLinks.kind, 'member'))),
   );
-  return rows.filter((r) => r.status !== 'blocked' && r.status !== 'archived');
+  const out: MemberLink[] = rows.filter((r) => r.status !== 'blocked' && r.status !== 'archived');
+  for (const e of await employeeLinks(tgUserId)) {
+    if (out.some((m) => m.tenantId === e.tenantId)) continue;
+    const userId = await employeeHead(e.tenantId, e.employeeId);
+    if (userId) out.push({ tenantId: e.tenantId, tenantName: e.tenantName, userId, chatId: e.chatId });
+  }
+  return out;
 }

@@ -9,8 +9,8 @@ import { getCoords, haptic, shrinkImage } from './webapp';
  * Vazifa (dizayn: «Vazifa va hisobot», «Qaytarilgan vazifa»): checklist, hisobot — kamera bilan rasm (capture), lokatsiya, izoh.
  * Talab qilingan isbot yetmasa server rad etadi (missingProofs), xabar shu yerda ko'rinadi.
  */
-export function TaskReport({ taskId, status, checklist, checklistDone, proofs }: {
-  taskId: string; status: string; checklist: string[]; checklistDone: boolean[]; proofs: string[];
+export function TaskReport({ taskId, status, checklist, checklistDone, proofs, doneHref = '/tg/vazifalar?yuborildi=1' }: {
+  taskId: string; status: string; checklist: string[]; checklistDone: boolean[]; proofs: string[]; doneHref?: string;
 }) {
   const router = useRouter();
   const [done, setDone] = useState<boolean[]>(checklist.map((_, i) => !!checklistDone[i]));
@@ -38,7 +38,7 @@ export function TaskReport({ taskId, status, checklist, checklistDone, proofs }:
     if (r.error) { setErr(r.error); haptic('error'); return; }
     haptic('success');
     router.refresh();
-    if (to === 'submitted') router.push('/tg/vazifalar?yuborildi=1');
+    if (to === 'submitted') router.push(doneHref);
   };
 
   if (status === 'new') {

@@ -50,7 +50,7 @@ process.env.PLATFORM_BOT_TOKEN = 'test:token';
 process.env.FACE_SERVICE_URL = `http://127.0.0.1:${port}/face`;
 process.env.MEDIA_DIR = await mkdtemp(path.join(tmpdir(), 'adone-media-'));
 
-const { withTenant, withPlatform, employees, branches, schedules, tenants, attendanceEvents, invites, tgLinks, media, consents, jobs, pool } = await import('@adone/db');
+const { withTenant, withPlatform, employees, branches, schedules, tenants, attendanceEvents, invites, tgLinks, media, consents, jobs, pool, departments, memberships } = await import('@adone/db');
 const { createInvite } = await import('../src/server/employees');
 const { processUpdate } = await import('../src/server/bot');
 const { attendanceTick } = await import('../src/server/ticks');
@@ -327,6 +327,55 @@ try {
   assert.ok(dlJobs.some((j) => j.dedupeKey === `tr:overdue:${t2}:${dl2.requestedDueAt.getTime()}`), 'eslatma yangi muddatga qayta rejalashtirildi');
   ok("muddatni uzaytirish so'rovi: bot → rahbar ruxsati, muddat va eslatmalar yangilandi");
 
+  // 10b. Panel a'zosiga vazifa (egasi → bo'lim boshlig'i, xodim yozuvisiz): Telegram'da qabul → hisobot → bergan rahbar baholaydi
+  const [teamUser] = await odb.execute<{ id: string }>(sql`select id from users where phone = ${TEAM_PHONE}`).then((r) => r.rows);
+  const { taskIds: [mt] } = await withTenant(T, (tx) => createTasks(tx, {
+    tenantId: T, source: 'assigned', title: 'Sinov: filial hisobotini tayyorlash', priority: 'medium', proofs: [], checklist: [],
+    dueAt: new Date(Date.now() + 5 * 3600_000), assignees: [{ userId: teamUser!.id }], createdBy: { userId: ownerUser!.id },
+  }));
+  calls.length = 0;
+  await taskNotify(T, mt!, 'assigned');
+  assert.ok(calls.some((c) => c.body.chat_id === TEAM_TG && String(c.body.text).includes('Sinov: filial hisobotini') && JSON.stringify(c.body.reply_markup).includes(`tk:acc:${mt}`)), 'a’zoga Telegram xabari');
+  await cb(`tk:acc:${mt}`, TEAM_TG);
+  assert.equal((await taskOf(mt!)).status, 'accepted');
+  await cb(`tk:done:${mt}`, TEAM_TG);
+  await processUpdate(msg({ text: 'Tayyor, panelga yukladim' }, TEAM_TG));
+  assert.equal((await taskOf(mt!)).status, 'submitted', 'a’zo botdan hisobot topshirdi');
+  calls.length = 0;
+  await taskNotify(T, mt!, 'submitted');
+  assert.ok(calls.some((c) => c.body.chat_id === OTHER && String(c.body.text).includes('Hisobot keldi')), 'bergan rahbarga (egasi) hisobot');
+  assert.ok(!calls.some((c) => c.body.chat_id === TEAM_TG), 'ijrochining o‘ziga emas');
+  await cb(`tk:rt:${mt}:5`, TEAM_TG);
+  assert.equal((await taskOf(mt!)).status, 'submitted', 'o‘z vazifasini o‘zi tasdiqlay olmaydi');
+  await cb(`tk:rt:${mt}:5`, OTHER);
+  assert.equal((await taskOf(mt!)).status, 'approved');
+  ok("panel a'zosiga vazifa: Telegram'da qabul, hisobot, egasi baholadi");
+
+  // 10c. Xodimni bo'lim boshlig'i qilish: hisob + menejer a'zoligi; bot rahbar tugmalari va bildirishnomalar uning xodim chatiga; olish — a'zolik o'chadi
+  const { setDepartmentHead } = await import('../src/server/department-head');
+  const { memberLinks } = await import('../src/server/bot/links');
+  const { userChatsFor } = await import('../src/server/notify');
+  const [ombor] = await withTenant(T, (tx) => tx.select().from(departments).where(eq(departments.name, 'Ombor')));
+  assert.ok(ombor && !ombor.managerUserId, 'seed: Ombor boshliqsiz');
+  const ownerTU = { id: ownerUser!.id, name: 'Egasi', phone: ownerUser!.phone, isPlatformAdmin: false, tenantId: T, tenantName: mudom!.name, tenantStatus: 'active' as const, tenantTimezone: mudom!.timezone, role: 'owner' as const, mustChangePassword: false };
+  assert.equal(await setDepartmentHead(ownerTU, ombor!.id, { employeeId: empId }), null);
+  const head = await withTenant(T, async (tx) => {
+    const [e] = await tx.select({ userId: employees.userId }).from(employees).where(eq(employees.id, empId));
+    const [m] = await tx.select().from(memberships).where(eq(memberships.userId, e!.userId!));
+    const [d] = await tx.select({ m: departments.managerUserId }).from(departments).where(eq(departments.id, ombor!.id));
+    return { userId: e!.userId!, m: m!, d: d!.m };
+  });
+  assert.ok(head.m.role === 'manager' && head.m.isActive && head.m.departmentIds.includes(ombor!.id) && head.d === head.userId, 'a’zolik va bo‘lim boshlig‘i');
+  assert.ok((await memberLinks(UID)).some((l) => l.userId === head.userId), 'bot: xodim bog‘lanishi orqali rahbar');
+  assert.deepEqual((await userChatsFor(T, [head.userId])).map((c) => c.chatId), [UID], 'bildirishnoma xodim chatiga');
+  const headJob = (await withPlatform((tx) => tx.select().from(jobs).where(and(eq(jobs.tenantId, T), eq(jobs.type, 'notify_employee'))))).find((j) => j.payload.employeeId === empId && String(j.payload.text).includes('boshlig'));
+  assert.ok(headJob && headJob.payload.miniPath === '/tg/rejim?to=rahbar', 'xodimga tayinlanish xabari (Mini App rahbar rejimi)');
+  assert.equal(await setDepartmentHead(ownerTU, ombor!.id, null), null);
+  const after = await withTenant(T, async (tx) => (await tx.select().from(memberships).where(eq(memberships.userId, head.userId)))[0]!);
+  assert.equal(after.isActive, false, 'boshqa bo‘limi yo‘q — a’zolik o‘chdi');
+  assert.equal((await memberLinks(UID)).some((l) => l.userId === head.userId), false);
+  ok("xodim bo'lim boshlig'i: tayinlash, bot va bildirishnoma kanali, olish");
+
   // 11. Takrorlanuvchi vazifa: kuniga bir marta
   await withTenant(T, (tx) => tx.insert(taskTemplates).values({ tenantId: T, title: 'Sinov: har kuni', assigneeEmployeeIds: [empId], recurrence: { kind: 'daily', weekdays: [], monthDay: 1 }, dueTime: '23:59' }));
   const made1 = await withTenant(T, (tx) => runTaskTemplates(tx, T));
@@ -367,6 +416,8 @@ try {
 } finally {
   await odb.execute(sql`delete from task_templates where ${empId} = any(assignee_employee_ids)`);
   await odb.execute(sql`delete from task_batches where id in (select batch_id from tasks where assignee_employee_id = ${empId})`);
+  await odb.execute(sql`delete from task_batches where tenant_id = ${T} and title = 'Sinov: filial hisobotini tayyorlash'`);
+  await odb.execute(sql`delete from users where phone = '998935551122'`);
   await odb.execute(sql`delete from employees where id = ${empId}`);
   await odb.execute(sql`delete from tg_links where telegram_user_id in (${UID}, ${OTHER}, ${TEAM_TG})`);
   await odb.execute(sql`delete from bot_sessions where telegram_user_id in (${UID}, ${OTHER}, ${TEAM_TG})`);

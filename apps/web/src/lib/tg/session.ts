@@ -22,7 +22,10 @@ const key = () => {
   return new TextEncoder().encode(`${s}:miniapp`);
 };
 
-/** Xodim: { tg, t, e }; rahbar (panel foydalanuvchisi, tg_links kind=member): { tg, t, m }. */
+/**
+ * Xodim: { tg, t, e }; rahbar (panel foydalanuvchisi, tg_links kind=member): { tg, t, m }. Bo'lim boshlig'i bo'lgan xodimning
+ * rahbar tomoni tokenda emas — `currentTgMember` xodim bog'lanishidan har so'rovda hisoblaydi (xodim va rahbar rejimlari).
+ */
 export async function signTgSession(c: { tg: number; tenantId: string; employeeId: string } | { tg: number; tenantId: string; userId: string }) {
   const payload = 'employeeId' in c ? { tg: c.tg, t: c.tenantId, e: c.employeeId } : { tg: c.tg, t: c.tenantId, m: c.userId };
   return new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime(`${TTL}s`).sign(key());
@@ -97,20 +100,31 @@ export interface TgMember {
 export const currentTgMember = cache(async (): Promise<TgMember | null> => {
   const token = (await cookies()).get(TG_COOKIE)?.value;
   if (!token) return null;
-  let p: { tg?: unknown; t?: unknown; m?: unknown };
+  let p: { tg?: unknown; t?: unknown; m?: unknown; e?: unknown };
   try {
     p = (await jwtVerify(token, key())).payload as typeof p;
   } catch {
     return null;
   }
-  if (typeof p.tg !== 'number' || typeof p.t !== 'string' || typeof p.m !== 'string') return null;
-  const tg = p.tg, tenantId = p.t, userId = p.m;
+  if (typeof p.tg !== 'number' || typeof p.t !== 'string') return null;
+  const tg = p.tg, tenantId = p.t;
+  // Rahbarning o'z Telegram'i (m, kind=member) yoki xodim sessiyasi (e) — xodimga bog'langan faol rahbar hisobi (bo'lim boshlig'i).
+  // Ikkinchisi har so'rovda hisoblanadi: boshliq tayinlansa/olinsa Mini App'ni qayta ochish shart emas.
+  const viaEmployee = typeof p.m === 'string' ? null : typeof p.e === 'string' ? p.e : null;
+  if (typeof p.m !== 'string' && !viaEmployee) return null;
   const [link] = await withPlatform((tx) =>
     tx.select({ status: tenants.status }).from(tgLinks).innerJoin(tenants, eq(tenants.id, tgLinks.tenantId))
-      .where(and(eq(tgLinks.telegramUserId, tg), eq(tgLinks.tenantId, tenantId), eq(tgLinks.kind, 'member'), eq(tgLinks.refId, userId))).limit(1),
+      .where(and(eq(tgLinks.telegramUserId, tg), eq(tgLinks.tenantId, tenantId),
+        viaEmployee ? and(eq(tgLinks.kind, 'employee'), eq(tgLinks.refId, viaEmployee)) : and(eq(tgLinks.kind, 'member'), eq(tgLinks.refId, p.m as string)))).limit(1),
   );
   if (!link || link.status === 'blocked' || link.status === 'archived') return null;
   return withTenant(tenantId, async (tx) => {
+    let userId = p.m as string;
+    if (viaEmployee) {
+      const [e] = await tx.select({ userId: employees.userId, status: employees.status, tg: employees.telegramUserId }).from(employees).where(eq(employees.id, viaEmployee)).limit(1);
+      if (!e?.userId || e.status !== 'active' || e.tg !== tg) return null;
+      userId = e.userId;
+    }
     const [r] = await tx
       .select({ name: users.name, phone: users.phone, active: users.isActive, role: memberships.role, mActive: memberships.isActive, tenantName: tenants.name, tz: tenants.timezone })
       .from(memberships).innerJoin(users, eq(users.id, memberships.userId)).innerJoin(tenants, eq(tenants.id, memberships.tenantId))
@@ -118,6 +132,19 @@ export const currentTgMember = cache(async (): Promise<TgMember | null> => {
     if (!r || !r.active || !r.mActive || !canUsePanel(r.role)) return null;
     return { tg, tenantId, tenantName: r.tenantName, tz: r.tz, userId, name: r.name, phone: r.phone, role: r.role };
   });
+});
+
+/** Ikki rejimli sessiya (bo'lim boshlig'i xodim): qaysi ko'rinish ochiq. Standart — xodim (har kuni «Keldim»). */
+export const TG_MODE_COOKIE = 'adone_tg_mode';
+
+/**
+ * Mini App ko'rinishi: `manager` — rahbar ekranlari (Bugun, Vazifalar nazorati, vazifa sahifasi rahbar sifatida).
+ * Faqat rahbar — doim rahbar; faqat xodim — doim xodim; ikkalasi — `TG_MODE_COOKIE` bo'yicha.
+ */
+export const tgView = cache(async () => {
+  const [u, m] = await Promise.all([currentTgUser(), currentTgMember()]);
+  const mode = (await cookies()).get(TG_MODE_COOKIE)?.value;
+  return { u, m, dual: !!u && !!m, manager: !!m && (!u || mode === 'rahbar') };
 });
 
 /** Panel server funksiyalari (`listDay`, `listLeaves`, `listTasks`…) uchun — o'sha foydalanuvchi, o'sha rol va bo'lim cheklovi. */

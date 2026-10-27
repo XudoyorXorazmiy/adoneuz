@@ -7,6 +7,7 @@ import { assertArea } from '@/lib/auth/guard';
 import type { FormState } from '@/components/ui/form-drawer';
 import { canTouch, createInvite, setEmployeeStatus } from '@/server/employees';
 import { saveEmployeeFromForm } from '@/server/employees-form';
+import { setDepartmentHead } from '@/server/department-head';
 import { kick } from '@/server/jobs/enqueue';
 import { queueNotifyEmployee } from '@/server/notify';
 
@@ -67,4 +68,29 @@ export async function requestFaceResampleAction(f: FormData): Promise<void> {
   });
   kick();
   revalidatePath(`/xodimlar/${id}`);
+}
+
+/** Xodimni bo'lim boshlig'i qilish (egasi, admin): hisob va menejer a'zoligi ochiladi, xodimga bot xabari ketadi. */
+export async function appointHeadAction(_p: FormState, f: FormData): Promise<FormState> {
+  const user = await assertArea('employees');
+  const employeeId = z.uuid().safeParse(str(f, 'employeeId'));
+  const departmentId = z.uuid().safeParse(str(f, 'departmentId'));
+  if (!employeeId.success || !departmentId.success) return { error: "Bo'limni tanlang" };
+  const err = await setDepartmentHead(user, departmentId.data, { employeeId: employeeId.data });
+  if (err) return { error: err };
+  revalidatePath('/xodimlar');
+  revalidatePath(`/xodimlar/${employeeId.data}`);
+  kick();
+  return { ok: "Bo'lim boshlig'i tayinlandi — xodimga Telegram'da xabar ketdi" };
+}
+
+/** Bo'limni boshliqsiz qoldirish (boshliqlikdan olish). */
+export async function removeHeadAction(f: FormData): Promise<void> {
+  const user = await assertArea('employees');
+  const departmentId = z.uuid().parse(f.get('departmentId'));
+  const err = await setDepartmentHead(user, departmentId, null);
+  if (err) throw new Error(err);
+  revalidatePath('/xodimlar');
+  const back = z.uuid().safeParse(str(f, 'employeeId'));
+  if (back.success) revalidatePath(`/xodimlar/${back.data}`);
 }

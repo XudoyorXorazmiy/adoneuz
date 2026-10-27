@@ -31,7 +31,7 @@ export default async function TasksPage({ searchParams }: PageProps<'/vazifalar'
   const tab = (TABS.map((v) => v[0]) as string[]).includes(String(sp.holat)) ? (String(sp.holat) as TaskTab) : 'all';
   const layout = sp.tur === 'royxat' ? 'list' : 'kanban';
   const f: TaskFilter = {
-    view, tab, assignee: uuid(sp.ijrochi), department: uuid(sp.bolim),
+    view, tab, assignee: typeof sp.ijrochi === 'string' && sp.ijrochi.startsWith('u:') ? (uuid(sp.ijrochi.slice(2)) ? sp.ijrochi : undefined) : uuid(sp.ijrochi), department: uuid(sp.bolim),
     priority: (TASK_PRIORITIES as readonly string[]).includes(String(sp.muhim)) ? (String(sp.muhim) as TaskPriority) : undefined,
     due: DUE.some((d) => d[0] === sp.muddat) ? (sp.muddat as TaskFilter['due']) : undefined,
     q: typeof sp.q === 'string' ? sp.q.trim().slice(0, 60) : undefined,

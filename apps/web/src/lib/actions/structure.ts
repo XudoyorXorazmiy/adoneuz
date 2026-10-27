@@ -2,11 +2,13 @@
 import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { auditLog, branches, departments, memberships, schedules, withTenant, type Tx } from '@adone/db';
+import { auditLog, branches, departments, schedules, withTenant, type Tx } from '@adone/db';
 import { isValidDate, isValidTime, parseCoordinates } from '@adone/core';
 import { assertArea } from '@/lib/auth/guard';
 import type { FormState } from '@/components/ui/form-drawer';
 import { expandMapLink } from '@/server/maps';
+import { setDepartmentHead, type HeadChoice } from '@/server/department-head';
+import { kick } from '@/server/jobs/enqueue';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
 const optUuid = (v: string) => (z.uuid().safeParse(v).success ? v : null);
@@ -54,32 +56,34 @@ export async function toggleBranchAction(f: FormData): Promise<void> {
 
 // ---------- Bo'limlar ----------
 
-async function ownsMember(tx: Tx, userId: string) {
-  const [m] = await tx.select({ id: memberships.id }).from(memberships).where(and(eq(memberships.userId, userId), eq(memberships.isActive, true))).limit(1);
-  return !!m;
-}
-
+/**
+ * Bo'lim: nomi va boshlig'i. Boshliq — `e:<xodim>` (xodimga hisob va menejer a'zoligi ochiladi) yoki `u:<jamoa a'zosi>`;
+ * bitta tushuncha va yagona yozish nuqtasi — server/department-head.ts.
+ */
 export async function saveDepartmentAction(_p: FormState, f: FormData): Promise<FormState> {
   const user = await assertArea('employees');
   if (user.role === 'manager') return { error: "Bo'limlarni egasi yoki administrator boshqaradi" };
   const id = optUuid(str(f, 'id'));
   const name = str(f, 'name');
   if (name.length < 2) return { error: "Bo'lim nomini kiriting" };
-  const managerUserId = optUuid(str(f, 'managerUserId'));
-  const err = await withTenant(user.tenantId, async (tx) => {
-    if (managerUserId && !(await ownsMember(tx, managerUserId))) return 'Boshliq topilmadi';
+  const raw = str(f, 'head');
+  const head: HeadChoice = raw.startsWith('e:') && optUuid(raw.slice(2)) ? { employeeId: raw.slice(2) } : raw.startsWith('u:') && optUuid(raw.slice(2)) ? { userId: raw.slice(2) } : null;
+  const res = await withTenant(user.tenantId, async (tx): Promise<string | { id: string }> => {
     if (id) {
-      const [r] = await tx.update(departments).set({ name, managerUserId }).where(eq(departments.id, id)).returning({ id: departments.id });
+      const [r] = await tx.update(departments).set({ name }).where(eq(departments.id, id)).returning({ id: departments.id });
       if (!r) return "Bo'lim topilmadi";
-      await audit(tx, user.tenantId, user.id, 'department.update', id, { name, managerUserId });
-    } else {
-      const [r] = await tx.insert(departments).values({ tenantId: user.tenantId, name, managerUserId }).returning({ id: departments.id });
-      await audit(tx, user.tenantId, user.id, 'department.create', r!.id, { name });
+      await audit(tx, user.tenantId, user.id, 'department.update', id, { name });
+      return { id };
     }
-    return null;
+    const [r] = await tx.insert(departments).values({ tenantId: user.tenantId, name }).returning({ id: departments.id });
+    await audit(tx, user.tenantId, user.id, 'department.create', r!.id, { name });
+    return { id: r!.id };
   });
-  if (err) return { error: err };
+  if (typeof res === 'string') return { error: res };
+  const err = await setDepartmentHead(user, res.id, head);
   revalidatePath('/xodimlar');
+  if (err) return { error: id ? err : `Bo'lim yaratildi, lekin boshliq tayinlanmadi: ${err}` };
+  kick();
   return { ok: 'Saqlandi' };
 }
 
