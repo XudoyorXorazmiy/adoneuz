@@ -17,6 +17,9 @@ const PASS = ['/api'];
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (PASS.some((p) => under(pathname, p))) return NextResponse.next();
+  // Server action skanerlari (React2Shell va sh.: «Next-Action: x», «r2s», «cachefn») — haqiqiy id hex; ilovaga yetkazmay rad
+  const action = req.headers.get('next-action');
+  if (action !== null && !/^[0-9a-f]{32,}$/i.test(action)) return new NextResponse(null, { status: 400 });
 
   // Server action redirect'dan keyin Next ichki fetch qiladi va Host yo'qolishi mumkin — asl host forward qilinadi.
   const originalHost = req.headers.get('x-forwarded-host') ?? req.headers.get('host');
@@ -88,5 +91,6 @@ function clear(res: NextResponse) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  // /api — o'zi autentifikatsiya qiladi (PASS); proxy'dan o'tmasa tana bufersiz keladi (Mini App video yuklash, 10 MB chegarasi yo'q)
+  matcher: ['/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 };

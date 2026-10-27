@@ -6,7 +6,7 @@ import { tgCheckAction, tgGeoPreviewAction } from '@/lib/actions/miniapp';
 import type { CheckResult } from '@/server/checkin';
 import { Icon } from '@/components/ui/icon';
 import { TgHeader } from './tg-shell';
-import { getCoords, haptic, shrinkImage, type Coords } from './webapp';
+import { getCoords, haptic, shrinkImage, type Coords, actionError } from './webapp';
 
 type Geo = { status: 'ok' | 'outside' | 'low_accuracy'; distanceM: number; branchName: string; radiusM: number } | { error: string };
 const PROMPTS = ['Yuzingizni ramkaga joylang', 'Boshingizni chapga burang', "Endi o'ngga burang", 'Tayyor — yuboring'];
@@ -60,7 +60,7 @@ export function CheckFlow({ action, branchName, radiusM }: { action: 'check_in' 
       setResult(r);
       haptic(r.ok ? 'success' : 'error');
     } catch (e) {
-      setResult({ ok: false, reason: 'state', message: (e as Error).message });
+      setResult({ ok: false, reason: 'state', message: actionError(e) });
     }
     setBusy(false);
     setStep('result');

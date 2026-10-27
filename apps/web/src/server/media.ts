@@ -1,6 +1,9 @@
 import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import { media, type Tx } from '@adone/db';
 import type { MediaKind } from '@adone/core';
@@ -21,4 +24,42 @@ export async function saveMedia(tx: Tx, input: { tenantId: string; employeeId: s
     sizeBytes: input.data.length, sha256: createHash('sha256').update(input.data).digest('hex'), durationSec: input.durationSec ?? null,
   });
   return id;
+}
+
+export class MediaTooLarge extends Error {}
+
+/**
+ * Katta fayl (Mini App hisobot videosi) — xotiraga yig'ilmaydi: oqim diskka yoziladi, hajm va sha256 yo'l-yo'lakay.
+ * `maxBytes` dan oshsa — fayl o'chiriladi, `MediaTooLarge`. Bazaga yozuv — chaqiruvchining tranzaksiyasida (`insertStreamed`).
+ */
+export async function writeMediaStream(tenantId: string, body: ReadableStream<Uint8Array>, ext: string, maxBytes: number) {
+  const id = randomUUID();
+  const rel = path.join(tenantId, new Date().toISOString().slice(0, 7), `${id}.${ext}`);
+  const full = path.join(mediaRoot(), rel);
+  await mkdir(path.dirname(full), { recursive: true });
+  const hash = createHash('sha256');
+  let size = 0;
+  const meter = new Transform({
+    transform(chunk: Buffer, _enc, cb) {
+      size += chunk.length;
+      if (size > maxBytes) return cb(new MediaTooLarge());
+      hash.update(chunk);
+      cb(null, chunk);
+    },
+  });
+  try {
+    await pipeline(Readable.fromWeb(body as import('node:stream/web').ReadableStream), meter, createWriteStream(full));
+  } catch (e) {
+    await rm(full, { force: true });
+    throw e;
+  }
+  return { id, path: rel, size, sha256: hash.digest('hex'), full };
+}
+
+export async function insertStreamed(tx: Tx, input: { tenantId: string; employeeId: string | null; kind: MediaKind; mime: string; file: Awaited<ReturnType<typeof writeMediaStream>> }) {
+  await tx.insert(media).values({
+    id: input.file.id, tenantId: input.tenantId, employeeId: input.employeeId, kind: input.kind, path: input.file.path, mime: input.mime,
+    sizeBytes: input.file.size, sha256: input.file.sha256,
+  });
+  return input.file.id;
 }

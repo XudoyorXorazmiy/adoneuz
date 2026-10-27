@@ -2,10 +2,11 @@ import 'server-only';
 import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { jwtVerify, SignJWT } from 'jose';
-import { and, eq } from 'drizzle-orm';
-import { branches, departments, employees, memberships, tenants, tgLinks, users, withPlatform, withTenant } from '@adone/db';
+import { and, eq, type SQL } from 'drizzle-orm';
+import { branches, departments, employees, memberships, tasks, tenants, tgLinks, users, withPlatform, withTenant } from '@adone/db';
 import { canUsePanel, type MemberRole } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
+import type { ActorRef } from '@/server/tasks';
 
 /**
  * Mini App sessiyasi — panel sessiyasidan ALOHIDA (xodim panelga kirmaydi). initData tekshirilgach beriladi:
@@ -166,4 +167,17 @@ export async function assertTgUser(): Promise<TgUser> {
   const u = await currentTgUser();
   if (!u) throw new Error('Mini App sessiyasi tugagan — ilovani qaytadan oching');
   return u;
+}
+
+/**
+ * Vazifa ijrochisi (hisobot, checklist, video yuklash): xodim sessiyasi yoki — xodim yozuvi yo'q — rahbar sessiyasi
+ * (panel a'zosiga berilgan vazifa). Ikki rejimli boshliq — xodim sifatida (unga berilgan vazifa xodim yozuviga tushadi).
+ * `own` — shu ijrochining vazifasi sharti.
+ */
+export async function currentTgAssignee(): Promise<{ tg: number; tenantId: string; employeeId: string | null; actor: ActorRef; own: SQL }> {
+  const u = await currentTgUser();
+  if (u) return { tg: u.tg, tenantId: u.tenantId, employeeId: u.employeeId, actor: { employeeId: u.employeeId }, own: eq(tasks.assigneeEmployeeId, u.employeeId) };
+  const m = await currentTgMember();
+  if (!m) throw new Error('Mini App sessiyasi tugagan — ilovani qaytadan oching');
+  return { tg: m.tg, tenantId: m.tenantId, employeeId: null, actor: { userId: m.userId, role: m.role }, own: eq(tasks.assigneeUserId, m.userId) };
 }

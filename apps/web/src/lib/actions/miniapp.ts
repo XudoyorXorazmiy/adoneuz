@@ -1,11 +1,11 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { auditLog, employees, jobs, tasks, taskBatches, withTenant } from '@adone/db';
+import { auditLog, employees, jobs, media, tasks, taskBatches, withTenant } from '@adone/db';
 import { can, faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
 import { cookies } from 'next/headers';
-import { assertTgMember, assertTgUser, currentTgMember, currentTgUser, memberAsTenantUser, TG_MODE_COOKIE, tgCookieOptions } from '@/lib/tg/session';
+import { assertTgMember, assertTgUser, currentTgAssignee, currentTgMember, currentTgUser, memberAsTenantUser, TG_MODE_COOKIE, tgCookieOptions } from '@/lib/tg/session';
 import type { FormState } from '@/components/ui/form-drawer';
 import { canTouch, inviteLink, setEmployeeStatus } from '@/server/employees';
 import { saveEmployeeFromForm } from '@/server/employees-form';
@@ -15,7 +15,7 @@ import { today } from '@/server/attendance';
 import { escHtml as esc } from '@/lib/task-text';
 import { saveMedia } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
-import { commentTask, createTasks, proofFlags, selfTasksNeedApproval, transitionTask, type ActorRef } from '@/server/tasks';
+import { commentTask, createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
 import { createTaskFromForm } from '@/server/tasks-form';
 import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
@@ -89,21 +89,9 @@ export async function tgBreakAction(): Promise<{ ok: boolean; message?: string }
   return r;
 }
 
-/**
- * Vazifa ijrochisi: xodim sessiyasi yoki (xodim yozuvi yo'q) rahbar sessiyasi — panel a'zosiga berilgan vazifa.
- * Ikki rejimli boshliq — xodim sifatida (unga berilgan vazifa xodim yozuviga tushadi).
- */
-async function tgAssignee(): Promise<{ tenantId: string; employeeId: string | null; actor: ActorRef; own: ReturnType<typeof eq> }> {
-  const u = await currentTgUser();
-  if (u) return { tenantId: u.tenantId, employeeId: u.employeeId, actor: { employeeId: u.employeeId }, own: eq(tasks.assigneeEmployeeId, u.employeeId) };
-  const m = await currentTgMember();
-  if (!m) throw new Error('Mini App sessiyasi tugagan — ilovani qaytadan oching');
-  return { tenantId: m.tenantId, employeeId: null, actor: { userId: m.userId, role: m.role }, own: eq(tasks.assigneeUserId, m.userId) };
-}
-
 /** Vazifa: qabul / boshladim / topshirish (rasm, lokatsiya, izoh). Isbot yetarliligi serverda (transitionTask). */
 export async function tgTaskAction(f: FormData): Promise<{ ok?: boolean; error?: string }> {
-  const a = await tgAssignee();
+  const a = await currentTgAssignee();
   const taskId = String(f.get('taskId') ?? '');
   const to = z.enum(['accepted', 'in_progress', 'submitted']).safeParse(f.get('to'));
   if (!z.uuid().safeParse(taskId).success || !to.success) return { error: "Ma'lumot noto'g'ri" };
@@ -115,8 +103,16 @@ export async function tgTaskAction(f: FormData): Promise<{ ok?: boolean; error?:
   }
   const c = coords(f);
   const text = String(f.get('text') ?? '').trim().slice(0, 1000) || null;
+  // Oldindan yuklangan video (/api/tg/upload): shu ishxonaning (RLS), hisobot fayli, shu ijrochi yuklagan, oxirgi 6 soatda
+  const uploaded = [...new Set(f.getAll('media').map(String).filter(isUuid))].slice(0, 5);
   const res = await withTenant(a.tenantId, async (tx) => {
     const mediaIds: string[] = [];
+    if (uploaded.length) {
+      const ok = await tx.select({ id: media.id }).from(media).where(and(inArray(media.id, uploaded), eq(media.kind, 'task_report'),
+        a.employeeId ? eq(media.employeeId, a.employeeId) : isNull(media.employeeId), gte(media.createdAt, new Date(Date.now() - 6 * 3600_000))));
+      if (ok.length !== uploaded.length) return { error: 'Video topilmadi — qaytadan yozib oling' };
+      mediaIds.push(...uploaded);
+    }
     for (const img of files) mediaIds.push(await saveMedia(tx, { tenantId: a.tenantId, employeeId: a.employeeId, kind: 'task_report', ...img }));
     const got = await proofFlags(tx, mediaIds, !!c);
     return transitionTask(tx, {
@@ -132,7 +128,7 @@ export async function tgTaskAction(f: FormData): Promise<{ ok?: boolean; error?:
 
 /** Checklist bandini belgilash (holat emas — faqat ijrochining belgisi). */
 export async function tgChecklistAction(taskId: string, index: number, done: boolean): Promise<void> {
-  const a = await tgAssignee();
+  const a = await currentTgAssignee();
   if (!z.uuid().safeParse(taskId).success || !Number.isInteger(index) || index < 0 || index > 50) return;
   await withTenant(a.tenantId, async (tx) => {
     const [r] = await tx.select({ t: tasks, b: taskBatches }).from(tasks).innerJoin(taskBatches, eq(taskBatches.id, tasks.batchId))

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { canRequestDeadline, type TaskStatus } from '@adone/core';
 import { tgDeadlineRequestAction } from '@/lib/actions/miniapp';
 import { Icon } from '@/components/ui/icon';
-import { haptic } from './webapp';
+import { haptic, actionError } from './webapp';
 
 export type DeadlineInfo = { status: string; requested: string; current: string | null; reason: string | null; comment: string | null } | null;
 
@@ -28,7 +28,7 @@ export function DeadlineRequest({ taskId, status, existing, today, defaultDate }
   }
   const submit = async () => {
     setBusy(true); setErr(null);
-    const r = await tgDeadlineRequestAction(taskId, date, time, reason).catch((e: Error) => ({ error: e.message }));
+    const r = await tgDeadlineRequestAction(taskId, date, time, reason).catch((e: unknown) => ({ error: actionError(e) }));
     setBusy(false);
     if (r.error) { setErr(r.error); haptic('error'); return; }
     haptic('success');

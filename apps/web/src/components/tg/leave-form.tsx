@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LEAVE_KIND_ICONS, LEAVE_KIND_LABELS, LEAVE_KINDS, type LeaveKind } from '@adone/core';
 import { tgCancelLeaveAction, tgLeaveAction } from '@/lib/actions/miniapp';
-import { haptic } from './webapp';
+import { haptic, actionError } from './webapp';
 
 /** Ruxsat so'rash formasi (Mini App). Davr — bitta kun yoki «gacha». */
 export function LeaveForm({ today }: { today: string }) {
@@ -18,7 +18,7 @@ export function LeaveForm({ today }: { today: string }) {
     setBusy(true);
     const fd = new FormData();
     fd.set('kind', kind); fd.set('from', from); fd.set('to', to < from ? from : to); fd.set('reason', reason);
-    const r = await tgLeaveAction(fd).catch((e: Error) => ({ error: e.message }));
+    const r = await tgLeaveAction(fd).catch((e: unknown) => ({ error: actionError(e) }));
     setBusy(false); setMsg(r); haptic(r.error ? 'error' : 'success');
     if (!r.error) { setReason(''); router.refresh(); }
   };

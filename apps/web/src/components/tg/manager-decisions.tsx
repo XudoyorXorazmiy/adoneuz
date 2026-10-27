@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
+import { actionError } from './webapp';
 import { tgApproveEmployeeAction, tgCommentTaskAction, tgDecideDeadlineAction, tgDecideLeaveAction, tgRemindEmployeeAction, tgResolveSuspiciousAction, tgReviewTaskAction } from '@/lib/actions/miniapp';
 
 function useAct() {
@@ -16,8 +17,8 @@ function useAct() {
         const r = await fn();
         if (r.error) setError(r.error);
         else { setError(null); setDone(label); router.refresh(); }
-      } catch {
-        setError('Aloqa uzildi — qayta urinib ko‘ring');
+      } catch (e) {
+        setError(actionError(e));
       }
     });
   return { pending, error, done, run };
@@ -129,8 +130,8 @@ export function TaskComment({ id }: { id: string }) {
         const r = await tgCommentTaskAction(id, text);
         if (r.error) setError(r.error);
         else { setError(null); setText(''); router.refresh(); }
-      } catch {
-        setError('Aloqa uzildi — qayta urinib ko‘ring');
+      } catch (e) {
+        setError(actionError(e));
       }
     });
   return (

@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { tgAddWorkAction } from '@/lib/actions/miniapp';
 import { Icon } from '@/components/ui/icon';
-import { haptic, shrinkImage } from './webapp';
+import { haptic, shrinkImage, actionError } from './webapp';
 
 const SPENT: Array<[number, string]> = [[15, '15 daq'], [30, '30 daq'], [60, '1 soat'], [120, '2 soat']];
 
@@ -27,7 +27,7 @@ export function AddWork({ today, needsApproval }: { today: string; needsApproval
     if (mode === 'done' && spent) fd.set('spentMinutes', String(spent));
     if (mode === 'plan') { fd.set('dueDate', due); fd.set('dueTime', '18:00'); }
     shots.forEach((s, i) => fd.append('photo', new File([s.blob], `w${i}.jpg`, { type: 'image/jpeg' })));
-    const r = await tgAddWorkAction(fd).catch((e: Error) => ({ error: e.message }));
+    const r = await tgAddWorkAction(fd).catch((e: unknown) => ({ error: actionError(e) }));
     setBusy(false);
     if ('error' in r && r.error) { setErr(r.error); haptic('error'); return; }
     haptic('success');
