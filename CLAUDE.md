@@ -238,6 +238,11 @@ berilmaydi. Hammasi bitta `tasks` jadvalida, `source` bilan ajraladi (alohida ti
 - Profilim: parol (kamida 8, harf+raqam) o'zgarsa `password_changed_at` suriladi — boshqa qurilmalar chiqadi, joriy cookie qayta imzolanadi; «Kirishlar» — login'da `audit_log auth.login` (UA, IP). Ishxonani yopish = holat `archived` (o'chirish emas).
 - Hali yo'q: ish turlari (kategoriyalar), logotip/rasm yuklash, Click/Payme (Tarif — «tez orada», tanlash qo'llab-quvvatlash orqali).
 
+## 9j. Qo'llanmalar (2026-10-27)
+
+- `docs/qollanma/xodim-qollanma.{html,pdf}` (xodim: bot + Mini App, A–Z) va `rahbar-qollanma.{html,pdf}` (egasi/admin/menejer: panel, rahbar Mini App'i, bot bildirishnomalari, rollar jadvali). Uslub `qollanma.css` (talimtizim namunasi + Telegram chat ramkasi — bot matnlari `server/bot/texts.ts`, `task-notify.ts` dan so'zma-so'z).
+- Suratlar `docs/qollanma/img/` — lokal seed ma'lumot (prod ma'lumoti ishlatilmaydi). Qayta olish: `docs/qollanma/README.md` (`scripts/shoot.mjs` — Chrome + puppeteer-core, dev server va `PLATFORM_BOT_TOKEN=test:token`, `tg_links` test qatorlari; `scripts/topdf.mjs` — HTML → PDF). Ekran o'zgarsa surat va matnni birga yangilang.
+
 ## 9c. Mini App (`app.adone.uz/tg`)
 
 - **Kirish:** `telegram-web-app.js` → `initData` → `POST /api/tg/auth` (HMAC: `WebAppData` + bot tokeni, 24 soatdan eski rad, `lib/tg/init-data.ts`) → Telegram user → `tg_links` (employee) → cookie `adone_tg` (jose, kalit AUTH_SECRET + `:miniapp`, 12 soat, prod'da SameSite=None; Secure). Har so'rovda `currentTgUser()` bog'lanish, xodim holati va `telegram_user_id` ni qayta tekshiradi. Panel sessiyasi bilan aralashmaydi; proxy `/tg` ni panel cookie'siz o'tkazadi (faqat app host'da).

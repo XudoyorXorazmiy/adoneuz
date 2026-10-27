@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><title>adone.uz — Rahbar va administrator uchun qo'llanma</title>
+<link rel="stylesheet" href="qollanma.css">
+</head><body>
+
+<div class="cover">
+  <div class="logo">a</div>
+  <div class="badge">adone.uz · davomat, vazifalar, ish haqi</div>
+  <h1>Rahbar va administrator<br>uchun qo'llanma</h1>
+  <div class="sub">Panel (app.adone.uz), rahbar Mini App'i va Telegram bildirishnomalari: ishxonani sozlash, xodimlar, davomat, vazifalar, so'rovlar, ish haqi, hisobotlar</div>
+  <div class="meta">Versiya 1.0 · 27.10.2026 · Panel: app.adone.uz · Bot: @adoneuz_bot</div>
+  <div class="quick">
+    <b>Ishga tushirish — 6 qadam</b>
+    <ol>
+      <li><b>app.adone.uz</b> → telefon raqam va parol bilan kiring; Sozlamalar → Profilim'da parolni almashtiring.</li>
+      <li><b>Filiallar</b> → filial qo'shing (xarita havolasi, radius 100 m). <b>Jadvallar</b> → ish grafigi.</li>
+      <li><b>Xodimlar</b> → xodim qo'shing → <b>taklif havolasini</b> Telegram'da yuboring.</li>
+      <li>Xodim botda ro'yxatdan o'tgach <b>«Tasdiq kutmoqda»</b> → <b>Tasdiqlash</b>.</li>
+      <li>O'zingizning Telegram'ingizni ulang (Sozlamalar → Jamoa) — bildirishnomalar va rahbar Mini App'i ishlaydi.</li>
+      <li>Har kuni: <b>Bosh sahifa</b> yoki Mini App → <b>Bugun</b> va <b>Qarorlar</b>.</li>
+    </ol>
+  </div>
+</div>
+
+<section class="toc">
+<h2>Mundarija</h2>
+<ol>
+  <li>Rollar: egasi, administrator, bo'lim boshlig'i</li>
+  <li>Panelga kirish, parol, Telegram'ni ulash</li>
+  <li>Bosh sahifa</li>
+  <li>Filiallar (xarita, radius)</li>
+  <li>Jadvallar (ish grafigi)</li>
+  <li>Bo'limlar</li>
+  <li>Xodimlar: qo'shish, taklif havolasi, tasdiqlash</li>
+  <li>Xodim profili</li>
+  <li>Davomat: kunlik, isbotlar, tuzatish, shubhalilar</li>
+  <li>Tabel va Excel</li>
+  <li>Vazifa berish</li>
+  <li>Vazifalarni nazorat qilish va hisobotni baholash</li>
+  <li>So'rovlar (ruxsat)</li>
+  <li>Ish haqi: qoidalar, tuzatish, oyni yopish</li>
+  <li>Hisobotlar</li>
+  <li>Sozlamalar</li>
+  <li>Rahbar Mini App'i</li>
+  <li>Telegram bildirishnomalari va botdan qaror</li>
+  <li>Ko'p uchraydigan vaziyatlar</li>
+</ol>
+</section>
+
+<section>
+<h2><span class="step">1</span> Rollar: egasi, administrator, bo'lim boshlig'i</h2>
+<p class="why">Nima uchun: har kim o'z vazifasiga mos narsani ko'radi — ish haqi hammaga ochiq emas, bo'lim boshlig'i faqat o'z bo'limini boshqaradi.</p>
+<table>
+  <tr><th style="width:26%">Bo'lim / amal</th><th>Egasi</th><th>Administrator</th><th>Bo'lim boshlig'i (menejer)</th></tr>
+  <tr><td>Bosh sahifa, Davomat, tuzatish, shubhalilar</td><td class="ok">Ha</td><td class="ok">Ha</td><td class="ok">Faqat o'z bo'limi xodimlari</td></tr>
+  <tr><td>Xodim qo'shish, tasdiqlash, profil</td><td class="ok">Ha</td><td class="ok">Ha</td><td class="ok">Faqat o'z bo'limiga (stavkani ko'rmaydi)</td></tr>
+  <tr><td>Vazifa berish, hisobotni tasdiqlash/qaytarish</td><td class="ok">Hammaga</td><td class="ok">Hammaga</td><td class="ok">Faqat o'z bo'limidagilarga</td></tr>
+  <tr><td>So'rovlar (ruxsat), muddat so'rovlari</td><td class="ok">Ha</td><td class="ok">Ha</td><td class="ok">O'z bo'limi</td></tr>
+  <tr><td>Filiallar, bo'limlar, jadvallar</td><td class="ok">Ha</td><td class="ok">Ha</td><td class="bad">Yo'q</td></tr>
+  <tr><td>Hisobotlar (davomat, vazifalar, reyting)</td><td class="ok">Ha</td><td class="ok">Ha</td><td class="bad">Yo'q</td></tr>
+  <tr><td>Ish haqi: qoidalar, vedomost, oyni yopish</td><td class="ok">Ha (qayta ochish ham)</td><td class="ok">Ha</td><td class="bad">Yo'q</td></tr>
+  <tr><td>Sozlamalar (jamoa, davomat, vazifalar, bildirishnomalar)</td><td class="ok">Ha</td><td class="ok">Ha (menejer qo'shadi)</td><td>Faqat «Profilim»</td></tr>
+  <tr><td>Tarif va to'lov</td><td class="ok">Ha</td><td class="bad">Yo'q</td><td class="bad">Yo'q</td></tr>
+</table>
+<table>
+  <tr><th style="width:26%">Qayerda nima qilinadi</th><th>Panel (app.adone.uz)</th><th>Rahbar Mini App (Telegram → «Ochish»)</th><th>Bot bildirishnomasi</th></tr>
+  <tr><td>Sozlash: filial, jadval, xodim, qoidalar, sozlamalar</td><td class="ok">To'liq</td><td>Xodim qo'shish, vazifa berish</td><td>—</td></tr>
+  <tr><td>Kundalik nazorat</td><td class="ok">Davomat, bosh sahifa</td><td class="ok">Bugun, Qarorlar, Vazifalar</td><td>Kechikdi / kelmadi / shubhali xabarlari</td></tr>
+  <tr><td>Qarorlar: hisobot, ruxsat, muddat, shubhali, yangi xodim</td><td class="ok">Ha</td><td class="ok">Ha — telefonda</td><td class="ok">Tugma bilan (✅ / 🔁 / ❌)</td></tr>
+  <tr><td>Hisobotlar, Excel, ish haqi tuzatish</td><td class="ok">Ha</td><td>Faqat ko'rish</td><td>—</td></tr>
+</table>
+<div class="note"><b>Menejer (bo'lim boshlig'i)</b> — Sozlamalar → Jamoa'da qo'shiladi va unga bo'lim(lar) biriktiriladi. U faqat shu bo'limdagi xodimlarni ko'radi va boshqaradi; boshqa bo'lim xodimiga vazifa bera olmaydi.</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">2</span> Panelga kirish, parol, Telegram'ni ulash</h2>
+<p class="why">Nima uchun: panel — asosiy ish joyi; Telegram ulangach bildirishnomalar va Mini App ham ishlaydi.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-00-kirish.png"><figcaption>Kirish: telefon raqam va parol</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li>Brauzerda <b>app.adone.uz</b> ni oching. <b>Telefon</b> (faqat 9 raqam, +998 turibdi) va <b>parol</b>ni kiriting → <b>Kirish</b>.</li>
+      <li>Birinchi kirishda vaqtinchalik parol bo'lsa, tepada sariq banner chiqadi — <b>Sozlamalar → Profilim → Parolni o'zgartirish</b> (kamida 8 belgi, harf va raqam). Parol o'zgargach boshqa qurilmalardagi sessiyalar yopiladi.</li>
+      <li>5 marta noto'g'ri parol — 15 daqiqaga qulflanadi.</li>
+      <li>Chiqish — chap pastdagi ism yonidagi <b>⎋</b> tugmasi.</li>
+    </ol>
+    <h3>Telegram'ni ulash (bildirishnomalar + Mini App)</h3>
+    <ol class="steps">
+      <li><b>Sozlamalar → Jamoa</b> → o'z qatoringizda <b>«Telegram ulash»</b> (yoki yangi admin uchun <b>«Telegram orqali taklif»</b>) — havola chiqadi: <code>t.me/adoneuz_bot?start=mem_…</code>.</li>
+      <li>Havolani telefoningizda oching → botda <b>Start</b> → <b>«📱 Raqamni yuborish»</b>. Raqam paneldagi raqamingiz bilan solishtiriladi.</li>
+      <li>Bot «✅ Telegram ulandi» deydi. Endi kechikkanlar, kelmaganlar, yangi xodimlar, hisobotlar shu chatga keladi; chat menyusidagi <b>«Ochish»</b> rahbar Mini App'ini ochadi (17-bob).</li>
+    </ol>
+  </div>
+</div>
+<div class="tgrow">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">/start mem_k7p2qx9m4t<span class="t">10:00</span></div>
+      <div class="msg in">Assalomu alaykum! Siz <b>Mudom bozor</b> rahbariyati sifatida ulanyapsiz.
+
+Bu siz ekaningizni tasdiqlash uchun pastdagi «📱 Raqamni yuborish» tugmasini bosing — raqam paneldagi raqamingiz bilan solishtiriladi.<span class="t">10:00</span></div>
+      <div class="msg out">📱 Kontakt: +998 90 111 22 33<span class="t">10:00</span></div>
+      <div class="msg in">✅ Telegram ulandi. <b>Mudom bozor</b> bo'yicha bildirishnomalar (kechikkanlar, kelmaganlar, yangi xodimlar, vazifa hisobotlari) shu yerga keladi. Hisobotni shu yerdan tasdiqlash yoki qaytarish mumkin.<span class="t">10:00</span></div>
+    </div>
+    <div class="kb"><div><span>📱 Raqamni yuborish</span></div></div>
+  </div><div class="cap">Rahbar Telegram'ini ulash</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="sys">yangi admin «Telegram orqali taklif» bilan</div>
+      <div class="msg in">🔐 <b>Panelga kirish</b>
+app.adone.uz
+Telefon: +998 90 111 22 44
+Vaqtinchalik parol: <code>k7m-4p9x</code>
+
+Kirgach, Sozlamalar → Profilim'da parolni o'zgartiring. Bu xabarni hech kimga yubormang.<span class="t">10:05</span></div>
+    </div>
+  </div><div class="cap">Yangi admin/menejerga bot parolni o'zi yuboradi</div></div>
+  <div>
+    <div class="warn"><b>«Bu raqam taklif qilingan rahbar raqamiga mos kelmadi»</b> — Telegram'ingiz boshqa raqamda. Sozlamalar → Jamoa'da raqamni tekshiring yoki o'sha raqamdagi Telegram'dan kiring. <b>mem_</b> havola bir marta ishlaydi — eskirsa yangisini oling.</div>
+    <div class="note">Parolni unutsangiz — egasi yoki admin Sozlamalar → Jamoa'da <b>vaqtinchalik parol</b> beradi (yoki Telegram orqali taklif yuboradi). Boshqa ishxonada ham a'zo bo'lgan hisobning paroli bu yerdan o'zgartirilmaydi.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">3</span> Bosh sahifa</h2>
+<p class="why">Nima uchun: bir qarashda bugungi holat — kim ishda, kim kechikdi, nimalar qaror kutmoqda.</p>
+<figure class="w"><img src="img/p-01-bosh.png"><figcaption>Bosh sahifa: davomat tahlili, o'rtacha ish vaqti, hozir ishda, vazifalar bajarilishi, qaror kutmoqda</figcaption></figure>
+<ul>
+  <li><b>Davomat tahlili</b> — oy bo'yicha kunlik kelganlar soni; bugungi ishda / kechikdi / kelmadi.</li>
+  <li><b>Hozir ishda</b> — jonli ro'yxat: keldi vaqti, ishlagan vaqt, isbot belgilari (📍 lokatsiya, 📹 video, 🙂 yuz). Qator ustiga bosilsa — xodim profili.</li>
+  <li><b>Qaror kutmoqda</b> — shubhali keldi-ketdi va tasdiq kutayotgan xodimlar: shu yerdan <b>Tasdiqlash / Rad etish</b>.</li>
+  <li><b>Vazifalar bajarilishi</b> — shu oyda o'z vaqtida bajarilgan ulushi.</li>
+  <li>Tepadagi <b>filial tanlagich</b> — hamma raqamlar tanlangan filial bo'yicha. <b>«+ Vazifa berish»</b> — tezkor tugma.</li>
+</ul>
+</section>
+
+<section class="brk">
+<h2><span class="step">4</span> Filiallar (xarita, radius)</h2>
+<p class="why">Nima uchun: «Keldim» faqat filial nuqtasidan belgilangan radius ichida qabul qilinadi — nuqta aniq bo'lsin.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-02-filiallar.png"><figcaption>Filiallar: xarita, radius, xodimlar soni</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li><b>Filiallar → «Filial qo'shish»</b>. <b>Nomi</b> (masalan, «Mudom — Markaz»), <b>Manzil</b>.</li>
+      <li><b>Joylashuv</b>: Google Maps'da do'konni toping → <b>Ulashish</b> → havolani nusxalang (<code>maps.app.goo.gl/…</code> qisqa havola ham, <code>google.com/maps/…@41.31,61.07</code> ham bo'ladi) va maydonga qo'ying — koordinata o'zi olinadi. Yoki <code>41.3194, 61.0742</code> ko'rinishida yozing. Xaritada belgini sudrab aniqlashtirish mumkin.</li>
+      <li><b>Radius</b> — standart <b>100 m</b>. Katta hovli/bozor bo'lsa 150–200 m; kichik do'kon — 50–80 m. GPS xatosi hisobga olinadi (aniqlik zaxirasi), shuning uchun juda kichik qo'ymang.</li>
+      <li>Saqlang. Xodim kartasida filialni tanlashni unutmang — filialsiz xodim «Keldim» qila olmaydi.</li>
+    </ol>
+    <div class="note">Xodim ko'p «zonadan tashqari» olsa: xaritada belgi do'konning o'zidami tekshiring (ko'pincha havola do'kon emas, ko'cha nuqtasiga tushadi) yoki radiusni 20–50 m oshiring.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">5</span> Jadvallar (ish grafigi)</h2>
+<p class="why">Nima uchun: kechikish, kelmagan kun va ishlagan soat jadvalga qarab hisoblanadi; jadvalsiz xodimga kechikish yozilmaydi.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-03-jadvallar.png"><figcaption>Jadvallar: haftalik, navbatli, erkin</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li><b>Jadvallar → «Jadval qo'shish»</b>. Turi: <b>Haftalik</b> (5/2, 6/1 — ish kunlarini belgilaysiz), <b>Navbatli</b> (2/2, 3/1 — N kun ish, M kun dam, boshlanish sanasi bilan), <b>Erkin</b> (smena yo'q, faqat ishlagan vaqt hisoblanadi).</li>
+      <li><b>Boshlanishi / Tugashi</b> (masalan 09:00–18:00). Tugash boshlanishdan kichik bo'lsa — <b>tungi smena</b>: yarim tundan o'tadi, smena boshlangan kunga yoziladi.</li>
+      <li><b>Tanaffus (daqiqa)</b> — ishlagan vaqtdan ayriladi. <b>Kechikish chegarasi (daqiqa)</b> — shu daqiqagacha kechikish hisoblanmaydi (masalan 10).</li>
+      <li>Jadvalni xodimga biriktiring: Xodimlar → xodim → <b>Ish jadvali</b>. Bitta jadval ko'p xodimga.</li>
+    </ol>
+    <div class="note">Dam kunida kelgan xodim «Dam olish» holatida ishlagan vaqt bilan ko'rinadi — kelmagan deb hisoblanmaydi. Bayramlar taqvimi — keyingi versiyada.</div>
+  </div>
+</div>
+</section>
+
+<section>
+<h2><span class="step">6</span> Bo'limlar</h2>
+<p class="why">Nima uchun: bo'lim boshlig'i faqat o'z bo'limini ko'radi; bildirishnomalar ham bo'lim bo'yicha boradi; hisobotlar bo'limlar kesimida.</p>
+<ol class="steps">
+  <li><b>Xodimlar</b> sahifasining o'ng tomonida <b>Bo'limlar</b> kartasi → <b>«Qo'shish»</b> → nomi (Sotuv zali, Kassa, Ombor, Ofis…).</li>
+  <li>Bo'lim boshlig'ini tayinlash: Sozlamalar → Jamoa'da menejer qo'shib, unga bo'limni biriktirasiz (yoki bo'limni tahrirlashda boshliqni tanlang).</li>
+  <li>Xodim kartasida <b>Bo'lim</b>ni tanlang. Bo'limsiz xodimni menejer ko'rmaydi — faqat egasi va admin.</li>
+</ol>
+</section>
+
+<section class="brk">
+<h2><span class="step">7</span> Xodimlar: qo'shish, taklif havolasi, tasdiqlash</h2>
+<p class="why">Nima uchun: xodim botga faqat sizning havolangiz orqali va faqat siz kiritgan raqam bilan kiradi — begona odam ulana olmaydi.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-04-xodimlar.png"><figcaption>Xodimlar: holatlar, taklif havolasi, bo'limlar</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li><b>Xodimlar → «Xodim qo'shish»</b>: <b>Ism-familiya</b>, <b>Telefon</b> (xodimning Telegram'idagi raqam!), lavozim, <b>bo'lim</b>, <b>filial</b>, <b>ish jadvali</b>, ish haqi turi (oylik / kunbay / soatbay) va <b>stavka</b> (so'm).</li>
+      <li>Saqlangach xodim <b>«Taklif yuborildi»</b> holatida, qatorida <b>Havola</b> (nusxa) va <b>Telegram'da yuborish</b> tugmalari. Havolani xodimga yuboring — 14 kun amal qiladi, bir marta ishlaydi.</li>
+      <li>Xodim botda: Start → raqamini yuboradi (sizniki bilan solishtiriladi) → rozilik → dumaloq video (yuz namunasi). Holat <b>«Tasdiq kutmoqda»</b> bo'ladi, sizga Telegram'da xabar keladi.</li>
+      <li><b>Tasdiqlash</b>: Xodimlar → «Tasdiq kutmoqda» tabida <b>Tasdiqlash</b> (yoki bosh sahifa / Mini App → Qarorlar). Xodimga «🎉 … sizni tasdiqladi» xabari ketadi, «Keldim» ishlay boshlaydi.</li>
+    </ol>
+    <div class="note"><b>Avtomatik tasdiqlash</b> (Sozlamalar → Davomat) yoqilsa, xodim ro'yxatdan o'tishi bilan faol bo'ladi — tasdiq shart emas.</div>
+    <div class="warn">Xodim «raqam mos kelmadi» desa — Xodimlar → xodim → tahrirlash → <b>Telefon</b>ni uning Telegram raqamiga to'g'rilang, keyin havolani qayta yuboring. Havola eskirgan bo'lsa — profil → «Havolani yangilash».</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">8</span> Xodim profili</h2>
+<p class="why">Nima uchun: bitta xodim haqida hamma narsa bir joyda — tabel, vazifalar, so'rovlar, ish haqi, yuz namunasi, qurilma.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-05-xodim-profil.png"><figcaption>Xodim profili: tabel-kalendar va KPI</figcaption></figure>
+  <div>
+    <ul>
+      <li><b>Tabel</b> — oy kalendari: har kun holati (Ishda / Kechikdi / Kelmadi / Ruxsatda / Dam olish), ishlagan soat; KPI: ish kunlari, kechikishlar, soat, vazifalar o'z vaqtida. Katak bosilsa — o'sha kunning davomati.</li>
+      <li><b>Vazifalar</b> — ish jurnali: berilgan va o'zi qo'shgan ishlar kun bo'yicha, sarflangan vaqt, baho.</li>
+      <li><b>So'rovlar</b> — ruxsat so'rovlari tarixi.</li>
+      <li><b>Ish haqi</b> (egasi, admin) — shu oy hisobi: asosiy, jarimalar, bonuslar, tuzatish, jami.</li>
+      <li><b>Ma'lumotlar</b> — telefon, bo'lim, filial, jadval; <b>Yuz namunasi</b> (holati, <b>«Qayta olish»</b> — xodimga /yuz haqida xabar), <b>Telegram</b> (ulangan/yo'q, taklif havolasi), <b>Qurilma</b> (Mini App bog'lagan telefon, <b>«Uzish»</b> — telefon almashganda).</li>
+      <li>Tepada: <b>«Vazifa berish»</b> (shu xodimga), <b>tahrirlash</b> ✎, <b>«Ishdan bo'shatish»</b> — xodim <i>o'chirilmaydi</i>, «O'chirilgan» holatga o'tadi; yuz namunasi va videolari o'chiriladi (qonun talabi).</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">9</span> Davomat: kunlik, isbotlar, tuzatish, shubhalilar</h2>
+<p class="why">Nima uchun: davomat — o'zgarmas jurnal. Siz eski yozuvni o'chirmaysiz, sabab bilan tuzatish qo'shasiz; hamma o'zgarish izi qoladi.</p>
+<figure class="w"><img src="img/p-06-davomat.png"><figcaption>Davomat: kun, tablar (Barchasi · Ishda · Kechikdi · Kelmadi · Ruxsatda · Shubhali · Dam olish), qator menyusi</figcaption></figure>
+<ol class="steps">
+  <li><b>Davomat</b> → sana (standart bugun), filial / bo'lim filtri, qidiruv. Tablar holat bo'yicha; <b>Shubhali</b> — tekshiruvi aniq bo'lmagan keldi-ketdilar.</li>
+  <li>Qator ochilsa — <b>isbot kartochkalari</b>: selfi (Mini App) yoki dumaloq video (bot), mini xarita va masofa, <b>yuz mosligi %</b>, GPS aniqligi, lokatsiya turi (jonli/oddiy), manba; sabablar (zonadan tashqari, yuz mos kelmadi, boshqa qurilma…). Rasm/videoni bosib kattalashtiring.</li>
+  <li>Qator <b>⋯</b> menyusi → <b>«Davomatni tuzatish»</b>: <b>Keldi / Ketdi vaqtini belgilash</b> (eski birinchi kirish va oxirgi chiqish bekor bo'ladi, yangisi qo'shiladi), <b>kirish/chiqish qo'shish</b>, hodisani <b>bekor qilish</b> yoki shubhalini <b>tasdiqlash</b>. <b>Sabab majburiy</b> — audit jurnaliga tushadi. Tungi smenada ketish uchun «ertasi kun» belgisi.</li>
+  <li><b>Shubhali</b> hodisa bo'yicha qaror: bosh sahifadagi «Qaror kutmoqda» yoki Mini App → Qarorlar → isbotni ko'rib <b>Tasdiqlash</b> (hodisa «ok» bo'ladi) yoki <b>Rad etish</b> (hodisa bekor, kun «Kelmadi» bo'lib qoladi). Qaror qilinmaguncha kun «shubhali» belgisi bilan turadi.</li>
+  <li>Xodim «Ketdim»ni unutsa — smenadan 3 soat keyin (erkin grafikda 16 soat) kun o'zi yopiladi, sizga xabar keladi; haqiqiy vaqtni xodimdan so'rab tuzatasiz.</li>
+</ol>
+<div class="note"><b>Nega «shubhali»?</b> Yuz namunaga yetarli o'xshamadi, kadrda yuz yo'q yoki boshqa odam, bosh burilmadi (jonlilik), yuz servisi vaqtincha ishlamadi, Mini App boshqa qurilmadan. Geofence (zonadan tashqari) esa <b>rad etiladi</b> — jurnalga tushadi, lekin davomat qayd etilmaydi.</div>
+</section>
+
+<section>
+<h2><span class="step">10</span> Tabel va Excel</h2>
+<p class="why">Nima uchun: oylik tabel — ish haqi va hisobotlarning asosi; buxgalteriyaga Excel kerak.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-07-tabel.png"><figcaption>Oylik tabel: xodim × kun</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li><b>Davomat → Tabel</b> (yoki <code>/davomat/tabel</code>). Oyni tanlang, bo'lim filtri.</li>
+      <li>Har katak — kun holati (rang) va ishlagan soat; oxirida jami: ish kunlari, soat, kechikishlar, kelmagan, ruxsat.</li>
+      <li><b>Excel</b> tugmasi — shu oy tabelini yuklab olish.</li>
+    </ol>
+    <div class="note">Tabel «attendance_days» yig'masidan: har 10 daqiqada yangilanadi, bugungi kun jonli hisoblanadi. Tuzatish qilsangiz o'sha kun darhol qayta hisoblanadi.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">11</span> Vazifa berish</h2>
+<p class="why">Nima uchun: vazifa xodimga Telegram'da tugmalar bilan boradi — qabul, bajardim, hisobot. Bir vazifani bir nechta kishiga bersangiz har biriga alohida nusxa.</p>
+<figure class="w"><img src="img/p-09-vazifa-berish.png"><figcaption>«Vazifa berish» oynasi: Kimga, sarlavha, tavsif, muddat, muhimlik, hisobot talabi, bosqichlar, takrorlash</figcaption></figure>
+<ol class="steps">
+  <li><b>Vazifalar → «Vazifa berish»</b> (yoki bosh sahifa / xodim profili).</li>
+  <li><b>Kimga</b> — ism yozib tanlang yoki <b>Bo'lim: …</b> / <b>Filial: …</b> chipini bosing (hammasi qo'shiladi). Botga ulanmaganlar uchun ogohlantirish chiqadi — xabar bormaydi.</li>
+  <li><b>Sarlavha</b>, <b>Tavsif</b> (nima, qayerda, qanday). <b>Muddat</b> va <b>vaqt</b> (standart bugun 18:00; soat 17 dan keyin — ertaga).</li>
+  <li><b>Muhimlik</b>: Oddiy / O'rta / Shoshilinch. <b>Hisobot talabi</b>: Faqat tugma / <b>Rasm</b> / <b>Video</b> / <b>Lokatsiya</b> — xodim shusiz topshira olmaydi (tizim tekshiradi).</li>
+  <li><b>Bosqichlar</b> (checklist) — xodim belgilab boradi. <b>Takrorlash</b> — har kuni / hafta kunlari / har oy: tizim har safar yangi nusxa yuboradi.</li>
+  <li>O'ngda xodim Telegram'da ko'radigan xabar namunasi. <b>Yuborish</b>.</li>
+</ol>
+<div class="note">Eslatmalar avtomatik (Sozlamalar → Vazifalar): 30 daqiqada qabul qilinmasa, muddatga 1 soat qolganda, muddat o'tganda (sizga ham). Kechasi 22:00–08:00 yuborilmaydi.</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">12</span> Vazifalarni nazorat qilish va hisobotni baholash</h2>
+<p class="why">Nima uchun: natija ish haqiga tasdiqlanganda tushadi — baho va qaytarish xodimga darhol boradi.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-08-vazifalar.png"><figcaption>Vazifalar: KPI, tablar, kanban (Yangi · Jarayonda · Tekshiruvda · Tasdiqlandi)</figcaption></figure>
+  <figure class="w2"><img src="img/p-10-vazifa.png"><figcaption>Vazifa sahifasi: tasdiqlash (baho), qaytarish, hisobot fayllari, tarix</figcaption></figure>
+</div>
+<ol class="steps">
+  <li><b>Vazifalar</b>: tepada KPI (faol, tekshiruvda, muddati o'tgan, o'z vaqtida %). Tablar: <b>Berilgan</b> · <b>O'zi qo'shgan</b> (xodimlar kiritgan ishlar — tasdiq kutadi) · <b>Mening ishlarim</b>. Kanban yoki ro'yxat; filtrlar: ijrochi, bo'lim, muhimlik, muddat.</li>
+  <li>Vazifa sahifasida: holat, ijrochi, muddat, bosqichlar, <b>Hisobot</b> (rasm/video — bosib oching, lokatsiya — xaritada), <b>Tarix va yozishma</b> (izoh yozsangiz xodimga Telegram'da boradi).</li>
+  <li><b>Tekshiruvda</b> bo'lsa: <b>Tasdiqlash</b> → <b>baho 1–5</b> (ish haqi bonusiga ta'sir qilishi mumkin) + izoh; yoki <b>Qaytarish</b> → <b>sabab majburiy</b> — xodim tuzatib qayta topshiradi.</li>
+  <li><b>Bekor qilish</b> — sabab bilan; vazifa o'chirilmaydi, «Bekor qilindi» bo'lib qoladi.</li>
+  <li><b>Muddatni uzaytirish so'rovi</b> kelsa — vazifa sahifasida sariq blok: hozirgi → so'ralgan muddat, sabab; <b>Ruxsat berish</b> (muddat o'zgaradi, eslatmalar ko'chadi) yoki <b>Rad etish</b> (sabab ixtiyoriy).</li>
+  <li>Takrorlanuvchi vazifani to'xtatish — vazifa sahifasida «Takrorlashni to'xtatish».</li>
+</ol>
+</section>
+
+<section class="brk">
+<h2><span class="step">13</span> So'rovlar (ruxsat)</h2>
+<p class="why">Nima uchun: tasdiqlangan kun davomatda «Ruxsatda» bo'ladi — kelmagan deb jarima yozilmaydi; oylik maosh ruxsat kunlari uchun to'lanadi.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-11-sorovlar.png"><figcaption>So'rovlar: Kutilmoqda · Tasdiqlangan · Rad etilgan</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li>Xodim botda «📝 So'rov» yoki Mini App'da yuboradi: tur (kasal, ta'til, shaxsiy, masofadan, boshqa), kun(lar), sabab. Sizga Telegram'da tugmali xabar keladi.</li>
+      <li><b>So'rovlar</b> sahifasi (menyuda kutilayotganlar soni) → <b>Tasdiqlash</b> yoki <b>Rad etish</b> (sabab). Botdan ham: ✅ / ❌ tugmalari.</li>
+      <li>Tasdiqlansa o'sha kunlar «Ruxsatda», xodimga xabar ketadi. O'tgan kun bo'lsa davomat qayta hisoblanadi.</li>
+    </ol>
+    <div class="note">Xodim o'z kutilayotgan so'rovini bekor qila oladi. Bir kunga ikki so'rov bo'lmaydi; 30 kundan eski kunlarga so'rov emas — davomatni tuzatish orqali.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">14</span> Ish haqi: qoidalar, tuzatish, oyni yopish</h2>
+<p class="why">Nima uchun: oylik vedomost tabel va tasdiqlangan vazifalardan avtomatik; qoidalarni siz belgilaysiz, hamma qo'lda o'zgartirish sabab bilan yoziladi.</p>
+<figure class="w"><img src="img/p-12-ish-haqi.png"><figcaption>Ish haqi: KPI, xodimlar jadvali (asosiy · jarima · bonus · tuzatish · jami), Qoidalar, Oyni yopish, Excel</figcaption></figure>
+<ol class="steps">
+  <li><b>Qoidalar</b> (o'ng yuqorida): <b>Jarimalar</b> — kechikish (har daqiqa yoki har holat uchun, so'm), sababsiz kelmagan kun, erta ketish, vazifa kechikdi; <b>Bonuslar</b> — qo'shimcha soat, vazifa o'z vaqtida, 5 baho; <b>Jarima cheklovi</b> — asosiydan % (standart 30). Hammasi butun so'mda. Saqlang — joriy qoralama qayta hisoblanadi.</li>
+  <li>Xodim kartasida <b>stavka</b>: <b>oylik</b> (reja kunlariga mutanosib, ruxsat kunlari to'lanadi), <b>kunbay</b> (kelgan kun × stavka), <b>soatbay</b> (ishlagan daqiqa).</li>
+  <li><b>Ish haqi</b> sahifasi → oy. <b>Qoralama</b> har ochilganda qayta hisoblanadi. Qator ochilsa — davomat va hisob tafsiloti.</li>
+  <li><b>Tuzatish</b> (qator ichida) — qo'shimcha +/− summa, <b>sabab majburiy</b>, audit jurnaliga tushadi. Faqat qoralamada.</li>
+  <li>Oy tugagach <b>«Oyni yopish»</b> — yakuniy hisob muhrlanadi (keyin davomat o'zgarsa ham summa o'zgarmaydi). Xato bo'lsa <b>«Qayta ochish»</b> — faqat egasi.</li>
+  <li><b>Excel</b> — vedomost (bo'lim filtri bilan).</li>
+</ol>
+<div class="note">Xodim o'z ish haqini Mini App profilida ko'rishi uchun: Sozlamalar → Ish haqi → <b>«Xodim o'z ish haqini Mini App'da ko'radi»</b>. O'zi qo'shgan ishlar ish haqiga standart holda ta'sir qilmaydi (sozlamada yoqiladi).</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">15</span> Hisobotlar</h2>
+<p class="why">Nima uchun: haftalik/oylik rasm — kim barqaror, kim kechikadi, vazifalar qanday bajarilyapti; reyting bilan rag'bat.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-13-hisobotlar.png"><figcaption>Hisobotlar → Davomat: KPI, kunlar/haftalar, kelish vaqti</figcaption></figure>
+  <figure class="w2"><img src="img/p-14-reyting.png"><figcaption>Reyting: ball, o'rin o'zgarishi, e'tibor talab qiladiganlar</figcaption></figure>
+</div>
+<ul>
+  <li><b>Davr</b>: Bu hafta / O'tgan hafta / Bu oy / O'tgan oy / Tanlash (93 kungacha); filial, bo'lim filtri; oldingi davr bilan solishtirish.</li>
+  <li><b>Davomat</b> — kelgan %, kechikishlar, kelmagan, ishlagan vaqt; bo'limlar bo'yicha; kelish vaqti taqsimoti; xodimlar jadvali.</li>
+  <li><b>Vazifalar</b> — berilgan, bajarilgan, o'z vaqtida %, o'rtacha baho, qaytarilgan; xodim bo'yicha; o'zi qo'shgan ishlar.</li>
+  <li><b>Reyting</b> — ball = davomat 40% + vazifalar o'z vaqtida 40% + o'rtacha baho 20%; o'rin o'zgarishi; «E'tibor talab qiladi» — 90 dan past, sababi bilan. Bo'limlar reytingi.</li>
+  <li><b>Ish jurnali</b> — davrda bajarilgan barcha ishlar (xodim, manba bo'yicha), hisobot rasmlari.</li>
+  <li><b>Excel</b> — varaqlar: davomat, vazifalar, reyting, jurnal. <b>⋯</b> → chop etish / PDF.</li>
+</ul>
+</section>
+
+<section class="brk">
+<h2><span class="step">16</span> Sozlamalar</h2>
+<p class="why">Nima uchun: tizim xatti-harakati — kim tasdiqlaydi, qachon eslatadi, kimga xabar boradi — ishxonaga moslanadi.</p>
+<div class="row stack">
+  <figure class="w2"><img src="img/p-15-sozlamalar.png"><figcaption>Sozlamalar: bo'limlar</figcaption></figure>
+  <figure class="w2"><img src="img/p-17-bildirishnomalar.png"><figcaption>Bildirishnomalar: hodisa → kimga</figcaption></figure>
+</div>
+<table>
+  <tr><th style="width:22%">Bo'lim</th><th>Nima bor</th></tr>
+  <tr><td><b>Profilim</b></td><td>Ism, telefon, parolni o'zgartirish, kirishlar tarixi (qurilma, IP). Hamma panel foydalanuvchisiga ochiq.</td></tr>
+  <tr><td><b>Ishxona</b></td><td>Nomi, logotip, vaqt mintaqasi (Asia/Tashkent), ish haftasi boshlanishi, sana formati, til; ishxonani yopish (arxiv).</td></tr>
+  <tr><td><b>Jamoa</b></td><td>Admin va menejer qo'shish: egasi — admin va menejer, admin — faqat menejer. Yangi hisob: <b>vaqtinchalik parol</b> yoki <b>Telegram orqali taklif</b> (bot parolni o'zi yuboradi). Menejerga bo'lim(lar) biriktiriladi. O'z Telegram'ingizni ulash havolasi shu yerda.</td></tr>
+  <tr><td><b>Davomat</b></td><td><b>Avtomatik tasdiqlash</b> (ro'yxatdan o'tgan xodim darhol faol), botda faqat jonli lokatsiya, GPS aniqligi talabi, yuz <b>o'xshashlik chegarasi</b> va <b>bosh burilishi</b> (jonlilik), <b>qurilmani bog'lash</b>, «Ketdim» bosilmasa necha soatdan keyin yopish (erkin grafikda alohida), <b>«Kelmaganlar va kechikkanlar» xabari</b> vaqti (standart 10:00).</td></tr>
+  <tr><td><b>Vazifalar</b></td><td>Eslatmalar: qabul qilinmasa (N daqiqa), muddatga 1 soat qolganda, muddat o'tganda, hisobot 24 soat tekshirilmasa; <b>tinch vaqt</b> (22:00–08:00); o'zi qo'shgan ish <b>rahbar tasdig'ini talab qiladimi</b>.</td></tr>
+  <tr><td><b>Ish haqi</b></td><td>Xodim o'z ish haqini Mini App'da ko'radimi; o'zi qo'shgan ishlar ish haqiga ta'sir qiladimi; oxirgi yopilgan oy.</td></tr>
+  <tr><td><b>Bildirishnomalar</b></td><td>Har hodisa uchun kimga Telegram xabari: kechikdi, kelmaganlar, shubhali, ruxsat so'rovi, hisobot keldi, muddati o'tdi, yangi xodim → <b>egasi / adminlar / bo'lim boshlig'i / vazifani bergan</b>. O'chirib ham qo'ysa bo'ladi.</td></tr>
+  <tr><td><b>Tarif</b> (egasi)</td><td>Joriy tarif, xodimlar limiti, to'lov (Click/Payme — tez orada; hozircha qo'llab-quvvatlash orqali).</td></tr>
+</table>
+</section>
+
+<section class="brk">
+<h2><span class="step">17</span> Rahbar Mini App'i</h2>
+<p class="why">Nima uchun: telefonda, Telegram ichida — bugungi davomat, qarorlar, vazifalar, hisobot. Panelga kirish shart emas.</p>
+<p>Telegram'ingiz ulangan bo'lsa (2-bob), bot chatidagi <b>«Ochish»</b> tugmasi rahbar Mini App'ini ochadi. Egasi, admin va bo'lim boshlig'i uchun; menejer faqat o'z bo'limini ko'radi.</p>
+<div class="gallery">
+  <figure class="m"><img src="img/r-01-bugun.png"><figcaption><b>Bugun</b>: tezkor tugmalar, davomat, vazifalar KPI, qarorlar</figcaption></figure>
+  <figure class="m"><img src="img/r-02-qarorlar.png"><figcaption><b>Qarorlar</b>: shubhali keldi-ketdi, yangi xodim, ruxsat…</figcaption></figure>
+  <figure class="m"><img src="img/r-03-vazifalar.png"><figcaption><b>Vazifalar</b>: holat tablari, nazorat</figcaption></figure>
+  <figure class="m"><img src="img/r-04-vazifa-tekshiruv.png"><figcaption>Vazifa: baho, qaytarish, hisobot, yozishma</figcaption></figure>
+</div>
+<ul>
+  <li><b>Bugun</b> — Ishda / Kechikdi / Kelmadi / Ruxsatda; shubhali bo'lsa sariq banner (→ Qarorlar); vazifalar (Faol / Tekshiruvda / Muddati o'tgan); <b>Qaror kutmoqda</b> soni; xodimlar ro'yxati — kelgan vaqti va holati. Kelmagan xodim qatorida <b>«Eslatma»</b> — bir bosishda botga xabar (kuniga bir marta). Xodim ismi → <b>xodim kartasi</b>.</li>
+  <li><b>Qarorlar</b> — bir sahifada hamma kutayotgan narsa: <b>shubhali keldi-ketdi</b> (isbot kartochkasi: selfi/video, masofa, yuz %, GPS → Tasdiqlash / Rad etish), <b>yangi xodimlar</b> (Tasdiqlash), <b>ruxsat so'rovlari</b> (Tasdiqlash / Rad etish sabab bilan), <b>muddat so'rovlari</b> (Ruxsat / Rad etish), <b>hisobotlar tekshiruvda</b> (baho ★ → Tasdiqlash yoki Qaytarish sabab bilan).</li>
+  <li><b>Vazifalar</b> — Berilgan / O'zi qo'shgan; tablar Hammasi · Yangi · Jarayonda · Tekshiruvda · Muddati o'tgan · Bajarilgan. Vazifa sahifasida hisobot fayllari, boshqa ijrochilar, tarix, <b>izoh yozish</b>, tasdiqlash / qaytarish / bekor qilish, muddat so'rovi.</li>
+  <li><b>Vazifa berish</b> — paneldagi forma bilan bir xil (Kimga chiplari, muddat, hisobot talabi, bosqichlar, takrorlash).</li>
+</ul>
+<div class="gallery">
+  <figure class="m"><img src="img/r-05-vazifa-berish.png"><figcaption><b>Vazifa berish</b></figcaption></figure>
+  <figure class="m"><img src="img/r-06-hisobot.png"><figcaption><b>Hisobot</b> (egasi, admin): davr, davomat, vazifalar, reyting</figcaption></figure>
+  <figure class="m"><img src="img/r-07-ish-haqi.png"><figcaption><b>Ish haqi</b> (egasi, admin): oy vedomosti, faqat ko'rish</figcaption></figure>
+  <figure class="m"><img src="img/r-08-xodim.png"><figcaption><b>Xodim kartasi</b>: bugun, isbotlar, oy tabeli, ishlar</figcaption></figure>
+</div>
+<ul>
+  <li><b>Hisobot</b> — Bu hafta / O'tgan hafta / Bu oy / O'tgan oy: kelgan %, kechikishlar, kelmagan, vazifalar, reyting TOP-5, e'tibor talab qiladiganlar. To'liq hisobot va Excel — panelda.</li>
+  <li><b>Ish haqi</b> — jami, asosiy, jarima, bonus, xodimlar bo'yicha; oy almashtirish. Tuzatish va yopish — panelda.</li>
+  <li><b>Xodim kartasi</b> — bugungi holat va isbotlar, oy kalendari va KPI, ishlar; <b>Vazifa berish</b>, Telegram'da yozish, qo'ng'iroq, eslatma.</li>
+  <li><b>Xodim qo'shish</b> (Bugun'dagi tugma) — paneldagi forma; saqlangach taklif havolasi va <b>«Telegram'da yuborish»</b>.</li>
+</ul>
+<div class="row">
+  <figure class="m"><img src="img/r-09-xodim-qoshish.png"><figcaption>Xodim qo'shish — Mini App'dan</figcaption></figure>
+  <div>
+    <div class="note">Pastki menyu: <b>Bugun · Vazifalar · Qarorlar · Hisobot · Panel</b> (Panel — brauzerda app.adone.uz). Menejerda Hisobot va Ish haqi yo'q.</div>
+    <div class="note">Rahbarning o'zi ham «Keldim» qilishi kerak bo'lsa, u xodim sifatida ham qo'shiladi (Xodimlar → qo'shish, o'z raqami) — shunda Mini App xodim ko'rinishida ochiladi, rahbar amallari esa paneldan va bot tugmalaridan.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">18</span> Telegram bildirishnomalari va botdan qaror</h2>
+<p class="why">Nima uchun: ko'p qarorlarni botning o'zida bir tugma bilan qilasiz; «Mini App’da ochish» — tafsilot va fayllar.</p>
+<div class="tgrow">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg in">⏰ <b>Ulug'bek Sobirov</b> kechikdi: 23 daqiqa (keldi 09:23).<span class="t">09:23</span></div>
+      <div class="ik"><span>Mini App’da ochish ↗</span></div>
+      <div class="msg in">🔎 <b>Bekzod Tursunov</b> — kelish shubhali (face_mismatch). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».<span class="t">08:54</span></div>
+      <div class="ik"><span>Mini App’da ochish ↗</span></div>
+      <div class="msg in">👤 <b>Otabek Yusupov</b> botda ro'yxatdan o'tdi — tasdiqlang: Mini App → Qarorlar yoki panelda Xodimlar → «Tasdiq kutmoqda».<span class="t">10:12</span></div>
+      <div class="ik"><span>Mini App’da ochish ↗</span></div>
+      <div class="msg in">📋 <b>Bugun, 27.10.2026</b>
+
+❌ Kelmaganlar (1):
+• Test Xodim — +998901234567 (smena 09:00)
+
+⏰ Kechikkanlar (2):
+• Ulug'bek Sobirov — 23 daq
+• Zarina Qosimova — 12 daq<span class="t">10:00</span></div>
+      <div class="ik"><span>Mini App’da ochish ↗</span></div>
+    </div>
+  </div><div class="cap">Davomat xabarlari (sozlamadagi rollarga)</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg in">📥 <b>Hisobot keldi</b>
+<b>Yangi kolleksiyani vitrinaga terish</b>
+👤 Bekzod Tursunov
+💬 Tayyor, vitrina terildi
+📎 1 ta fayl quyida<span class="t">14:02</span></div>
+      <div class="ik c2"><span>✅ Tasdiqlash</span><span>🔁 Qaytarish</span><span class="full">Mini App’da ochish ↗</span><span class="full">Panelda ochish ↗</span></div>
+      <div class="msg in"><div class="media pic">🖼 hisobot rasmi</div><span class="t">14:02</span></div>
+      <div class="msg out">✅ Tasdiqlash<span class="t">14:10</span></div>
+      <div class="msg in">Baho qo‘ying:<span class="t">14:10</span></div>
+      <div class="ik c3"><span>5⭐️</span><span>4⭐️</span><span>3⭐️</span><span>2⭐️</span><span>1⭐️</span></div>
+      <div class="msg in">✅ Tasdiqlandi · ⭐️⭐️⭐️⭐️<span class="t">14:10</span></div>
+    </div>
+  </div><div class="cap">Hisobot → ✅ Tasdiqlash → baho</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">🔁 Qaytarish<span class="t">14:12</span></div>
+      <div class="msg in">🔁 Qaytarish sababini yozing (xodim shu matnni ko‘radi):<span class="t">14:12</span></div>
+      <div class="msg out">Narx yorliqlari ko'rinmayapti — qayta suratga oling<span class="t">14:13</span></div>
+      <div class="msg in">🔁 Qaytarildi — xodimga sabab bilan xabar ketdi.<span class="t">14:13</span></div>
+      <div class="msg in">📝 <b>Ruxsat so'rovi</b> · Zarina Qosimova
+👤 Shaxsiy ish · 29.10.2026 (1 kun)
+💬 Hujjat topshirish<span class="t">20:11</span></div>
+      <div class="ik c2"><span>✅ Tasdiqlash</span><span>❌ Rad etish</span><span class="full">Mini App’da ochish ↗</span></div>
+      <div class="msg in">📅 <b>Muddatni uzaytirish so'rovi</b> · Bekzod Tursunov
+📋 <b>Yangi kolleksiyani vitrinaga terish</b>
+⏰ 26.10.2026 22:02 → <b>27.10.2026 18:00</b>
+💬 Mahsulot ertaga keladi<span class="t">16:41</span></div>
+      <div class="ik c2"><span>✅ Ruxsat</span><span>❌ Rad etish</span><span class="full">Mini App’da ochish ↗</span></div>
+    </div>
+  </div><div class="cap">Qaytarish sababi · ruxsat va muddat so'rovlari</div></div>
+</div>
+<table>
+  <tr><th>Xabar</th><th>Qachon</th><th>Botdan qaror</th></tr>
+  <tr><td>⏰ … kechikdi</td><td>Xodim kechikib «Keldim» qilganda</td><td>— (ko'rish)</td></tr>
+  <tr><td>🔎 … kelish shubhali</td><td>Yuz/qurilma tekshiruvi aniq bo'lmasa</td><td>Mini App → Qarorlar → Tasdiqlash / Rad etish</td></tr>
+  <tr><td>👤 … botda ro'yxatdan o'tdi</td><td>Yangi xodim</td><td>Mini App → Qarorlar → Tasdiqlash</td></tr>
+  <tr><td>📋 Bugun — kelmaganlar / kechikkanlar</td><td>Har kuni sozlangan vaqtda (10:00)</td><td>—</td></tr>
+  <tr><td>ℹ️ … «Ketdim» bosmagan — avto-yopildi</td><td>Smenadan 3 soat keyin</td><td>Kerak bo'lsa panelda tuzatish</td></tr>
+  <tr><td>📥 Hisobot keldi (+ fayllar)</td><td>Xodim topshirganda</td><td>✅ Tasdiqlash → baho · 🔁 Qaytarish → sabab</td></tr>
+  <tr><td>❓ Savol</td><td>Xodim vazifa bo'yicha savol yozsa</td><td>Mini App / panelda izoh bilan javob</td></tr>
+  <tr><td>⚠️ Muddati o'tdi · ⏰ Hisobot 24 soatdan beri tekshirilmagan</td><td>Eslatmalar</td><td>✅ / 🔁 tugmalari</td></tr>
+  <tr><td>📝 Ruxsat so'rovi</td><td>Xodim so'raganda</td><td>✅ Tasdiqlash · ❌ Rad etish</td></tr>
+  <tr><td>📅 Muddatni uzaytirish so'rovi</td><td>Xodim so'raganda</td><td>✅ Ruxsat · ❌ Rad etish</td></tr>
+</table>
+<div class="note">Kimga qaysi xabar borishi — <b>Sozlamalar → Bildirishnomalar</b>. Bo'lim boshlig'iga faqat o'z bo'limi xodimlari haqida boradi; vazifa hisoboti — vazifani bergan rahbarga ham.</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">19</span> Ko'p uchraydigan vaziyatlar</h2>
+<dl class="faq">
+  <dt>Xodim «raqam mos kelmadi» deyapti.</dt><dd>Uning Telegram'i boshqa raqamda. Xodimlar → xodim → ✎ → Telefon'ni to'g'rilang, havolani qayta yuboring.</dd>
+  <dt>Taklif havolasi «yaroqsiz».</dt><dd>14 kun o'tgan yoki ishlatilgan. Xodim profili → Telegram → «Havolani yangilash» → yangi havolani yuboring.</dd>
+  <dt>Xodim telefonini almashtirdi, Mini App «boshqa qurilma» deydi.</dt><dd>Xodim profili → Ma'lumotlar → Qurilma → <b>Uzish</b>. Keyingi «Keldim» yangi telefonni bog'laydi.</dd>
+  <dt>Xodim doim «shubhali» chiqadi.</dt><dd>Profil → Yuz namunasi → <b>Qayta olish</b> (xodimga /yuz xabari boradi) — yaxshi yorug'likda yangi video. Yoki Sozlamalar → Davomat'da o'xshashlik chegarasini biroz pasaytiring (standart 0.45).</dd>
+  <dt>Xodim doim «zonadan tashqari».</dt><dd>Filiallar → xaritada belgi do'konning o'zidami? Radiusni 20–50 m oshiring. Xodimda GPS «Aniq» rejimda bo'lsin.</dd>
+  <dt>Xodim internet yo'qligi uchun kech «Keldim» qildi.</dt><dd>Davomat → qator ⋯ → Davomatni tuzatish → Keldi vaqtini belgilang, sabab yozing. Jurnalda ikkalasi ham qoladi.</dd>
+  <dt>Xodim ishdan ketdi.</dt><dd>Profil → «Ishdan bo'shatish». Yozuvlar qoladi, yuz namunasi va videolar o'chiriladi, Telegram uziladi. Qayta ishga olsangiz — «O'chirilgan» tabida qayta yoqish.</dd>
+  <dt>Menejer xodimni ko'rmayapti.</dt><dd>Xodimning bo'limi menejerga biriktirilganmi (Sozlamalar → Jamoa)? Bo'limsiz xodimni menejer ko'rmaydi.</dd>
+  <dt>Ish haqi noto'g'ri hisoblangan.</dt><dd>Avval tabelni tekshiring (davomat tuzatiladi — hisob o'zi yangilanadi), keyin Qoidalar'ni. Bir martalik farq — «Tuzatish» sabab bilan. Yopilgan oy — faqat egasi «Qayta ochish».</dd>
+  <dt>Tungi smena qaysi kunga yoziladi?</dt><dd>Smena boshlangan kunga. Jadvalda tugash vaqti boshlanishdan kichik bo'lsa tizim buni o'zi tushunadi.</dd>
+  <dt>Bildirishnoma kelmayapti.</dt><dd>Telegram ulanganmi (Sozlamalar → Jamoa, yashil belgi)? Sozlamalar → Bildirishnomalar'da shu hodisa va sizning rolingiz yoqilganmi? Botni bloklab qo'ymaganmisiz?</dd>
+</dl>
+<p class="small">adone.uz · Savol va takliflar: qo'llab-quvvatlash Telegram'i yoki telefon (landing sahifasida).</p>
+</section>
+
+</body></html>

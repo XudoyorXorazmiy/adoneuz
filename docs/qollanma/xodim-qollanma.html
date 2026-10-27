@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><title>adone.uz — Xodimlar uchun qo'llanma</title>
+<link rel="stylesheet" href="qollanma.css">
+</head><body>
+
+<div class="cover">
+  <div class="logo">a</div>
+  <div class="badge">adone.uz · davomat va vazifalar</div>
+  <h1>Xodimlar uchun<br>qo'llanma</h1>
+  <div class="sub">Telegram bot (@adoneuz_bot) va Mini App: ro'yxatdan o'tish, Keldim / Ketdim, vazifalar, so'rovlar</div>
+  <div class="meta">Versiya 1.0 · 27.10.2026 · Telegram: @adoneuz_bot</div>
+  <div class="quick">
+    <b>Qisqacha — 5 qadam</b>
+    <ol>
+      <li>Rahbaringiz yuborgan <b>taklif havolasini</b> oching → botda <b>Start</b>.</li>
+      <li><b>«📱 Raqamni yuborish»</b> → <b>«✅ Roziman»</b> → yuzingiz ko'ringan <b>dumaloq video</b> (3–5 soniya).</li>
+      <li>Rahbar tasdiqlagach botdan <b>«🎉 … sizni tasdiqladi»</b> xabari keladi.</li>
+      <li>Ishga kelganda <b>«✅ Keldim»</b>: jonli joylashuv + dumaloq video. Ketayotganda <b>«🏁 Ketdim»</b>: jonli joylashuv.</li>
+      <li>Vazifalar, so'rovlar, tarix — botdagi tugmalar yoki chat menyusidagi <b>«Ochish»</b> (Mini App).</li>
+    </ol>
+  </div>
+</div>
+
+<section class="toc">
+<h2>Mundarija</h2>
+<ol>
+  <li>Sizga nima kerak</li>
+  <li>Ro'yxatdan o'tish (bot)</li>
+  <li>Botning asosiy menyusi</li>
+  <li>«✅ Keldim» — botda</li>
+  <li>«🏁 Ketdim» va «📊 Bugun»</li>
+  <li>Mini App: ochish va bosh sahifa</li>
+  <li>Mini App'da Keldim / Ketdim, tanaffus</li>
+  <li>Vazifalar: qabul, bajarish, hisobot</li>
+  <li>Muddatni uzaytirish so'rovi</li>
+  <li>«➕ Ish qo'shish» — o'zingiz qilgan ish</li>
+  <li>«📝 So'rov» — ruxsat so'rash</li>
+  <li>Tarix va Profil (ish haqi)</li>
+  <li>Botdan keladigan eslatmalar</li>
+  <li>Yuz namunasini yangilash — /yuz</li>
+  <li>Ko'p uchraydigan xatolar va yechimi</li>
+  <li>Savol-javob</li>
+</ol>
+</section>
+
+<section>
+<h2><span class="step">1</span> Sizga nima kerak</h2>
+<p class="why">Nima uchun: tizim sizni Telegram orqali taniydi, davomatni esa joylashuv va yuz orqali tasdiqlaydi.</p>
+<ul>
+  <li><b>Telegram</b> — telefoningizda o'rnatilgan va yangilangan bo'lsin (eski versiyada dumaloq video va jonli joylashuv bo'lmasligi mumkin).</li>
+  <li><b>Telefon raqam</b> — rahbaringiz panelga kiritgan raqam. Botga <i>aynan shu raqam</i> bog'langan Telegram'dan kiring.</li>
+  <li><b>Taklif havolasi</b> — rahbaringiz yuboradi, ko'rinishi: <code>https://t.me/adoneuz_bot?start=inv_…</code>. Havola 14 kun amal qiladi va bir marta ishlaydi.</li>
+  <li><b>Joylashuv (GPS) va kamera</b> — Telegram'ga ruxsat berilgan bo'lsin (telefon sozlamalari → Telegram → Joylashuv, Kamera).</li>
+</ul>
+<div class="warn"><b>Muhim.</b> Botga faqat o'zingiz kiring, telefoningizni boshqaga bermang: «Keldim» joylashuv va yuz bilan tekshiriladi, boshqa qurilmadan qilingan urinish rahbarga «shubhali» bo'lib ko'rinadi.</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">2</span> Ro'yxatdan o'tish (bot)</h2>
+<p class="why">Nima uchun: bir marta qilinadi — raqam, rozilik va yuz namunasi. Shundan keyin har kuni faqat tugma bosasiz.</p>
+<ol class="steps">
+  <li>Rahbaringiz yuborgan <b>taklif havolasini</b> bosing. Bot ochiladi — pastdagi <b>Start</b>ni bosing.</li>
+  <li>Bot salomlashadi. Pastda bitta tugma chiqadi: <b>«📱 Raqamni yuborish»</b> — bosing. Raqam o'zi yuboriladi (qo'lda yozilmaydi).</li>
+  <li><b>Rozilik</b> matnini o'qing va <b>«✅ Roziman»</b>ni bosing.</li>
+  <li><b>Yuz namunasi</b>: pastdagi 🎤 mikrofon belgisini <i>bir marta</i> bosing — u 📹 kameraga aylanadi. Uni <b>bosib turib</b> yuzingiz aniq ko'ringan <b>3–5 soniyalik dumaloq video</b> yozing va qo'yib yuboring.</li>
+  <li>Bot «Rahmat! ✅ Ro'yxatdan o'tdingiz» deydi. Endi rahbar tasdiqlashini kuting — tasdiqlanganda xabar keladi.</li>
+</ol>
+<div class="tgrow">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">/start inv_5ytc6wmf73<span class="t">09:01</span></div>
+      <div class="msg in">Assalomu alaykum, <b>Bekzod Tursunov</b>!
+<b>Mudom bozor</b> davomat tizimiga ulanyapsiz.
+
+1-qadam: pastdagi «📱 Raqamni yuborish» tugmasini bosing.<span class="t">09:01</span></div>
+    </div>
+    <div class="kb"><div><span>📱 Raqamni yuborish</span></div></div>
+    <div class="inp"><span>Xabar</span><span>🎤</span></div>
+  </div><div class="cap">1–2. Havola → Start → raqam tugmasi</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">📱 Kontakt: +998 91 200 22 22<span class="t">09:01</span></div>
+      <div class="msg in">2-qadam: <b>Rozilik</b>
+
+Davomatni tasdiqlash uchun ishxona sizning <b>joylashuvingiz</b> (faqat «Keldim/Ketdim» paytida), <b>yuz tasviringiz</b> (dumaloq video) va kelish-ketish vaqtlaringizni saqlaydi. Ma'lumotlar faqat shu ishxona rahbariyatiga ko'rinadi va ishdan bo'shaganingizda o'chiriladi.
+
+Rozimisiz?<span class="t">09:01</span></div>
+      <div class="ik c2"><span>✅ Roziman</span><span>❌ Rozi emasman</span></div>
+    </div>
+    <div class="inp"><span>Xabar</span><span>🎤</span></div>
+  </div><div class="cap">3. Rozilik</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg in">3-qadam: <b>yuz namunasi</b>.
+
+Pastdagi mikrofon belgisini bir marta bosing — u 📹 kameraga aylanadi. Keyin uni bosib turib, yuzingiz aniq ko'rinadigan <b>3–5 soniyalik dumaloq video</b> yozing.<span class="t">09:02</span></div>
+      <div class="msg out"><div class="media round">⏺ dumaloq video · 0:04</div><span class="t">09:02</span></div>
+      <div class="msg in">Rahmat! ✅ Ro'yxatdan o'tdingiz.
+
+<b>Mudom bozor</b> rahbari tasdiqlagach «✅ Keldim» tugmasi ishlaydi. Tasdiqlanganda xabar beramiz.<span class="t">09:02</span></div>
+      <div class="msg in">🎉 <b>Mudom bozor</b> sizni tasdiqladi. Endi ishga kelganda «✅ Keldim», ketayotganda «🏁 Ketdim» tugmasini bosing.<span class="t">09:40</span></div>
+    </div>
+    <div class="inp"><span>Xabar</span><span>📹</span></div>
+  </div><div class="cap">4–5. Yuz namunasi → tasdiq</div></div>
+</div>
+<div class="note"><b>«Iltimos, dumaloq video yuboring»</b> chiqsa — oddiy rasm yoki galereyadan video yuborgansiz. Faqat 📹 belgisini bosib turib yoziladigan <b>dumaloq video</b> qabul qilinadi.</div>
+<div class="warn"><b>«Bu raqam rahbaringiz kiritgan raqamga mos kelmadi»</b> — Telegram'ingiz boshqa raqamda. Rahbaringizga to'g'ri raqamni ayting (panelda o'zgartiradi) yoki shu raqamdagi Telegram'dan kiring.</div>
+</section>
+
+<section>
+<h2><span class="step">3</span> Botning asosiy menyusi</h2>
+<p class="why">Nima uchun: hamma kundalik amallar shu 7 ta tugmada. Xabar yozish shart emas.</p>
+<div class="row">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">❓ Yordam<span class="t">09:05</span></div>
+      <div class="msg in"><b>Qanday ishlaydi</b>
+
+✅ Keldim — ishga kelganda: jonli joylashuv + dumaloq video.
+🏁 Ketdim — ketayotganda: jonli joylashuv.
+📋 Vazifalarim — sizga berilgan vazifalar: qabul qilish, «Bajardim» va hisobot.
+➕ Ish qo'shish — o'zingiz qilgan yoki rejalashtirgan ish.
+📝 So'rov — ruxsat so'rash (kasal, ta'til, shaxsiy).
+📊 Bugun — bugungi holatingiz.
+
+Muammo bo'lsa rahbaringizga yozing.<span class="t">09:05</span></div>
+    </div>
+    <div class="kb">
+      <div><span>✅ Keldim</span><span>🏁 Ketdim</span></div>
+      <div><span>📋 Vazifalarim</span><span>➕ Ish qo'shish</span></div>
+      <div><span>📊 Bugun</span><span>📝 So'rov</span><span>❓ Yordam</span></div>
+    </div>
+    <div class="inp"><span>Xabar</span><span>🎤</span></div>
+  </div><div class="cap">Asosiy menyu (pastdagi tugmalar)</div></div>
+  <div>
+    <table>
+      <tr><th>Tugma</th><th>Nima qiladi</th></tr>
+      <tr><td><b>✅ Keldim</b></td><td>Ishga kelganingizni qayd etadi: jonli joylashuv → dumaloq video.</td></tr>
+      <tr><td><b>🏁 Ketdim</b></td><td>Ketganingizni qayd etadi: faqat jonli joylashuv.</td></tr>
+      <tr><td><b>📋 Vazifalarim</b></td><td>Ochiq vazifalaringiz ro'yxati; har birini ochib qabul qilish, boshlash, hisobot topshirish.</td></tr>
+      <tr><td><b>➕ Ish qo'shish</b></td><td>Rahbar bermagan, lekin o'zingiz qilgan yoki rejalashtirgan ishni kiritish.</td></tr>
+      <tr><td><b>📊 Bugun</b></td><td>Smena vaqti, qachon kelganingiz, ishlagan vaqtingiz.</td></tr>
+      <tr><td><b>📝 So'rov</b></td><td>Ruxsat so'rash: kasal, ta'til, shaxsiy ish, masofadan ishlash.</td></tr>
+      <tr><td><b>❓ Yordam</b></td><td>Qisqa eslatma.</td></tr>
+    </table>
+    <div class="note">Tugmalar ko'rinmasa — xabar yozish maydonining o'ng tomonidagi <b>⌨️ / ▦</b> belgisini bosing, menyu ochiladi.</div>
+    <div class="note">Chat sarlavhasi yonidagi <b>«Ochish»</b> (yoki <b>☰ Menu</b>) tugmasi <b>Mini App</b>ni ochadi — o'sha amallar chiroyli ekranlarda (6-bob).</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">4</span> «✅ Keldim» — botda</h2>
+<p class="why">Nima uchun: davomat faqat siz filial hududida va o'zingiz bo'lsangiz qayd etiladi — shuning uchun jonli joylashuv va dumaloq video so'raladi.</p>
+<ol class="steps">
+  <li>Ishxonaga kirgach <b>«✅ Keldim»</b>ni bosing.</li>
+  <li>Bot <b>jonli joylashuv</b> so'raydi: <b>📎</b> (skrepka) → <b>Joylashuv</b> → <b>«Jonli joylashuvni ulashish»</b> → <b>15 daqiqa</b>. Xaritadan tanlangan oddiy nuqta qabul qilinmaydi.</li>
+  <li>Bot «📍 Joylashuv tasdiqlandi» deydi. Endi 📹 belgisini bosib turib yuzingiz ko'ringan <b>dumaloq video</b> (3–5 soniya) yuboring.</li>
+  <li>«✅ Qabul qilindi · 08:58» — tayyor. Kechiksangiz «⚠️ Kechikdingiz: N daqiqa» qo'shiladi.</li>
+</ol>
+<div class="tgrow">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">✅ Keldim<span class="t">08:57</span></div>
+      <div class="msg in">✅ Keldim — <b>jonli joylashuvni</b> yuboring:
+
+📎 (skrepka) → <b>Joylashuv</b> → <b>«Jonli joylashuvni ulashish»</b> → 15 daqiqa.
+
+<i>Xaritadan tanlangan oddiy nuqta qabul qilinmaydi.</i><span class="t">08:57</span></div>
+      <div class="msg out"><div class="media">📍 Jonli joylashuv · 15 daqiqa</div><span class="t">08:58</span></div>
+      <div class="msg in">📍 Joylashuv tasdiqlandi. Endi yuzingiz ko'rinadigan <b>dumaloq video</b> yuboring (3–5 soniya).<span class="t">08:58</span></div>
+    </div>
+    <div class="inp"><span>Xabar</span><span>📹</span></div>
+  </div><div class="cap">1–3. Keldim → jonli joylashuv → video so'rovi</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out"><div class="media round">⏺ dumaloq video · 0:04</div><span class="t">08:58</span></div>
+      <div class="msg in">✅ Qabul qilindi · <b>08:58</b>
+
+Yaxshi ish kuni!<span class="t">08:58</span></div>
+      <div class="sys">kechikkan kunda</div>
+      <div class="msg in">✅ Qabul qilindi · <b>09:23</b>
+⚠️ Kechikdingiz: 23 daqiqa
+
+Yaxshi ish kuni!<span class="t">09:23</span></div>
+    </div>
+    <div class="kb">
+      <div><span>✅ Keldim</span><span>🏁 Ketdim</span></div>
+      <div><span>📋 Vazifalarim</span><span>➕ Ish qo'shish</span></div>
+      <div><span>📊 Bugun</span><span>📝 So'rov</span><span>❓ Yordam</span></div>
+    </div>
+  </div><div class="cap">4. Video → qabul qilindi</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="sys">xato holatlari</div>
+      <div class="msg in">Bu oddiy joylashuv. Iltimos, <b>«Jonli joylashuvni ulashish»</b>ni tanlang (📎 → Joylashuv).<span class="t">08:57</span></div>
+      <div class="msg in">❌ Siz filialdan <b>640 m</b> uzoqdasiz (Mudom — Markaz). Filial hududiga kirib, qaytadan yuboring.<span class="t">08:57</span></div>
+      <div class="msg in">GPS aniqligi past (±180 m). Ochiq joyga chiqib, qaytadan yuboring.<span class="t">08:57</span></div>
+      <div class="msg in">Vaqt o'tib ketdi. «✅ Keldim» tugmasini qaytadan bosing.<span class="t">09:14</span></div>
+    </div>
+  </div><div class="cap">Xatolar (15-bobga qarang)</div></div>
+</div>
+<div class="note"><b>Jonli joylashuvni qanday yuborish:</b> xabar maydonidagi 📎 → <b>Joylashuv</b> → xarita ochiladi → pastda <b>«Jonli joylashuvni ulashish»</b> → muddat <b>15 daqiqa</b> → Ulashish. iPhone'da ham, Android'da ham shunday. Joylashuv 2 daqiqadan eski bo'lsa yoki forward qilingan bo'lsa qabul qilinmaydi.</div>
+<div class="note"><b>«🔎 Yuz tekshiruvi aniq emas — rahbar ko'rib chiqadi»</b> qo'shilsa — davomat qayd etildi, lekin yuz namunaga unchalik o'xshamadi (yorug'lik, niqob, burchak). Rahbar videoni ko'rib tasdiqlaydi. Tez-tez takrorlansa <code>/yuz</code> bilan namunani yangilang (14-bob).</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">5</span> «🏁 Ketdim» va «📊 Bugun»</h2>
+<p class="why">Nima uchun: ishlagan vaqtingiz «Ketdim»gacha hisoblanadi; unutsangiz tizim smenadan keyin o'zi yopadi va rahbarga xabar beradi.</p>
+<div class="row">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">🏁 Ketdim<span class="t">18:02</span></div>
+      <div class="msg in">🏁 Ketdim — <b>jonli joylashuvni</b> yuboring:
+
+📎 (skrepka) → <b>Joylashuv</b> → <b>«Jonli joylashuvni ulashish»</b> → 15 daqiqa.
+
+<i>Xaritadan tanlangan oddiy nuqta qabul qilinmaydi.</i><span class="t">18:02</span></div>
+      <div class="msg out"><div class="media">📍 Jonli joylashuv · 15 daqiqa</div><span class="t">18:03</span></div>
+      <div class="msg in">🏁 Ketish qayd etildi · <b>18:03</b>
+Bugun ishladingiz: <b>9 soat 05 daq</b>. Rahmat!<span class="t">18:03</span></div>
+    </div>
+  </div><div class="cap">Ketdim — faqat jonli joylashuv</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">📊 Bugun<span class="t">13:10</span></div>
+      <div class="msg in">📊 Bugun
+
+<b>Mudom bozor</b>
+Smena: 09:00–18:00
+Keldingiz: 08:58
+Hozir ishdasiz
+Ishlagan vaqt: 4 soat 12 daq<span class="t">13:10</span></div>
+    </div>
+  </div><div class="cap">Bugun — holatingiz</div></div>
+  <div>
+    <ol class="steps">
+      <li>Ketayotganda <b>«🏁 Ketdim»</b> → jonli joylashuv yuboring (video kerak emas).</li>
+      <li>Bot ketish vaqti va bugun ishlagan vaqtingizni yozadi.</li>
+      <li><b>«📊 Bugun»</b> — istalgan payt smena, kelgan vaqt va ishlagan vaqtni ko'rsatadi.</li>
+    </ol>
+    <div class="warn"><b>«Ketdim»ni unutsangiz</b> smena tugaganidan 3 soat o'tgach tizim kunni o'zi yopadi («avto-yopildi») va rahbarga xabar beradi. Ishlagan vaqt kam hisoblanishi mumkin — shuning uchun ketayotganda tugmani bosing.</div>
+    <div class="note"><b>«Siz allaqachon ishdasiz»</b> — bugun «Keldim» qilib bo'lgansiz. <b>«Siz hali Keldim qilmagansiz»</b> — avval «✅ Keldim» bosing.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">6</span> Mini App: ochish va bosh sahifa</h2>
+<p class="why">Nima uchun: Mini App — o'sha bot, lekin ekranlar bilan: Keldim bir bosishda, vazifalar ro'yxati, tarix va profil.</p>
+<div class="row">
+  <figure class="m"><img src="img/x-01-bosh.png"><figcaption>Bosh sahifa: Keldim doirasi, bugungi vazifalar, oy</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li>Bot chatida sarlavha yonidagi (yoki xabar maydoni chapidagi) <b>«Ochish»</b> tugmasini bosing. Mini App Telegram ichida ochiladi — alohida o'rnatish shart emas, parol so'ralmaydi.</li>
+      <li>Bosh sahifada: katta <b>«Keldim»</b> doirasi (yoki ishda bo'lsangiz — ishlagan vaqt, <b>Tanaffus</b> va <b>Ketdim</b>), <b>bugungi vazifalar</b>, oy bo'yicha qisqa natija.</li>
+      <li>Pastdagi menyu: <b>Bosh · Vazifalar · Tarix · Profil</b>.</li>
+    </ol>
+    <div class="note">Birinchi ochilganda Telegram <b>joylashuv</b> va <b>kamera</b>ga ruxsat so'raydi — ikkalasiga ruxsat bering, aks holda «Keldim» ishlamaydi.</div>
+    <div class="note">Mini App birinchi «Keldim»da shu telefonni sizga bog'laydi. Keyin boshqa telefondan «Keldim» qilsangiz, davomat qayd etiladi, lekin rahbarga «boshqa qurilmadan» deb ko'rinadi. Telefon almashtirgan bo'lsangiz, rahbarga ayting — u eski qurilmani uzadi.</div>
+  </div>
+</div>
+</section>
+
+<section>
+<h2><span class="step">7</span> Mini App'da Keldim / Ketdim, tanaffus</h2>
+<p class="why">Nima uchun: botdagi bilan bir xil tekshiruv — joylashuv va jonli selfi, lekin 20 soniyada.</p>
+<div class="row">
+  <figure class="m"><img src="img/x-02-keldim.png"><figcaption>1-qadam: lokatsiya tekshirildi</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li>Bosh sahifada <b>«Keldim»</b> doirasini bosing. Telefon joylashuvni aniqlaydi, ekranda filialgacha masofa chiqadi (<b>Lokatsiya tekshirildi</b>). Hudud tashqarisida bo'lsangiz — qizil xabar, filialga kirib qayta urinasiz.</li>
+      <li><b>«Davom etish»</b> → old kamera ochiladi. Ko'rsatmaga amal qiling: <b>to'g'riga qarang → chapga → o'ngga</b>. Tizim 3 ta kadrni o'zi oladi (bu rasmni kameraga tutib aldab bo'lmasligi uchun). Galereyadan rasm yuklab bo'lmaydi.</li>
+      <li><b>Natija</b> ekrani: «Qabul qilindi · 08:58». Kechikish bo'lsa yoziladi. «Qabul qilindi, tekshiriladi» chiqsa — yuz aniq mos kelmadi, rahbar ko'radi.</li>
+      <li>Ishda bo'lganingizda bosh sahifada <b>Tanaffus</b> (qaytganda <b>Davom etish</b>) va <b>Ketdim</b> tugmalari. <b>Ketdim</b> — faqat lokatsiya, selfi so'ralmaydi.</li>
+    </ol>
+    <div class="warn"><b>«Kameraga ruxsat berilmadi»</b> — telefon sozlamalari → Telegram → Kamera → ruxsat bering, Mini App'ni yopib qayta oching. Vaqtincha botdagi «✅ Keldim» (dumaloq video) bilan ham qilsa bo'ladi.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">8</span> Vazifalar: qabul, bajarish, hisobot</h2>
+<p class="why">Nima uchun: rahbar bergan vazifa botga keladi; siz qabul qilasiz, bajarib isbot (rasm/video/lokatsiya) bilan topshirasiz; rahbar tasdiqlaydi yoki qaytaradi.</p>
+<h3>Botda</h3>
+<ol class="steps">
+  <li>Yangi vazifa kelganda bot karta yuboradi: nom, kimdan, muddat, muhimlik, qanday hisobot kerak. <b>«✅ Qabul qildim»</b>ni bosing (savol bo'lsa — <b>«❓ Savol»</b>, matn yozasiz, rahbarga boradi).</li>
+  <li>Ishni boshlaganda <b>«▶️ Boshladim»</b>.</li>
+  <li>Tugatgach <b>«✅ Bajardim»</b>. Bot qanday isbot kerakligini yozadi: <b>rasm</b> (📷 kamera bilan), <b>video</b> yoki <b>lokatsiya</b> (📎 → Joylashuv). Fayllarni yuboring, keyin qisqa izoh yozing (izoh yuborilgach hisobot ketadi) yoki <b>«✅ Yuborish»</b>ni bosing.</li>
+  <li>Isbot yetmasa bot «Hisobotda yetishmayapti: rasm, lokatsiya» deydi — yetishmaganini yuboring.</li>
+  <li>Rahbar natijasi botga keladi: <b>tasdiqlandi</b> (baho ⭐ bilan) yoki <b>qaytarildi</b> (sabab bilan) — tuzatib «✅ Bajardim»ni qayta bosasiz.</li>
+</ol>
+<div class="tgrow">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg in">📋 <b>Yangi vazifa!</b>
+<b>Yangi kolleksiyani vitrinaga terish</b>
+
+Kuzgi kolleksiyani asosiy vitrinaga, manekenlarga kiydirib joylang. Narx yorliqlari ko'rinib tursin.
+
+👤 Kimdan: Aziz Karimov
+⏰ Muddat: Bugun, 18:00
+🔴 Muhimlik: Shoshilinch
+📷 Hisobot: rasm bilan
+
+☑️ Bosqichlar:
+• Manekenlarga kiydirish
+• Narx yorliqlarini tekshirish<span class="t">10:02</span></div>
+      <div class="ik c2"><span>✅ Qabul qildim</span><span>❓ Savol</span><span class="full">Mini App’da ochish ↗</span></div>
+      <div class="msg in">✅ Qabul qilindi: <b>Yangi kolleksiyani vitrinaga terish</b>
+Ishni boshlaganda «▶️ Boshladim», tugatgach «✅ Bajardim».<span class="t">10:03</span></div>
+      <div class="ik c2"><span>▶️ Boshladim</span><span>❓ Savol</span><span class="full">⏰ Muddatni uzaytirish</span></div>
+    </div>
+  </div><div class="cap">1–2. Vazifa kartasi → qabul → boshladim</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg in">✅ <b>Hisobot</b>: Yangi kolleksiyani vitrinaga terish
+Talab: <b>rasm</b>.
+
+Yuboring, keyin izoh yozing yoki «✅ Yuborish»ni bosing.<span class="t">14:00</span></div>
+      <div class="ik c2"><span>✅ Yuborish</span><span>✖️ Bekor</span></div>
+      <div class="msg out"><div class="media pic">🖼 rasm</div><span class="t">14:01</span></div>
+      <div class="msg in">📎 Qabul qilindi (1). Yana yuboring, izoh yozing yoki «✅ Yuborish».<span class="t">14:01</span></div>
+      <div class="msg out">Tayyor, vitrina terildi<span class="t">14:02</span></div>
+      <div class="msg in">✅ Hisobot yuborildi — rahbar tekshiradi. Natija shu yerga keladi.<span class="t">14:02</span></div>
+    </div>
+  </div><div class="cap">3. Bajardim → rasm → izoh → yuborildi</div></div>
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg in">✅ Vazifa tasdiqlandi: <b>Yangi kolleksiyani vitrinaga terish</b>
+⭐️ Baho: ★★★★☆
+
+Rahmat!<span class="t">15:30</span></div>
+      <div class="sys">yoki</div>
+      <div class="msg in">🔁 Vazifa qaytarildi: <b>Yangi kolleksiyani vitrinaga terish</b>
+
+Sabab: Narx yorliqlari ko'rinmayapti — qayta suratga oling
+
+Tuzatib, qaytadan topshiring.<span class="t">15:30</span></div>
+      <div class="ik c2"><span>✅ Bajardim</span><span>❓ Savol</span><span class="full">⏰ Muddatni uzaytirish</span></div>
+    </div>
+  </div><div class="cap">5. Natija: tasdiqlandi yoki qaytarildi</div></div>
+</div>
+<h3>Mini App'da</h3>
+<div class="row">
+  <figure class="m"><img src="img/x-03-vazifalar.png"><figcaption>Vazifalar: ochiq, tekshiruvda, bajarilgan</figcaption></figure>
+  <figure class="m"><img src="img/x-04-vazifa.png"><figcaption>Vazifa: bosqichlar, kamera, izoh</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li>Pastdagi <b>Vazifalar</b> → ro'yxatdan vazifani oching.</li>
+      <li><b>Qabul qilish</b> / <b>Boshladim</b> tugmalari; <b>bosqichlar</b> (checklist) bo'lsa bajarganingizni belgilang.</li>
+      <li>Hisobot: <b>«Suratga olish»</b> (faqat kamera, 10 tagacha), kerak bo'lsa <b>lokatsiya</b>, <b>izoh</b> → <b>«Topshirish»</b> (qaytarilgan bo'lsa — <b>«Qayta topshirish»</b>; sabab tepada qizil bannerda).</li>
+      <li>Talab qilingan isbot yetmasa tugma ostida xato chiqadi — qo'shib yuboring.</li>
+    </ol>
+    <div class="note">Botdagi vazifa kartasidagi <b>«Mini App’da ochish ↗»</b> aynan shu sahifani ochadi.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">9</span> Muddatni uzaytirish so'rovi</h2>
+<p class="why">Nima uchun: ulgurmasangiz, muddat o'tib «kechikdi» bo'lgandan ko'ra oldindan yangi muddat so'rang — rahbar ruxsat bersa muddat o'zgaradi.</p>
+<div class="row">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg in">⏰ <b>Yangi kolleksiyani vitrinaga terish</b>
+Hozirgi muddat: 26.10.2026 22:02
+Yangi muddatni tanlang yoki yozing: <code>28.10 18:00</code><span class="t">16:40</span></div>
+      <div class="ik c3"><span>Ertaga 18:00</span><span>+2 kun</span><span>+3 kun</span><span class="full">✖️ Bekor</span></div>
+      <div class="msg in">📅 Yangi muddat: <b>27.10.2026 18:00</b>
+Sababini qisqacha yozing (yoki «-»):<span class="t">16:40</span></div>
+      <div class="msg out">Mahsulot ertaga keladi<span class="t">16:41</span></div>
+      <div class="msg in">📨 So'rov rahbarga yuborildi: <b>27.10.2026 18:00</b>. Javob kelganda xabar beramiz.<span class="t">16:41</span></div>
+      <div class="msg in">✅ Muddat uzaytirildi:
+📋 <b>Yangi kolleksiyani vitrinaga terish</b>
+⏰ 26.10.2026 22:02 → <b>27.10.2026 18:00</b>
+💬 Mahsulot ertaga keladi<span class="t">16:55</span></div>
+    </div>
+  </div><div class="cap">Bot: ⏰ tugma → muddat → sabab → javob</div></div>
+  <div>
+    <ol class="steps">
+      <li>Vazifa kartasida (yoki «📋 Vazifalarim» → vazifa) <b>«⏰ Muddatni uzaytirish»</b>ni bosing.</li>
+      <li>Tugmadan tanlang (<b>Ertaga 18:00</b>, <b>+2 kun</b>, <b>+3 kun</b>) yoki yozing: <code>28.10 18:00</code> (faqat <code>28.10</code> yozsangiz — 18:00; faqat <code>17:30</code> — bugun).</li>
+      <li>Sababni yozing (yoki <code>-</code>). So'rov rahbarga ketadi.</li>
+      <li>Rahbar <b>ruxsat bersa</b> — muddat o'zgaradi, eslatmalar yangi vaqtga ko'chadi; <b>rad etsa</b> — sabab bilan xabar keladi, eski muddat qoladi.</li>
+    </ol>
+    <p><b>Mini App'da:</b> vazifa sahifasida <b>«Muddatni uzaytirishni so'rash»</b> → sana, vaqt, sabab → <b>Yuborish</b>. So'rov kutilayotganda sariq banner ko'rinadi.</p>
+    <div class="note">Qoidalar: faqat hali topshirilmagan vazifada; yangi muddat hozirgisidan keyin va 30 kundan uzoq emas; bitta vazifaga bir vaqtda bitta so'rov.</div>
+  </div>
+</div>
+</section>
+
+<section>
+<h2><span class="step">10</span> «➕ Ish qo'shish» — o'zingiz qilgan ish</h2>
+<p class="why">Nima uchun: rahbar bermagan, lekin qilgan ishingiz ham hisobda va ish jurnalida ko'rinsin.</p>
+<div class="row">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">➕ Ish qo'shish<span class="t">17:20</span></div>
+      <div class="msg in">➕ <b>Ish qo'shish</b>
+
+Qanday ish qildingiz yoki qilmoqchisiz? Qisqacha yozing:<span class="t">17:20</span></div>
+      <div class="msg out">Kassani sanadim va hisobotni topshirdim<span class="t">17:21</span></div>
+      <div class="msg in"><b>Kassani sanadim va hisobotni topshirdim</b>
+
+Bu ish bajarildimi yoki reja?<span class="t">17:21</span></div>
+      <div class="ik c2"><span>✅ Bajardim</span><span>🗓 Rejalashtiraman</span><span class="full">✖️ Bekor</span></div>
+      <div class="msg out">30 daqiqa ketdi<span class="t">17:22</span></div>
+      <div class="msg in">✅ Ish qayd etildi — rahbaringiz tasdiqlaydi.<span class="t">17:22</span></div>
+    </div>
+  </div><div class="cap">Bot: nom → Bajardim → izoh</div></div>
+  <figure class="m"><img src="img/x-05-ish-qoshish.png"><figcaption>Mini App: Bajardim / Rejalashtiraman</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li><b>«➕ Ish qo'shish»</b> → ish nomini yozing.</li>
+      <li><b>«✅ Bajardim»</b> — bo'lib o'tgan ish: izoh, rasm (ixtiyoriy) yuboring yoki «✅ Yuborish». Rahbar tasdiqlaydi.</li>
+      <li><b>«🗓 Rejalashtiraman»</b> — bugungi rejangiz: «📋 Vazifalarim»da chiqadi, bajargach «✅ Bajardim».</li>
+    </ol>
+    <p><b>Mini App'da:</b> Vazifalar → <b>«Ish qo'shish»</b>: nom, sarflangan vaqt (15 daq / 30 daq / 1 soat / 2 soat), rasm, izoh.</p>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">11</span> «📝 So'rov» — ruxsat so'rash</h2>
+<p class="why">Nima uchun: tasdiqlangan kun davomatda «Ruxsatda» bo'ladi — «Kelmadi» emas, jarima yozilmaydi.</p>
+<div class="row">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">📝 So'rov<span class="t">20:10</span></div>
+      <div class="msg in">📝 <b>Ruxsat so'rash</b>
+Sababni tanlang:<span class="t">20:10</span></div>
+      <div class="ik c2"><span>🤒 Kasal</span><span>🏖 Ta'til</span><span>👤 Shaxsiy ish</span><span>🏠 Masofadan ishlash</span><span>📝 Boshqa</span><span>✖️ Bekor</span></div>
+      <div class="msg in">🤒 <b>Kasal</b>
+Qaysi kun(lar)?<span class="t">20:10</span></div>
+      <div class="ik c2"><span>Bugun</span><span>Ertaga</span><span class="full">✖️ Bekor</span></div>
+      <div class="msg in">Yoki sanani yozing: <code>25.10</code> yoki <code>25.10–28.10</code><span class="t">20:10</span></div>
+      <div class="msg in">📅 28.10.2026
+Sababini qisqacha yozing (yoki «-»):<span class="t">20:11</span></div>
+      <div class="msg out">Isitma, shifokorga boraman<span class="t">20:11</span></div>
+      <div class="msg in">📨 So'rov yuborildi: Kasal, 28.10.2026.
+Rahbar javobi shu yerga keladi.<span class="t">20:11</span></div>
+    </div>
+  </div><div class="cap">Bot: tur → kun → sabab</div></div>
+  <figure class="m"><img src="img/x-06-sorov.png"><figcaption>Mini App: So'rov sahifasi</figcaption></figure>
+  <div>
+    <ol class="steps">
+      <li><b>«📝 So'rov»</b> → turini tanlang: Kasal, Ta'til, Shaxsiy ish, Masofadan ishlash, Boshqa.</li>
+      <li>Kun: <b>Bugun</b> / <b>Ertaga</b> yoki yozing — <code>25.10</code> (bir kun) yoki <code>25.10–28.10</code> (davr, 60 kungacha).</li>
+      <li>Sabab (yoki <code>-</code>). Javob botga keladi: <b>✅ tasdiqlandi</b> yoki <b>❌ rad etildi</b> (sabab bilan).</li>
+    </ol>
+    <p><b>Mini App'da:</b> Tarix → <b>So'rov</b> (yoki bosh sahifadagi havola): tur, sanalar, sabab → Yuborish. Kutilayotgan so'rovingizni shu yerdan bekor qilsa bo'ladi.</p>
+    <div class="note">Bir kunga ikkita so'rov bo'lmaydi («Bu kunlarga so'rov allaqachon bor»). 30 kundan eski kunlarga so'rov berilmaydi — rahbar davomatni o'zi tuzatadi.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">12</span> Tarix va Profil (ish haqi)</h2>
+<p class="why">Nima uchun: oyingiz qanday o'tganini o'zingiz ham ko'ring — kunlar, kechikishlar, vazifalar, ish haqi.</p>
+<div class="row">
+  <figure class="m"><img src="img/x-07-tarix.png"><figcaption>Tarix: oy bo'yicha kunlar</figcaption></figure>
+  <figure class="m"><img src="img/x-08-profil.png"><figcaption>Profil</figcaption></figure>
+  <div>
+    <ul>
+      <li><b>Tarix</b> — oy bo'yicha har kun: keldi/ketdi vaqti, ishlagan soat, kechikish; yuqorida oy yig'masi (ish kunlari, kechikishlar, vazifalar o'z vaqtida %). Oyni chap/o'ng bilan almashtirasiz.</li>
+      <li><b>Profil</b> — ism, lavozim, filial, jadval, Telegram; <b>Ish haqi</b> bo'limi — agar ishxona sozlamasida xodimga ko'rsatish yoqilgan bo'lsa: shu oy hisoblangan summa (asosiy, jarima, bonus). Oy yopilgach «Yakuniy» deb belgilanadi.</li>
+    </ul>
+    <div class="note">Ish haqi ko'rinmasa — bu ishxona sozlamasi, xato emas. Savol bo'lsa rahbaringizga murojaat qiling.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">13</span> Botdan keladigan eslatmalar</h2>
+<p class="why">Nima uchun: bot vaqtida eslatadi — javob berish shart emas, lekin e'tibor bering.</p>
+<table>
+  <tr><th>Xabar</th><th>Qachon</th><th>Nima qilish kerak</th></tr>
+  <tr><td>⏰ Sizga berilgan vazifa hali qabul qilinmadi</td><td>Vazifa 30 daqiqada qabul qilinmasa</td><td>«✅ Qabul qildim»ni bosing (yoki savol bering)</td></tr>
+  <tr><td>⏳ Muddatga 1 soat qoldi</td><td>Muddatdan 1 soat oldin</td><td>Ulgurmasangiz — «⏰ Muddatni uzaytirish»</td></tr>
+  <tr><td>⚠️ Vazifa muddati o'tdi</td><td>Muddat o'tganda (rahbar ham ko'radi)</td><td>Tezroq bajarib topshiring</td></tr>
+  <tr><td>⏰ <i>Rahbar</i> eslatma yubordi: bugun «Keldim» qayd etilmagan</td><td>Rahbar bir bosishda yuborsa</td><td>Ishga kelgan bo'lsangiz «✅ Keldim», kelolmasangiz «📝 So'rov»</td></tr>
+  <tr><td>ℹ️ «Ketdim» bosmagan — avto-yopildi</td><td>Smenadan 3 soat keyin</td><td>Keyingi safar ketayotganda «🏁 Ketdim»</td></tr>
+  <tr><td>💬 Vazifa bo'yicha xabar</td><td>Rahbar izoh yozsa</td><td>O'qing; javob — «❓ Savol» orqali</td></tr>
+  <tr><td>🔄 Rahbaringiz yuz namunasini yangilashni so'radi</td><td>Namuna sifatsiz bo'lsa</td><td><code>/yuz</code> → yangi dumaloq video (14-bob)</td></tr>
+</table>
+<div class="note">Eslatmalar kechasi (22:00–08:00) yuborilmaydi — ertalabga suriladi.</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">14</span> Yuz namunasini yangilash — /yuz</h2>
+<p class="why">Nima uchun: «Keldim»da yuz ro'yxatdagi namuna bilan solishtiriladi. Ko'rinish o'zgargan bo'lsa (soqol, ko'zoynak) yoki tez-tez «shubhali» chiqsa — namunani yangilang.</p>
+<div class="row">
+  <div class="tgwrap"><div class="tg">
+    <div class="hd"><div class="av">a</div><div><b>adone davomat</b><span>bot</span></div></div>
+    <div class="body">
+      <div class="msg out">/yuz<span class="t">09:30</span></div>
+      <div class="msg in">3-qadam: <b>yuz namunasi</b>.
+
+Pastdagi mikrofon belgisini bir marta bosing — u 📹 kameraga aylanadi. Keyin uni bosib turib, yuzingiz aniq ko'rinadigan <b>3–5 soniyalik dumaloq video</b> yozing.<span class="t">09:30</span></div>
+      <div class="msg out"><div class="media round">⏺ dumaloq video · 0:05</div><span class="t">09:31</span></div>
+      <div class="msg in">✅ Yangi yuz namunasi qabul qilindi.<span class="t">09:31</span></div>
+    </div>
+  </div><div class="cap">/yuz → yangi dumaloq video</div></div>
+  <div>
+    <ol class="steps">
+      <li>Botga <code>/yuz</code> deb yozing (yoki rahbar so'rovidan keyin).</li>
+      <li>Yaxshi yorug'likda, yuzingiz to'liq ko'ringan holda 3–5 soniyalik <b>dumaloq video</b> yozing. Niqob, qorong'i joy, qiyshiq burchak — sifatsiz namuna.</li>
+      <li>«✅ Yangi yuz namunasi qabul qilindi» — eski namuna o'chadi, keyingi «Keldim»lar yangi namuna bilan solishtiriladi.</li>
+    </ol>
+    <div class="warn">Video sifatsiz bo'lsa bot aytadi va rahbarga ham xabar boradi — qaytadan yozing.</div>
+  </div>
+</div>
+</section>
+
+<section class="brk">
+<h2><span class="step">15</span> Ko'p uchraydigan xatolar va yechimi</h2>
+<p class="why">Nima uchun: ko'p xatolarni o'zingiz 1 daqiqada hal qilasiz, rahbarga murojaat shart emas.</p>
+<table>
+  <tr><th>Xabar / holat</th><th>Sababi</th><th>Yechim</th></tr>
+  <tr><td><b>Bu oddiy joylashuv</b></td><td>Xaritadan nuqta tanlab yuborgansiz</td><td>📎 → Joylashuv → <b>«Jonli joylashuvni ulashish»</b> → 15 daqiqa</td></tr>
+  <tr><td><b>❌ Siz filialdan N m uzoqdasiz</b> (zonadan tashqari)</td><td>Filial radiusidan tashqaridasiz yoki GPS adashgan</td><td>Filial ichiga kiring, Wi-Fi/GPS yoqilgan bo'lsin, qayta yuboring. Doim shunday bo'lsa — rahbarga ayting (filial nuqtasi/radiusi)</td></tr>
+  <tr><td><b>GPS aniqligi past (±N m)</b></td><td>Bino ichida, GPS o'chiq yoki «tejamkor» rejim</td><td>Joylashuvni «Aniq» rejimda yoqing, deraza/ochiq joyga chiqing, 10–20 soniya kuting</td></tr>
+  <tr><td><b>Joylashuv eskirgan</b> / <b>Forward qilingan xabar</b></td><td>2 daqiqadan eski yoki boshqa chatdan forward</td><td>Jonli joylashuvni o'zingiz yangidan yuboring</td></tr>
+  <tr><td><b>Vaqt o'tib ketdi</b></td><td>«Keldim» bosganingizdan 15 daqiqa o'tdi</td><td>«✅ Keldim»ni qaytadan bosing</td></tr>
+  <tr><td><b>Iltimos, dumaloq video yuboring</b></td><td>Oddiy rasm/video yuborilgan</td><td>📹 belgisini bosib turib dumaloq video yozing</td></tr>
+  <tr><td><b>🔎 Yuz tekshiruvi aniq emas</b> («shubhali»)</td><td>Yorug'lik, niqob, boshqa odam kadrda, namuna eskirgan</td><td>Davomat qayd etilgan — rahbar tasdiqlaydi. Takrorlansa <code>/yuz</code></td></tr>
+  <tr><td>Rahbarga «boshqa qurilmadan» deb ko'rindi</td><td>Mini App boshqa telefondan ochilgan</td><td>Telefon almashgan bo'lsa rahbarga ayting — eski qurilmani uzadi</td></tr>
+  <tr><td><b>Hisobingiz hali tasdiqlanmagan</b></td><td>Rahbar ro'yxatdan o'tganingizni tasdiqlamagan</td><td>Rahbarga ayting: Panel → Xodimlar → «Tasdiq kutmoqda» yoki Mini App → Qarorlar</td></tr>
+  <tr><td><b>Havola yaroqsiz yoki muddati o'tgan</b></td><td>Taklif havolasi ishlatilgan yoki 14 kundan o'tgan</td><td>Rahbardan yangi havola so'rang</td></tr>
+  <tr><td><b>Sizga filial biriktirilmagan</b></td><td>Panelda filial tanlanmagan</td><td>Rahbar xodim kartasida filialni tanlaydi</td></tr>
+  <tr><td><b>Bu Telegram hisobi boshqa xodimga bog'langan</b></td><td>Shu Telegram'dan boshqa odam ro'yxatdan o'tgan</td><td>Rahbarga murojaat qiling</td></tr>
+  <tr><td>Tugmalar ko'rinmayapti</td><td>Klaviatura yashirilgan</td><td>Xabar maydoni yonidagi ⌨️/▦ belgisini bosing yoki <code>/start</code> yozing</td></tr>
+  <tr><td>Mini App ochilmayapti / oq ekran</td><td>Internet sust yoki eski Telegram</td><td>Telegram'ni yangilang, Mini App'ni yopib qayta oching; botdagi tugmalar bilan davom eting</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="step">16</span> Savol-javob</h2>
+<dl class="faq">
+  <dt>Internet yo'q bo'lsa-chi?</dt><dd>Internet kelgach darhol «✅ Keldim» qiling — vaqt serverda belgilanadi (bosilgan payt). Kechikish bo'lsa rahbarga ayting — u davomatni sabab bilan tuzatadi.</dd>
+  <dt>Tanaffusga chiqsam nima qilay?</dt><dd>Mini App bosh sahifasida <b>Tanaffus</b> → qaytganda <b>Davom etish</b>. Tanaffus vaqti ishlagan vaqtdan ayriladi.</dd>
+  <dt>Ikki smenada yoki tungi smenada ishlayman.</dt><dd>Tungi smena yarim tundan o'tsa ham «Keldim» qilgan kuningizga tegishli. Har smenada alohida «Keldim»/«Ketdim».</dd>
+  <dt>Kecha «Ketdim»ni unutdim.</dt><dd>Tizim o'zi yopgan. Haqiqiy ketish vaqtini rahbaringizga ayting — u tuzatadi (jurnalga sabab bilan yoziladi).</dd>
+  <dt>Vazifani men emas, boshqa odam qilishi kerak.</dt><dd>«❓ Savol» orqali rahbarga yozing — u vazifani bekor qiladi yoki boshqaga beradi.</dd>
+  <dt>Ma'lumotlarim kimga ko'rinadi?</dt><dd>Faqat shu ishxona rahbariyatiga (egasi, admin, bo'lim boshlig'i). Ishdan bo'shaganingizda yuz namunasi va videolar o'chiriladi.</dd>
+</dl>
+<p class="small">adone.uz · Savol va takliflar: rahbaringiz orqali yoki ishxona qo'llab-quvvatlash raqamiga.</p>
+</section>
+
+</body></html>
