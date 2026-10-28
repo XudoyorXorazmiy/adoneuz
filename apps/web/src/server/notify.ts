@@ -4,7 +4,7 @@ import { departments, employees, memberships, tgLinks, withPlatform, withTenant,
 import { notifyTargets, type NotifyEvent, type NotifyRole } from '@adone/core';
 import { readSettings } from '@/server/settings';
 import { publicApiOrigin } from '@/lib/host';
-import { send, type Keyboard } from '@/server/telegram/api';
+import { isTransient, send, TelegramError, type Keyboard } from '@/server/telegram/api';
 import { menuKeyboard } from '@/server/bot/texts';
 import { employeeChat } from '@/server/bot/links';
 import { enqueue } from '@/server/jobs/enqueue';
@@ -40,8 +40,7 @@ export async function notifyMembers(tenantId: string, text: string, departmentId
   if (chats === null) return { skip: 'rahbar yo‘q' };
   if (chats.length === 0 && event) return { skip: 'sozlamada o‘chiq yoki rahbar Telegram ulamagan' };
   if (chats.length === 0) return { skip: 'rahbarlar Telegram ulamagan' };
-  for (const c of chats) await send(c.chatId, text, keyboard);
-  return {};
+  return deliver(chats, (chat) => send(chat, text, keyboard));
 }
 
 /**
@@ -145,6 +144,38 @@ export async function memberTaskReviewerChats(tenantId: string, t: { assigneeUse
 export async function notifyUser(tenantId: string, userId: string, text: string, keyboard?: Keyboard): Promise<JobOutcome> {
   const chats = await userChatsFor(tenantId, [userId]);
   if (!chats.length) return { skip: 'a’zo Telegram ulamagan' };
-  for (const c of chats) await send(c.chatId, text, keyboard);
+  return deliver(chats, (chat) => send(chat, text, keyboard));
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Bir nechta chatga tarqatish — har qabul qiluvchi alohida: bittasi botni bloklagan (403) yoki chat yo'q (400) bo'lsa
+ * qolganlari baribir oladi. Vaqtinchalik xato (429 — `retry_after`, 5xx, tarmoq) — shu yerning o'zida 2 marta qayta.
+ * Ish qayta urinilsa takror ketmasin: hech kimga yetmagan va vaqtinchalik xato bo'lgandagina xato tashlanadi
+ * (navbat qayta uradi); kimdir olgan bo'lsa — qolganlari logga, ish yakunlanadi.
+ */
+export async function deliver(chats: Array<{ chatId: number }>, fn: (chatId: number) => Promise<unknown>): Promise<JobOutcome> {
+  let sent = 0;
+  let transient: unknown = null;
+  const dead: number[] = [];
+  for (const { chatId } of chats) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await fn(chatId);
+        sent++;
+        break;
+      } catch (e) {
+        if (e instanceof TelegramError && (e.code === 400 || e.code === 403)) { dead.push(chatId); break; }
+        if (!isTransient(e) || attempt >= 3) { transient = e; break; }
+        const wait = e instanceof TelegramError && e.retryAfter ? Math.min(e.retryAfter, 30) * 1000 : attempt * 1500;
+        await sleep(wait);
+      }
+    }
+  }
+  if (dead.length) console.warn(`[notify] ${dead.length} ta chat bot bilan aloqani uzgan (403/400) — o'tkazib yuborildi`);
+  if (transient && sent === 0) throw transient;
+  if (transient) console.warn(`[notify] ba'zi qabul qiluvchilarga yetmadi: ${(transient as Error).message}`);
+  if (sent === 0 && dead.length) return { skip: 'hamma qabul qiluvchi botni bloklagan' };
   return {};
 }

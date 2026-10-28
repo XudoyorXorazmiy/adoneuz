@@ -16,7 +16,8 @@ export async function POST(req: Request) {
   const fresh = await withPlatform(async (tx) => {
     const rows = await tx.insert(tgUpdates).values({ updateId: update.update_id! }).onConflictDoNothing().returning({ id: tgUpdates.updateId });
     if (rows.length === 0) return false;
-    await enqueue(tx, null, 'tg_update', { update }, { maxAttempts: 3 });
+    // 6 urinish (30 s … 8 daq): Telegram fayl berishi vaqti-vaqti bilan sekinlashadi — xabar yo'qolmasin
+    await enqueue(tx, null, 'tg_update', { update }, { maxAttempts: 6 });
     return true;
   });
   if (fresh) kick();

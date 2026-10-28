@@ -11,5 +11,6 @@ RUN mkdir -p /root/.insightface/models && cd /root/.insightface/models \
  && unzip -q buffalo_l.zip -d buffalo_l && rm buffalo_l.zip
 COPY app.py .
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+# 15 s: og'ir tahlil paytida ham /health javob beradi (endpointlar thread pool'da), lekin sekin mashinada 5 s kam edi
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=3 CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

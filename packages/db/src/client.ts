@@ -17,13 +17,21 @@ function createPool(): Pool {
   if (!url) throw new Error('DATABASE_URL sozlanmagan');
   // sslmode=disable — o'z serverdagi ichki baza (TLS'siz)
   const local = url.includes('localhost') || url.includes('127.0.0.1') || url.includes('sslmode=disable');
-  return new Pool({
+  const pool = new Pool({
     connectionString: url,
     max: Number(process.env.DB_POOL_MAX ?? 5),
     idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 5_000,
     ssl: local ? undefined : { rejectUnauthorized: false },
+    // Bitta qotgan so'rov / qulf / ochiq qolgan tranzaksiya butun ilovani (pool'ni) to'xtatmasin
+    statement_timeout: 15_000,
+    lock_timeout: 5_000,
+    idle_in_transaction_session_timeout: 30_000,
   });
+  // Bo'sh turgan ulanish uzilsa (Postgres qayta ishga tushdi, tarmoq) — pg 'error' chiqaradi; tinglovchisiz jarayon o'ladi.
+  // Ulanish pool'dan chiqariladi, keyingi so'rov yangisini ochadi.
+  pool.on('error', (e) => console.error('[db] bo‘sh ulanish xatosi:', e.message));
+  return pool;
 }
 
 export const pool: Pool = globalThis.__adonePool ?? createPool();

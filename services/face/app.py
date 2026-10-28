@@ -8,10 +8,15 @@ adone yuz servisi (CLAUDE.md §2): InsightFace buffalo_l, CPU. Faqat ichki tarmo
 media — rasm(lar) yoki video (dumaloq video / mp4): videodan teng oraliqda kadrlar olinadi.
 Qaror (ok / suspicious) bu yerda emas — Next.js tomonida, ishxona chegaralari bilan (packages/core/face.ts).
 Rasm va vektor diskka yozilmaydi, logga chiqmaydi (§1.4).
+
+Barqarorlik: endpointlar oddiy `def` — FastAPI ularni thread pool'da ishlatadi, og'ir hisob event loop'ni (va /health'ni)
+to'smaydi; bir vaqtda ko'pi bilan INFER_SLOTS ta tahlil (CPU va RAM), navbatda QUEUE_WAIT_S dan ko'p kutsa — 503 busy
+(Next.js «face_unavailable» → shubhali, bloklanmaydi). Videodan kadrlar o'qish paytida tanlanadi — xotirada ≤ 2×MAX_FRAMES.
 """
 import json
 import os
 import tempfile
+import threading
 from typing import List, Optional
 
 import cv2
@@ -21,10 +26,14 @@ from insightface.app import FaceAnalysis
 
 MAX_BYTES = 20 * 1024 * 1024
 MAX_FRAMES = 8
+MAX_VIDEO_FRAMES = 1800  # ~60 s (30 fps) — undan uzunini o'qimaymiz
+INFER_SLOTS = int(os.environ.get("FACE_INFER_SLOTS", "2"))
+QUEUE_WAIT_S = 15
 MIN_FACE_PX = 60
 MIN_DET_SCORE = 0.6
 KEY = os.environ.get("FACE_SERVICE_KEY", "")
 
+slots = threading.BoundedSemaphore(INFER_SLOTS)
 app = FastAPI(title="adone-face")
 fa = FaceAnalysis(name="buffalo_l", allowed_modules=["detection", "recognition", "landmark_3d_68"], providers=["CPUExecutionProvider"])
 fa.prepare(ctx_id=-1, det_size=(640, 640))
@@ -37,8 +46,6 @@ def auth(key: Optional[str]):
 
 def decode(data: bytes, content_type: str) -> List[np.ndarray]:
     """Rasm → [kadr]; video → teng oraliqdagi ≤ MAX_FRAMES kadr."""
-    if len(data) > MAX_BYTES:
-        raise HTTPException(status_code=413, detail="too_large")
     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
     if img is not None:
         return [img]
@@ -54,15 +61,18 @@ def decode(data: bytes, content_type: str) -> List[np.ndarray]:
                 ok, fr = cap.read()
                 if ok:
                     frames.append(fr)
-        else:  # ba'zi konteynerlarda kadrlar soni noma'lum — ketma-ket o'qiymiz
-            all_frames = []
-            while len(all_frames) < 240:
+        else:  # ba'zi konteynerlarda kadrlar soni noma'lum — ketma-ket o'qiymiz, tanlab (xotirada ≤ 2×MAX_FRAMES kadr)
+            kept, step, i = [], 1, 0
+            while i < MAX_VIDEO_FRAMES:
                 ok, fr = cap.read()
                 if not ok:
                     break
-                all_frames.append(fr)
-            step = max(1, len(all_frames) // MAX_FRAMES)
-            frames = all_frames[::step][:MAX_FRAMES]
+                if i % step == 0:
+                    kept.append(fr)
+                    if len(kept) >= 2 * MAX_FRAMES:  # siyraklashtiramiz: har ikkinchisi qoladi, qadam ikki barobar
+                        kept, step = kept[::2], step * 2
+                i += 1
+            frames = kept[:: max(1, len(kept) // MAX_FRAMES)][:MAX_FRAMES]
         cap.release()
     if not frames:
         raise HTTPException(status_code=422, detail="bad_media")
@@ -87,22 +97,44 @@ def quality(face, frame) -> dict:
     return {"det_score": round(float(face.det_score), 3), "face_px": int(min(x2 - x1, y2 - y1)), "sharpness": round(sharp, 1)}
 
 
-async def read_all(files: List[UploadFile]) -> List[np.ndarray]:
+def read_all(files: List[UploadFile]) -> List[np.ndarray]:
+    """Hajm o'qishdan OLDIN tekshiriladi (va o'qish chegaralangan) — katta fayl RAM'ni to'ldirmasin."""
     frames: List[np.ndarray] = []
     for f in files[:MAX_FRAMES]:
-        frames += decode(await f.read(), f.content_type or "")
+        if f.size is not None and f.size > MAX_BYTES:
+            raise HTTPException(status_code=413, detail="too_large")
+        data = f.file.read(MAX_BYTES + 1)
+        if len(data) > MAX_BYTES:
+            raise HTTPException(status_code=413, detail="too_large")
+        frames += decode(data, f.content_type or "")
     return frames[: MAX_FRAMES * 2]
 
 
+class Slot:
+    """Bir vaqtda INFER_SLOTS ta tahlil; navbat QUEUE_WAIT_S dan uzun bo'lsa — 503 (Next.js shubhali deb saqlaydi)."""
+
+    def __enter__(self):
+        if not slots.acquire(timeout=QUEUE_WAIT_S):
+            raise HTTPException(status_code=503, detail="busy")
+
+    def __exit__(self, *exc):
+        slots.release()
+
+
 @app.get("/health")
-def health():
+async def health():  # event loop'da — tahlillar thread pool'da, /health ular tufayli kutmaydi
     return {"ok": True, "model": "buffalo_l"}
 
 
 @app.post("/embed")
-async def embed(media: List[UploadFile] = File(...), x_face_key: Optional[str] = Header(None)):
+def embed(media: List[UploadFile] = File(...), x_face_key: Optional[str] = Header(None)):
     auth(x_face_key)
-    frames = await read_all(media)
+    with Slot():
+        return _embed(media)
+
+
+def _embed(media: List[UploadFile]):
+    frames = read_all(media)
     best = None
     many = False
     for fr in frames:
@@ -120,7 +152,7 @@ async def embed(media: List[UploadFile] = File(...), x_face_key: Optional[str] =
 
 
 @app.post("/verify")
-async def verify(media: List[UploadFile] = File(...), templates: str = Form(...), x_face_key: Optional[str] = Header(None)):
+def verify(media: List[UploadFile] = File(...), templates: str = Form(...), x_face_key: Optional[str] = Header(None)):
     auth(x_face_key)
     try:
         T = np.array(json.loads(templates), dtype=np.float32)
@@ -128,7 +160,12 @@ async def verify(media: List[UploadFile] = File(...), templates: str = Form(...)
     except Exception:
         raise HTTPException(status_code=422, detail="bad_templates")
     T = T / np.linalg.norm(T, axis=1, keepdims=True)
-    frames = await read_all(media)
+    with Slot():
+        return _verify(media, T)
+
+
+def _verify(media: List[UploadFile], T: np.ndarray):
+    frames = read_all(media)
     sims, yaws, qs = [], [], []
     many = False
     for fr in frames:

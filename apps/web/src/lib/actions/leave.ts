@@ -1,4 +1,5 @@
 'use server';
+import { flashError } from '@/lib/flash';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withTenant } from '@adone/db';
@@ -24,5 +25,6 @@ export async function decideLeaveAction(_p: FormState, f: FormData): Promise<For
 }
 
 export async function quickDecideLeaveAction(f: FormData): Promise<void> {
-  await decideLeaveAction(undefined, f);
+  const r = await decideLeaveAction(undefined, f);
+  if (r?.error) await flashError(r.error);
 }

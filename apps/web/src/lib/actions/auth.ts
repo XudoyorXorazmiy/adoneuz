@@ -19,9 +19,15 @@ export async function loginAction(_prev: LoginState, form: FormData): Promise<Lo
 
   const h = await headers();
   const ip = (h.get('x-forwarded-for') ?? '').split(',')[0]?.trim() || 'local';
-  if (!(await allow(`login:ip:${ip}`, 20, 600))) return { error: "Juda ko'p urinish. 10 daqiqadan keyin qayta urinib ko'ring.", phone: raw };
-
-  const res = mode === 'platform' ? await loginPlatformAdmin(phone, password) : await loginTenantUser(phone, password, { ua: h.get('user-agent'), ip });
+  // Baza bir zum javob bermasa — inglizcha xato sahifasi emas, formada tushunarli xabar (redirect try'dan tashqarida)
+  let res: Awaited<ReturnType<typeof loginTenantUser>> | Awaited<ReturnType<typeof loginPlatformAdmin>>;
+  try {
+    if (!(await allow(`login:ip:${ip}`, 20, 600))) return { error: "Juda ko'p urinish. 10 daqiqadan keyin qayta urinib ko'ring.", phone: raw };
+    res = mode === 'platform' ? await loginPlatformAdmin(phone, password) : await loginTenantUser(phone, password, { ua: h.get('user-agent'), ip });
+  } catch (e) {
+    console.error('[auth] login', (e as Error).message);
+    return { error: "Server bilan aloqa uzildi — birozdan keyin qayta urinib ko'ring.", phone: raw };
+  }
   if (!res.ok) return { error: res.error, phone: raw };
   await setSessionCookie(res.claims);
   if (mode === 'platform') redirect('/');

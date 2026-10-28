@@ -1,4 +1,5 @@
 'use server';
+import { flashError } from '@/lib/flash';
 import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -17,7 +18,8 @@ const isUuid = (v: string) => z.uuid().safeParse(v).success;
 
 function done(path?: string) {
   revalidatePath('/vazifalar');
-  if (path) revalidatePath(path);
+  // Dinamik yo'l naqshi (`/vazifalar/[id]`) — 'page' turi bilan, aks holda yangilanmaydi
+  if (path) revalidatePath(path, path.includes('[') ? 'page' : undefined);
   revalidatePath('/');
   kick();
 }
@@ -76,9 +78,10 @@ export async function transitionTaskAction(_p: FormState, f: FormData): Promise<
   return { ok: 'Saqlandi' };
 }
 
-/** Tugma bilan o'tish (izohsiz: Boshladim, Qabul qildim). Xato — sahifa error boundary'si emas, jim qaytadi. */
+/** Tugma bilan o'tish (izohsiz: Boshladim, Qabul qildim). Xato — sahifa yiqilmaydi, tepada xabar (lib/flash). */
 export async function quickTransitionAction(f: FormData): Promise<void> {
-  await transitionTaskAction(undefined, f);
+  const r = await transitionTaskAction(undefined, f);
+  if (r?.error) await flashError(r.error);
 }
 
 export async function commentTaskAction(_p: FormState, f: FormData): Promise<FormState> {
@@ -111,8 +114,9 @@ export async function decideDeadlineAction(f: FormData): Promise<void> {
   const user = await assertArea('tasks');
   const id = str(f, 'id');
   const to = str(f, 'to');
-  if (!isUuid(id) || (to !== 'approved' && to !== 'rejected')) throw new Error("Ma'lumot noto'g'ri");
+  if (!isUuid(id) || (to !== 'approved' && to !== 'rejected')) return flashError("Ma'lumot noto'g'ri");
   const res = await withTenant(user.tenantId, (tx) => decideDeadlineRequest(tx, { tenantId: user.tenantId, id, to, actor: { userId: user.id, role: user.role }, comment: str(f, 'comment').slice(0, 500) || null }));
-  if ('error' in res) throw new Error(res.error);
+  if ('error' in res) return flashError(res.error);
   done('/vazifalar/[id]');
+  revalidatePath('/sorovlar');
 }

@@ -1,9 +1,9 @@
 'use client';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
-import { webApp } from './webapp';
+import { STALE_APP, STALE_EVENT, webApp } from './webapp';
 
 type NavItem = { href: string; label: string; icon: string; count?: number; external?: boolean };
 const NAV: NavItem[] = [
@@ -22,17 +22,35 @@ export const managerNav = ({ panelUrl, pending, reports }: ManagerShell): NavIte
   { href: panelUrl, label: 'Panel', icon: 'open_in_new', external: true },
 ];
 
-/** Telegram'ga tayyorlik: ready + to'liq balandlik + rangi (sahifa ochilganda bir marta). */
+/**
+ * Telegram'ga tayyorlik: ready + to'liq balandlik + rangi. telegram-web-app.js `afterInteractive` — hali yuklanmagan bo'lishi
+ * mumkin, shuning uchun paydo bo'lguncha (≤ 10 s) kutiladi. Eski ochiq ilova (deploy'dan keyin) — tepada «Yangilash» banneri.
+ */
 export function TgReady() {
+  const [stale, setStale] = useState(false);
   useEffect(() => {
-    const w = webApp();
-    if (!w) return;
-    w.ready();
-    w.expand();
-    w.setHeaderColor?.('#FFFFFF');
-    w.setBackgroundColor?.('#F7F8FA');
+    let n = 0;
+    const t = setInterval(() => {
+      const w = webApp();
+      if (!w && ++n < 100) return;
+      clearInterval(t);
+      if (!w) return;
+      w.ready();
+      w.expand();
+      w.setHeaderColor?.('#FFFFFF');
+      w.setBackgroundColor?.('#F7F8FA');
+    }, 100);
+    const on = () => setStale(true);
+    window.addEventListener(STALE_EVENT, on);
+    return () => { clearInterval(t); window.removeEventListener(STALE_EVENT, on); };
   }, []);
-  return null;
+  if (!stale) return null;
+  return (
+    <div className="fixed inset-x-0 top-0 z-50 flex items-center gap-3 bg-ink px-4 py-3 text-sm font-semibold text-white">
+      <span className="flex-1">{STALE_APP}</span>
+      <button onClick={() => window.location.reload()} className="shrink-0 rounded-full bg-white px-3.5 py-1.5 text-xs font-bold text-ink">Yangilash</button>
+    </div>
+  );
 }
 
 /** Pastki menyu (dizayn): Bosh · Vazifalar · Tarix · Profil (xodim) yoki rahbar menyusi. */

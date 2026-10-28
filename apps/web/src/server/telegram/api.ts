@@ -9,7 +9,7 @@ const base = () => (process.env.TELEGRAM_API_BASE || 'https://api.telegram.org')
 const token = () => process.env.PLATFORM_BOT_TOKEN || '';
 
 export class TelegramError extends Error {
-  constructor(public method: string, public code: number, public description: string) {
+  constructor(public method: string, public code: number, public description: string, public retryAfter?: number) {
     super(`telegram ${method}: ${code} ${description}`);
   }
 }
@@ -18,18 +18,27 @@ export function botConfigured(): boolean {
   return !!token();
 }
 
-export async function tg<T = unknown>(method: string, body: Record<string, unknown>): Promise<T> {
+export async function tg<T = unknown>(method: string, body: Record<string, unknown>, opts: { timeoutMs?: number } = {}): Promise<T> {
   if (!token()) throw new TelegramError(method, 0, 'PLATFORM_BOT_TOKEN sozlanmagan');
   const res = await fetch(`${base()}/bot${token()}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 15_000),
   });
-  const json = (await res.json().catch(() => ({}))) as { ok?: boolean; result?: T; error_code?: number; description?: string };
-  if (!json.ok) throw new TelegramError(method, json.error_code ?? res.status, json.description ?? 'xato');
+  const json = (await res.json().catch(() => ({}))) as { ok?: boolean; result?: T; error_code?: number; description?: string; parameters?: { retry_after?: number } };
+  if (!json.ok) throw new TelegramError(method, json.error_code ?? res.status, json.description ?? 'xato', json.parameters?.retry_after);
   return json.result as T;
 }
+
+/** Vaqtinchalik xato (Telegram sekinlashdi, tarmoq uzildi, 5xx, 429) — qayta urinsa o'tishi mumkin. */
+export function isTransient(e: unknown): boolean {
+  if (e instanceof TelegramError) return e.code === 429 || e.code >= 500;
+  const name = (e as { name?: string })?.name;
+  return name === 'TimeoutError' || name === 'AbortError' || e instanceof TypeError; // fetch tarmoq xatosi — TypeError
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export type Keyboard =
   | { inline_keyboard: Array<Array<{ text: string; callback_data?: string; url?: string; web_app?: { url: string } }>> }
@@ -62,13 +71,27 @@ export async function answerCallback(id: string, text?: string) {
   return tg('answerCallbackQuery', { callback_query_id: id, ...(text ? { text } : {}) }).catch(() => undefined);
 }
 
-/** Faylni yuklab olish (video_note ≤ 20 MB — Bot API chegarasi). */
+/**
+ * Faylni yuklab olish (video_note ≤ 20 MB — Bot API chegarasi). Telegram `getFile` vaqti-vaqti bilan 15 s dan sekinlashadi
+ * (28.10 prod: 4 ta dumaloq video yo'qoldi) — har qadam 60 s gacha kutadi, vaqtinchalik xatoda shu ishning o'zida yana
+ * 2 marta urinadi (1 s, 3 s), lekin umumiy ~100 s dan oshmaydi (ish chegarasi — jobs/runner).
+ */
 export async function downloadFile(fileId: string): Promise<{ data: Buffer; path: string }> {
-  const f = await tg<{ file_path?: string; file_size?: number }>('getFile', { file_id: fileId });
-  if (!f.file_path) throw new TelegramError('getFile', 0, 'file_path yo‘q');
-  const res = await fetch(`${base()}/file/bot${token()}/${f.file_path}`, { signal: AbortSignal.timeout(60_000) });
-  if (!res.ok) throw new TelegramError('download', res.status, 'yuklab bo‘lmadi');
-  return { data: Buffer.from(await res.arrayBuffer()), path: f.file_path };
+  const started = Date.now();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const f = await tg<{ file_path?: string; file_size?: number }>('getFile', { file_id: fileId }, { timeoutMs: 60_000 });
+      if (!f.file_path) throw new TelegramError('getFile', 0, 'file_path yo‘q');
+      const res = await fetch(`${base()}/file/bot${token()}/${f.file_path}`, { signal: AbortSignal.timeout(60_000) });
+      if (!res.ok) throw new TelegramError('download', res.status, 'yuklab bo‘lmadi');
+      return { data: Buffer.from(await res.arrayBuffer()), path: f.file_path };
+    } catch (e) {
+      const wait = attempt === 1 ? 1000 : 3000;
+      if (attempt >= 3 || !isTransient(e) || Date.now() - started + wait > 40_000) throw e;
+      console.warn(`[telegram] fayl olish ${attempt}-urinish yiqildi, qayta: ${(e as Error).message}`);
+      await sleep(wait);
+    }
+  }
 }
 
 /** Webhook siri — AUTH_SECRET dan (alohida env shart emas). Telegram uni X-Telegram-Bot-Api-Secret-Token da qaytaradi. */

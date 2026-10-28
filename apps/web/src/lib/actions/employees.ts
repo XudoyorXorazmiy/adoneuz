@@ -1,4 +1,5 @@
 'use server';
+import { flashError } from '@/lib/flash';
 import { revalidatePath } from 'next/cache';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
@@ -19,6 +20,8 @@ export async function saveEmployeeAction(_p: FormState, f: FormData): Promise<Fo
   const res = await saveEmployeeFromForm(user, f);
   if ('error' in res) return res;
   revalidatePath('/xodimlar');
+  revalidatePath('/xodimlar/[id]', 'page'); // profil sahifasidan tahrirlansa ham yangilansin
+  revalidatePath('/');
   return { ok: res.ok };
 }
 
@@ -28,7 +31,9 @@ export async function setEmployeeStatusAction(f: FormData): Promise<void> {
   const id = z.uuid().parse(f.get('id'));
   const status = z.enum(['active', 'disabled']).parse(f.get('status'));
   const err = await withTenant(user.tenantId, (tx) => setEmployeeStatus(tx, user, id, status));
-  if (err) throw new Error(err);
+  if (err) return flashError(err);
+  revalidatePath('/xodimlar/[id]', 'page');
+  revalidatePath('/');
   kick();
   revalidatePath('/xodimlar');
 }
@@ -37,11 +42,13 @@ export async function setEmployeeStatusAction(f: FormData): Promise<void> {
 export async function regenerateInviteAction(f: FormData): Promise<void> {
   const user = await assertArea('employees');
   const id = z.uuid().parse(f.get('id'));
-  await withTenant(user.tenantId, async (tx) => {
-    if (!(await canTouch(tx, user, id, null))) throw new Error("Ruxsat yo'q");
+  const ok = await withTenant(user.tenantId, async (tx) => {
+    if (!(await canTouch(tx, user, id, null))) return false;
     await tx.update(invites).set({ expiresAt: new Date() }).where(and(eq(invites.refId, id), isNull(invites.usedAt)));
     await createInvite(tx, user.tenantId, id);
+    return true;
   });
+  if (!ok) return flashError("Ruxsat yo'q");
   revalidatePath('/xodimlar');
 }
 
@@ -49,11 +56,13 @@ export async function regenerateInviteAction(f: FormData): Promise<void> {
 export async function unbindDeviceAction(f: FormData): Promise<void> {
   const user = await assertArea('employees');
   const id = z.uuid().parse(f.get('id'));
-  await withTenant(user.tenantId, async (tx) => {
-    if (!(await canTouch(tx, user, id, null))) throw new Error("Ruxsat yo'q");
+  const ok = await withTenant(user.tenantId, async (tx) => {
+    if (!(await canTouch(tx, user, id, null))) return false;
     await tx.update(employees).set({ deviceId: null, deviceLabel: null, deviceBoundAt: null }).where(eq(employees.id, id));
     await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'employee.device_unbind', entity: 'employee', entityId: id });
+    return true;
   });
+  if (!ok) return flashError("Ruxsat yo'q");
   revalidatePath(`/xodimlar/${id}`);
 }
 
@@ -61,11 +70,13 @@ export async function unbindDeviceAction(f: FormData): Promise<void> {
 export async function requestFaceResampleAction(f: FormData): Promise<void> {
   const user = await assertArea('employees');
   const id = z.uuid().parse(f.get('id'));
-  await withTenant(user.tenantId, async (tx) => {
-    if (!(await canTouch(tx, user, id, null))) throw new Error("Ruxsat yo'q");
+  const ok = await withTenant(user.tenantId, async (tx) => {
+    if (!(await canTouch(tx, user, id, null))) return false;
     await queueNotifyEmployee(tx, user.tenantId, id, "🔄 Rahbaringiz yuz namunasini yangilashni so'radi. /yuz buyrug'ini bosing va 3–5 soniyalik dumaloq video yuboring.");
     await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'employee.face_resample', entity: 'employee', entityId: id });
+    return true;
   });
+  if (!ok) return flashError("Ruxsat yo'q");
   kick();
   revalidatePath(`/xodimlar/${id}`);
 }
@@ -89,7 +100,7 @@ export async function removeHeadAction(f: FormData): Promise<void> {
   const user = await assertArea('employees');
   const departmentId = z.uuid().parse(f.get('departmentId'));
   const err = await setDepartmentHead(user, departmentId, null);
-  if (err) throw new Error(err);
+  if (err) return flashError(err);
   revalidatePath('/xodimlar');
   const back = z.uuid().safeParse(str(f, 'employeeId'));
   if (back.success) revalidatePath(`/xodimlar/${back.data}`);

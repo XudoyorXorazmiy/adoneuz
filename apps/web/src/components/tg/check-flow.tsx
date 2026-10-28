@@ -166,9 +166,17 @@ function Selfie({ busy, onShot, onCancel }: { busy: boolean; onShot: (b: Blob[])
   const shots = useRef<Blob[]>([]);
   useEffect(() => {
     let stream: MediaStream | null = null;
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false })
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErr("Bu Telegram versiyasida kamera ishlamaydi. Telegram'ni yangilang yoki botda «✅ Keldim» (jonli lokatsiya + dumaloq video) orqali qiling.");
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false })
       .then((s) => { stream = s; if (video.current) { video.current.srcObject = s; void video.current.play(); } setReady(true); })
-      .catch(() => setErr("Kameraga ruxsat berilmadi. Telegram sozlamalarida kamerani yoqing va qayta urinib ko'ring."));
+      .catch((e: DOMException) => setErr(
+        e?.name === 'NotFoundError' || e?.name === 'OverconstrainedError' ? "Old kamera topilmadi. Botda «✅ Keldim» (dumaloq video) orqali qiling."
+          : e?.name === 'NotReadableError' ? "Kamera boshqa ilovada band. Uni yoping va qayta urinib ko'ring."
+            : "Kameraga ruxsat berilmadi. Telegram sozlamalarida kamerani yoqing va qayta urinib ko'ring.",
+      ));
     return () => { stream?.getTracks().forEach((x) => x.stop()); };
   }, []);
   const grab = async (): Promise<Blob | null> => {

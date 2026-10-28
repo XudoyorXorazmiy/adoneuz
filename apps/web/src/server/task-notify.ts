@@ -11,7 +11,7 @@ import { formatTime, isOverdue, localDate, TASK_STATUS_LABELS, type NotifyEvent,
 import { dueLabel, escHtml as esc, taskCardText } from '@/lib/task-text';
 import { appOrigin, publicApiOrigin, ROOT_DOMAIN } from '@/lib/host';
 import { sendFile, send, type Keyboard } from '@/server/telegram/api';
-import { memberChats, memberTaskReviewerChats, miniAppKeyboard, miniAppRow, notifyEmployee, notifyUser } from '@/server/notify';
+import { deliver, memberChats, memberTaskReviewerChats, miniAppKeyboard, miniAppRow, notifyEmployee, notifyUser } from '@/server/notify';
 import { getSettings } from '@/server/settings';
 import { mediaRoot } from '@/server/media';
 import type { JobOutcome } from '@/server/jobs/types';
@@ -86,14 +86,14 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
   const toMembers = async (text: string, kb?: Keyboard, event?: NotifyEvent) => {
     const chats = await reviewers(event);
     if (!chats?.length) return { skip: 'rahbarlar Telegram ulamagan' };
-    for (const c of chats) {
-      await send(c.chatId, text, kb);
+    // Xabar — har rahbarga alohida (bittasi botni bloklasa qolganlari oladi); fayl yuborilmasa — xabar baribir yetgan
+    return deliver(chats, async (chat) => {
+      await send(chat, text, kb);
       for (const f of data.files) {
         const buf = await readFile(path.join(mediaRoot(), f.path)).catch(() => null);
-        if (buf) await sendFile(c.chatId, f.mime.startsWith('video/') ? 'video' : 'photo', buf, path.basename(f.path));
+        if (buf) await sendFile(chat, f.mime.startsWith('video/') ? 'video' : 'photo', buf, path.basename(f.path)).catch((e) => console.warn('[task_notify] fayl', (e as Error).message));
       }
-    }
-    return {};
+    });
   };
 
   // Eslatmalar: sozlama keyin o'chirilgan bo'lsa — navbatdagi ish yuborilmaydi
@@ -132,16 +132,15 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
       return toEmp(`⏳ Muddatga 1 soat qoldi: ${title}${due ? ` (${due})` : ''}`, work(t.status !== 'new'));
     case 'overdue': {
       if (!isOverdue({ status: t.status, dueAt: t.dueAt }, new Date())) return { skip: 'muddati o‘tmagan yoki topshirilgan' };
-      await toEmp(`⚠️ Vazifa muddati o‘tdi: ${title}${due ? ` (${due})` : ''}\nIloji boricha tezroq bajaring.`, work(t.status !== 'new'));
+      // Ijrochiga yetmasa ham rahbarlar xabari ketsin (ish qayta urinilsa ijrochiga takror bormasin)
+      await toEmp(`⚠️ Vazifa muddati o‘tdi: ${title}${due ? ` (${due})` : ''}\nIloji boricha tezroq bajaring.`, work(t.status !== 'new')).catch((e) => console.warn('[task_notify] overdue', (e as Error).message));
       const chats = await reviewers('task_overdue', null);
-      for (const c of chats ?? []) await send(c.chatId, `⚠️ Muddati o‘tdi: ${title}\n👤 ${esc(who)}${due ? ` · ${due}` : ''}`, miniAppKeyboard(`/tg/vazifa/${t.id}`));
-      return {};
+      return deliver(chats ?? [], (chat) => send(chat, `⚠️ Muddati o‘tdi: ${title}\n👤 ${esc(who)}${due ? ` · ${due}` : ''}`, miniAppKeyboard(`/tg/vazifa/${t.id}`)));
     }
     case 'review_stale': {
       if (t.status !== 'submitted' || !t.submittedAt || Date.now() - t.submittedAt.getTime() < 23 * 3600_000) return { skip: 'tekshirilgan yoki qayta topshirilgan' };
       const chats = await reviewers('task_submitted', null);
-      for (const c of chats ?? []) await send(c.chatId, `⏰ Hisobot 24 soatdan beri tekshirilmagan: ${title}\n👤 ${esc(who)}`, taskButtons.review(t.id));
-      return {};
+      return deliver(chats ?? [], (chat) => send(chat, `⏰ Hisobot 24 soatdan beri tekshirilmagan: ${title}\n👤 ${esc(who)}`, taskButtons.review(t.id)));
     }
   }
 }

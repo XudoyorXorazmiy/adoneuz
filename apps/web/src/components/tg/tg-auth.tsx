@@ -12,15 +12,20 @@ import { webApp } from './webapp';
  */
 export function TgAuth() {
   const router = useRouter();
-  const [state, setState] = useState<{ error?: string; pick?: Array<{ tenantId: string; name: string }>; loading: boolean }>({ loading: true });
+  const [state, setState] = useState<{ error?: string; pick?: Array<{ tenantId: string; name: string }>; loading: boolean; retry?: string }>({ loading: true });
   const login = async (tenantId?: string) => {
     const initData = webApp()?.initData ?? '';
     if (!initData) return setState({ loading: false, error: "Bu sahifa Telegram ichida ochiladi: botdagi «Ochish» tugmasini bosing." });
     setState({ loading: true });
-    const r = await fetch('/api/tg/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData, tenantId }) });
-    const j = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string; pick?: Array<{ tenantId: string; name: string }> };
-    if (j.ok) return router.refresh();
-    setState({ loading: false, error: j.error, pick: j.pick });
+    // Internet sekin/uzilgan bo'lsa «Yuklanmoqda…» abadiy qolmasin — 10 s dan keyin xato va «Qayta urinish»
+    try {
+      const r = await fetch('/api/tg/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData, tenantId }), signal: AbortSignal.timeout(10_000) });
+      const j = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string; pick?: Array<{ tenantId: string; name: string }> };
+      if (j.ok) return router.refresh();
+      setState({ loading: false, error: j.error ?? (r.status >= 500 ? 'Server javob bermadi — birozdan keyin qayta urinib ko‘ring.' : undefined), pick: j.pick, retry: !j.pick && r.status !== 403 ? tenantId ?? '' : undefined });
+    } catch {
+      setState({ loading: false, error: 'Internet sekin yoki uzilgan — ulanishni tekshirib, qayta urinib ko‘ring.', retry: tenantId ?? '' });
+    }
   };
   useEffect(() => {
     // telegram-web-app.js afterInteractive yuklanadi — biroz kutamiz
@@ -41,6 +46,7 @@ export function TgAuth() {
         </div>
       )}
       {state.error && <p className="m-0 max-w-sm rounded-2xl bg-card p-4 text-sm text-ink-2 shadow-[var(--shadow-card)]">{state.error}</p>}
+      {state.retry !== undefined && <button onClick={() => login(state.retry || undefined)} className="btn-primary h-12 px-6 text-sm">Qayta urinish</button>}
     </div>
   );
 }

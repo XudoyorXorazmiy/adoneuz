@@ -1,6 +1,7 @@
 import 'server-only';
 import { eq } from 'drizzle-orm';
 import { botSessions, withPlatform } from '@adone/db';
+import { arrivedAt } from './context';
 
 /** Suhbat holati (bot_sessions, platforma roli). Bitta Telegram foydalanuvchisiga bitta joriy qadam. */
 export type BotState =
@@ -30,9 +31,10 @@ export type BotState =
 
 export const SESSION_TTL_MS = 15 * 60_000;
 
-export async function getState(tgUserId: number): Promise<BotState> {
+/** `at` — xabar serverga kelgan vaqt (qayta urinishda kechikkan ish sessiyani «eskirgan» deb hisoblamasin, bot/context). */
+export async function getState(tgUserId: number, at: number = arrivedAt()): Promise<BotState> {
   const [r] = await withPlatform((tx) => tx.select().from(botSessions).where(eq(botSessions.telegramUserId, tgUserId)).limit(1));
-  if (!r || Date.now() - r.updatedAt.getTime() > SESSION_TTL_MS) return { step: 'idle' };
+  if (!r || at - r.updatedAt.getTime() > SESSION_TTL_MS) return { step: 'idle' };
   return r.state as BotState;
 }
 

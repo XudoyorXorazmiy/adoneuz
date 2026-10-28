@@ -68,7 +68,9 @@ export async function tgCheckAction(f: FormData): Promise<CheckResult> {
   const deviceId = String(f.get('deviceId') ?? '');
   const device = isUuid(deviceId) ? { id: deviceId, label: String(f.get('deviceLabel') ?? '').slice(0, 60) || 'Telefon' } : null;
   let face: FaceDecision | undefined;
-  if (action === 'check_in') {
+  // Zonadan tashqarida yoki GPS aniqligi past bo'lsa — yuz servisini (25 s gacha) bekor kutmaymiz: recordCheck baribir rad etadi
+  const geo = action === 'check_in' ? await withTenant(u.tenantId, (tx) => previewGeofence(tx, u.employeeId, c)) : null;
+  if (action === 'check_in' && geo?.status === 'ok') {
     const fc = await withTenant(u.tenantId, (tx) => faceContext(tx, u.employeeId));
     const r = fc.templates.length ? await verifyFace(frames.map((x, i) => ({ data: x.data, mime: x.mime, name: `f${i}.${x.ext}` })), fc.templates) : null;
     face = faceDecision(r, { templates: fc.templates.length, challenge: frames.length > 1, settings: fc.settings });

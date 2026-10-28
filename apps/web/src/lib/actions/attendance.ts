@@ -1,4 +1,5 @@
 'use server';
+import { flashError } from '@/lib/flash';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { withTenant } from '@adone/db';
@@ -63,5 +64,6 @@ export async function resolveSuspiciousAction(f: FormData): Promise<void> {
   fd.set('action', approve ? 'approve' : 'void');
   fd.set('reason', approve ? 'Rahbar tasdiqladi' : 'Rahbar rad etdi');
   const r = await correctAttendanceAction(undefined, fd);
-  if (r?.error) throw new Error(r.error);
+  // Ikkinchi bosish / allaqachon hal qilingan — sahifa yiqilmaydi, tepada xabar
+  if (r?.error) await flashError(r.error);
 }

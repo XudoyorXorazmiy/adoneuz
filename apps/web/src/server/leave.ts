@@ -12,7 +12,7 @@ import {
 import type { TenantUser } from '@/lib/auth/session';
 import { escHtml as esc } from '@/lib/task-text';
 import { enqueue } from './jobs/enqueue';
-import { memberChats, miniAppRow, notifyEmployee } from './notify';
+import { deliver, memberChats, miniAppRow, notifyEmployee } from './notify';
 import { departmentScope, inScope } from './scope';
 import { send } from './telegram/api';
 import type { JobOutcome } from './jobs/types';
@@ -80,12 +80,9 @@ export async function leaveNotify(tenantId: string, id: string, kind: string): P
     if (l.status !== 'pending') return { skip: 'hal qilingan' };
     const chats = await memberChats(tenantId, r.dep, null, { event: 'leave' });
     if (!chats?.length) return { skip: 'rahbarlar Telegram ulamagan' };
-    for (const c of chats) {
-      await send(c.chatId, `📝 <b>Ruxsat so'rovi</b> · ${esc(r.name)}\n${what}${l.reason ? `\n💬 ${esc(l.reason)}` : ''}`, {
-        inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `lv:ok:${id}` }, { text: '❌ Rad etish', callback_data: `lv:no:${id}` }], ...miniAppRow('/tg/qarorlar')],
-      });
-    }
-    return {};
+    return deliver(chats, (chat) => send(chat, `📝 <b>Ruxsat so'rovi</b> · ${esc(r.name)}\n${what}${l.reason ? `\n💬 ${esc(l.reason)}` : ''}`, {
+      inline_keyboard: [[{ text: '✅ Tasdiqlash', callback_data: `lv:ok:${id}` }, { text: '❌ Rad etish', callback_data: `lv:no:${id}` }], ...miniAppRow('/tg/qarorlar')],
+    }));
   }
   const text = kind === 'approved' ? `✅ Ruxsat so'rovingiz tasdiqlandi:\n${what}` : `❌ Ruxsat so'rovingiz rad etildi:\n${what}${l.decisionComment ? `\nSabab: ${esc(l.decisionComment)}` : ''}`;
   return notifyEmployee(tenantId, l.employeeId, text);

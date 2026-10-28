@@ -1,4 +1,5 @@
 'use server';
+import { flashError } from '@/lib/flash';
 import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -89,7 +90,7 @@ export async function saveDepartmentAction(_p: FormState, f: FormData): Promise<
 
 export async function archiveDepartmentAction(f: FormData): Promise<void> {
   const user = await assertArea('employees');
-  if (user.role === 'manager') throw new Error("Ruxsat yo'q");
+  if (user.role === 'manager') return flashError("Ruxsat yo'q");
   const id = z.uuid().parse(f.get('id'));
   await withTenant(user.tenantId, async (tx) => {
     await tx.update(departments).set({ isActive: false }).where(eq(departments.id, id));

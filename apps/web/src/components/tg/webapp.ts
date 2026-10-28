@@ -27,8 +27,16 @@ export function haptic(kind: 'success' | 'error' | 'warning') {
 
 export type Coords = { lat: number; lng: number; accuracy: number | null };
 
-/** GPS: brauzer geolocation (aniq rejim), bo'lmasa Telegram LocationManager (Bot API 8.0). */
+/** GPS: brauzer geolocation (aniq rejim), bo'lmasa Telegram LocationManager (Bot API 8.0). Umumiy chegara — 20 s. */
 export function getCoords(): Promise<Coords> {
+  let timer: ReturnType<typeof setTimeout>;
+  const limit = new Promise<Coords>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Lokatsiya 20 soniyada aniqlanmadi. GPS yoqilganini tekshiring, ochiq joyga chiqib qayta urinib ko‘ring.')), 20_000);
+  });
+  return Promise.race([locate(), limit]).finally(() => clearTimeout(timer));
+}
+
+function locate(): Promise<Coords> {
   return new Promise((resolve, reject) => {
     const viaTelegram = () => {
       const lm = webApp()?.LocationManager;
@@ -59,10 +67,16 @@ export async function shrinkImage(file: Blob, maxSide = 1600, quality = 0.82): P
 /** Deploy'dan keyin ochiq qolgan eski Mini App: server action topilmaydi — foydalanuvchiga «yangilang». */
 export const STALE_APP = 'Ilova yangilandi — davom etish uchun «Yangilash»ni bosing.';
 
+/** Ilova yangilangani — ekranning tepasida «Yangilash» tugmali banner (TgReady tinglaydi), xato qayerda chiqmasin. */
+export const STALE_EVENT = 'adone:stale';
+
 /** Server action / fetch xatosi → tushunarli matn (eski klient, internet uzilishi). */
 export function actionError(e: unknown): string {
   const m = e instanceof Error ? e.message : String(e ?? '');
-  if (/Server Action|older or newer deployment|unexpected response|Expected RSC|Failed to find/i.test(m)) return STALE_APP;
+  if (/Server Action|older or newer deployment|unexpected response|Expected RSC|Failed to find/i.test(m)) {
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(STALE_EVENT));
+    return STALE_APP;
+  }
   if (/Failed to fetch|Load failed|NetworkError|network/i.test(m)) return 'Internet uzildi — qayta urinib ko‘ring';
   return m || 'Xatolik — qayta urinib ko‘ring';
 }
@@ -85,7 +99,16 @@ export function uploadFile(url: string, file: Blob, onProgress: (pct: number) =>
       else reject(new Error(body.error ?? (xhr.status === 413 ? 'Fayl juda katta' : `Yuklab bo‘lmadi (${xhr.status})`)));
     };
     xhr.onerror = () => reject(new Error('Internet uzildi — qayta urinib ko‘ring'));
-    xhr.onabort = () => reject(new Error('Bekor qilindi'));
+    xhr.onabort = () => reject(new Error(stalled ? 'Yuklash to‘xtab qoldi — internetni tekshirib, qayta yozing' : 'Bekor qilindi'));
+    // Qo'riqchi: 45 s davomida bir bayt ham ketmasa — to'xtatamiz (aks holda «0%» da abadiy qoladi)
+    let stalled = false;
+    let last = Date.now();
+    xhr.upload.addEventListener('progress', () => { last = Date.now(); });
+    const watch = setInterval(() => {
+      if (xhr.readyState === 4) return clearInterval(watch);
+      if (Date.now() - last > 45_000) { stalled = true; clearInterval(watch); xhr.abort(); }
+    }, 5000);
+    xhr.addEventListener('loadend', () => clearInterval(watch));
     xhr.send(file);
   });
   return { done, abort: () => xhr.abort() };

@@ -41,6 +41,7 @@ tabel, KPI va ish haqi hisobiga (bonus/jarima — admin tahrirlaydigan qoidalar)
 - Mini App: `app.adone.uz/tg/...` (openstore naqshi) — `initData` HMAC tekshiruvi, `LocationManager` / `navigator.geolocation`, kamera (`getUserMedia`). Bot zaxira yo'li: **live location + dumaloq video (video_note)**.
 - Yuz servisi: alohida konteyner `services/face` (Python, FastAPI + InsightFace `buffalo_l`, CPU) — faqat ichki tarmoqda. API: `POST /embed` (rasm → 512 vektor + sifat), `POST /verify` (rasm + namuna vektorlari → o'xshashlik), `POST /liveness` (video kadrlar → ball). Next.js uni `FACE_SERVICE_URL` orqali chaqiradi; servis ishlamasa check-in `suspicious` bo'lib saqlanadi (bloklanmaydi).
 - Navbat: `jobs` jadvali + runner (`FOR UPDATE SKIP LOCKED`, qayta urinish 2^n, `dedupe_key`) + server cron har daqiqa `/api/cron/jobs`. Redis yo'q. Eslatmalar, kechikkanlar ro'yxati, kunlik hisobot, takrorlanuvchi vazifalar — shu orqali.
+  Barqarorlik (2026-10-28, `docs/BARQARORLIK-REJA.md`): jarayonda bitta ishchi (mutex), har ish ≤ 120 s, egallash tokeni `locked_at`, STALE 3 daq; `tg_update` 6 urinish (30 s dan), vaqt — xabar kelgan payt (`bot/context.ts arrivedAt`); urinishlar tugasa `onFinalFailure` (foydalanuvchiga «qayta yuboring», egasiga `alertOwner` → `PLATFORM_OWNER_CHAT_ID`). Tarqatish — `deliver()` (har qabul qiluvchi alohida). Panel `void` amallari xato tashlamaydi — `flashError` (`lib/flash.ts`). Baza: statement 15 s, lock 5 s.
 - Excel: exceljs (tabel, ish haqi, vazifalar eksporti).
 - Fayllar: server diski `MEDIA_DIR` (Coolify volume), keyin S3-mos.
 

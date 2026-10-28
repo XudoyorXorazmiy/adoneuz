@@ -17,6 +17,7 @@ import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
 import type { JobOutcome } from '@/server/jobs/types';
 import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from './session';
+import { arrivedAt, firstAttempt } from './context';
 import { employeeLinks, linkTelegram, type EmployeeLink } from './links';
 import { isTaskState, onTaskCallback, onTaskMessage, showMyTasks, startAddWork } from './tasks';
 import { isLeaveState, onLeaveCallback, onLeaveMessage, startLeave } from './leave';
@@ -178,6 +179,10 @@ async function onVideoNote(msg: TgMessage): Promise<JobOutcome> {
   const uid = msg.from!.id;
   const chat = msg.chat.id;
   const state = await getState(uid);
+  // Telegram'dan faylni olish sekin bo'lishi mumkin (yuz tekshiruvi ham) — xodim kutayotganini bilsin; qayta urinishda takrorlanmaydi
+  if ((state.step === 'reg_face' || state.step === 'ci_video' || state.step === 'face_resample') && firstAttempt()) {
+    await send(chat, '📥 Video qabul qilindi, tekshirilmoqda…').catch(() => undefined);
+  }
   if (state.step === 'reg_face') return finishRegistration(msg, state);
   if (state.step === 'ci_video') return finishCheckIn(msg, state);
   if (state.step === 'face_resample') return finishResample(msg, state);
@@ -331,7 +336,7 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
     await send(chat, links.length ? `Avval «${BTN.checkIn}» yoki «${BTN.checkOut}» tugmasini bosing.` : T.noInvite, links.length ? menuKeyboard : undefined);
     return { skip: 'lokatsiya kutilmagan' };
   }
-  if (Date.now() - state.startedAt > SESSION_TTL_MS) {
+  if (arrivedAt() - state.startedAt > SESSION_TTL_MS) {
     await clearState(uid);
     await send(chat, T.expired, menuKeyboard);
     return { skip: 'muddat o‘tdi' };
@@ -345,7 +350,7 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
     await send(chat, T.notLive);
     return { skip: 'jonli emas' };
   }
-  if (Math.floor(Date.now() / 1000) - msg.date > LOCATION_MAX_AGE_SEC) {
+  if (Math.floor(arrivedAt() / 1000) - msg.date > LOCATION_MAX_AGE_SEC) {
     await send(chat, T.stale);
     return { skip: 'eskirgan' };
   }
@@ -358,10 +363,12 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
     const [b] = await tx.select().from(branches).where(eq(branches.id, e.branchId)).limit(1);
     if (!b) return { kind: 'error' as const, text: T.noBranch };
     const g = checkGeofence({ branch: { lat: b.lat, lng: b.lng, radiusM: b.radiusM }, point: { lat: loc.latitude, lng: loc.longitude }, accuracyM: accuracy });
-    const wd = await workdayOf(tx, e.id, new Date(), t!.tz);
+    // Vaqt — xabar serverga kelgan payt (Telegram sekinlashib ish qayta urinilsa ham to'g'ri)
+    const at = new Date(arrivedAt());
+    const wd = await workdayOf(tx, e.id, at, t!.tz);
     const base = {
       tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, branchId: b.id, lat: loc.latitude, lng: loc.longitude,
-      accuracyM: accuracy, distanceM: g.distanceM, isLiveLocation: true, source: 'bot' as const,
+      accuracyM: accuracy, distanceM: g.distanceM, isLiveLocation: true, source: 'bot' as const, serverAt: at,
     };
     if (g.status === 'low_accuracy') return { kind: 'error' as const, text: T.lowAccuracy(accuracy ?? 0) };
     if (g.status === 'outside') {
@@ -372,9 +379,9 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
     if (state.action === 'check_out') {
       await tx.insert(attendanceEvents).values({ ...base, kind: 'check_out', checkStatus: 'ok' });
       const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
-      return { kind: 'out' as const, time: formatTime(new Date(), t!.tz), worked: formatMinutes(r.workedMinutes) };
+      return { kind: 'out' as const, time: formatTime(at, t!.tz), worked: formatMinutes(r.workedMinutes) };
     }
-    return { kind: 'in' as const, loc: { lat: loc.latitude, lng: loc.longitude, accuracyM: accuracy, distanceM: g.distanceM, branchId: b.id, live: true, at: Date.now() } };
+    return { kind: 'in' as const, loc: { lat: loc.latitude, lng: loc.longitude, accuracyM: accuracy, distanceM: g.distanceM, branchId: b.id, live: true, at: at.getTime() } };
   });
 
   if (out.kind === 'error') {
@@ -394,7 +401,7 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
 async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'ci_video' }>): Promise<JobOutcome> {
   const uid = msg.from!.id;
   const chat = msg.chat.id;
-  if (Date.now() - state.startedAt > SESSION_TTL_MS) {
+  if (arrivedAt() - state.startedAt > SESSION_TTL_MS) {
     await clearState(uid);
     await send(chat, T.expired, menuKeyboard);
     return { skip: 'muddat o‘tdi' };
@@ -410,13 +417,14 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
     const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).limit(1);
     if (!e || e.status !== 'active') return null;
-    const wd = await workdayOf(tx, e.id, new Date(), t!.tz);
+    const at = new Date(arrivedAt());
+    const wd = await workdayOf(tx, e.id, at, t!.tz);
     if (nextAction(await dayEvents(tx, e.id, wd.date)) === 'check_out') return { already: true as const };
     const mediaId = await saveMedia(tx, { tenantId: state.tenantId, employeeId: e.id, kind: 'checkin_video', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
     await tx.insert(attendanceEvents).values({
       tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, kind: 'check_in', branchId: state.loc.branchId,
       lat: state.loc.lat, lng: state.loc.lng, accuracyM: state.loc.accuracyM, distanceM: state.loc.distanceM, isLiveLocation: state.loc.live,
-      mediaId, checkStatus: verdict.status, reasons: verdict.reasons, faceScore: verdict.score, livenessScore: verdict.liveness, source: 'bot',
+      mediaId, checkStatus: verdict.status, reasons: verdict.reasons, faceScore: verdict.score, livenessScore: verdict.liveness, source: 'bot', serverAt: at,
     });
     const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
     if (r.lateMinutes > 0) {
@@ -425,7 +433,7 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     if (verdict.status === 'suspicious') {
       await queueNotifyMembers(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${verdict.reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious', '/tg/qarorlar');
     }
-    return { already: false as const, time: formatTime(r.firstIn ?? new Date(), t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious' };
+    return { already: false as const, time: formatTime(r.firstIn ?? at, t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious' };
   });
   await clearState(uid);
   if (!res) {

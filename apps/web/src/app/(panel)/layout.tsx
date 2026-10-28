@@ -7,6 +7,8 @@ import { Logo } from '@/components/ui/logo';
 import { Icon } from '@/components/ui/icon';
 import { shellInfo } from '@/server/shell';
 import Link from 'next/link';
+import { readFlash } from '@/lib/flash';
+import { Flash } from '@/components/shell/flash';
 
 /** Menyu tartibi dizayn bo'yicha (design/panel/Sidebar.dc.html). `ready: false` — keyingi bosqich. */
 const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready: boolean; count?: 'pending' | 'review' | 'leaves' }> = [
@@ -24,7 +26,7 @@ const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready:
 
 export default async function PanelLayout({ children }: LayoutProps<'/'>) {
   const user = await requireUser();
-  const info = await shellInfo(user.tenantId);
+  const [info, flash] = await Promise.all([shellInfo(user.tenantId), readFlash()]);
   const countOf = (n: (typeof NAV)[number]) => (n.count === 'pending' ? info.pending : n.count === 'review' && user.role !== 'manager' ? info.review : n.count === 'leaves' && user.role !== 'manager' ? info.leaves : undefined);
   const visible = NAV.filter((n) => can(user.role, n.area));
   const mobileItems = [
@@ -35,6 +37,7 @@ export default async function PanelLayout({ children }: LayoutProps<'/'>) {
   const pct = info.maxEmployees ? Math.min(100, Math.round((info.active / info.maxEmployees) * 100)) : 0;
   return (
     <div className="min-h-screen bg-canvas p-0 lg:p-4">
+      <Flash text={flash} />
       <div className="flex min-h-[calc(100vh-2rem)] overflow-hidden bg-card lg:rounded-3xl lg:shadow-[var(--shadow-frame)]">
         <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-5 bg-card px-4 pt-6 pb-4 max-lg:hidden lg:h-[calc(100vh-2rem)]">
           <div className="flex items-center justify-between px-1.5">

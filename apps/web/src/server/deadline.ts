@@ -10,7 +10,7 @@ import { canRequestDeadline, formatDateTime, validDeadline, type DeadlineStatus,
 import type { TenantUser } from '@/lib/auth/session';
 import { escHtml as esc } from '@/lib/task-text';
 import { enqueue } from './jobs/enqueue';
-import { memberChats, miniAppRow, notifyEmployee } from './notify';
+import { deliver, memberChats, miniAppRow, notifyEmployee } from './notify';
 import { departmentScope, inScope } from './scope';
 import { rescheduleReminders } from './tasks';
 import { taskButtons } from './task-notify';
@@ -146,12 +146,9 @@ export async function deadlineNotify(tenantId: string, id: string, kind: string)
     if (row.status !== 'pending') return { skip: 'hal qilingan' };
     const chats = await memberChats(tenantId, data.departmentId, null, { event: 'task_submitted', creatorUserId: data.creatorId });
     if (!chats?.length) return { skip: 'rahbarlar Telegram ulamagan' };
-    for (const c of chats) {
-      await send(c.chatId, `📅 <b>Muddatni uzaytirish so'rovi</b> · ${esc(row.employeeName)}\n${what}`, {
-        inline_keyboard: [[{ text: '✅ Ruxsat', callback_data: `dl:ok:${id}` }, { text: '❌ Rad etish', callback_data: `dl:no:${id}` }], ...miniAppRow('/tg/qarorlar')],
-      });
-    }
-    return {};
+    return deliver(chats, (chat) => send(chat, `📅 <b>Muddatni uzaytirish so'rovi</b> · ${esc(row.employeeName)}\n${what}`, {
+      inline_keyboard: [[{ text: '✅ Ruxsat', callback_data: `dl:ok:${id}` }, { text: '❌ Rad etish', callback_data: `dl:no:${id}` }], ...miniAppRow('/tg/qarorlar')],
+    }));
   }
   const text = kind === 'approved'
     ? `✅ Muddat uzaytirildi:\n${what}`

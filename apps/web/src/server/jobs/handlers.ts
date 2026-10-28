@@ -5,7 +5,9 @@ import 'server-only';
  */
 import { processUpdate } from '@/server/bot';
 import type { TgUpdate } from '@/server/telegram/types';
-import { TelegramError } from '@/server/telegram/api';
+import { send, TelegramError } from '@/server/telegram/api';
+import { withUpdateContext } from '@/server/bot/context';
+import { alertOwner } from '@/server/alerts';
 import { miniAppKeyboard, notifyEmployee, notifyMembers } from '@/server/notify';
 import { deadlineNotify } from '@/server/deadline';
 import { absentDigest, attendanceTick } from '@/server/ticks';
@@ -38,7 +40,8 @@ export const HANDLERS: Record<JobType, Handler> = {
     return {};
   },
   async tg_update(job) {
-    return tgSafe(() => processUpdate(job.payload.update as TgUpdate));
+    // Vaqt — webhook qabul qilgan payt (qayta urinishda ham), «qabul qilindi» — faqat birinchi urinishda (bot/context)
+    return withUpdateContext({ receivedAt: new Date(job.created_at).getTime(), attempt: job.attempts }, () => tgSafe(() => processUpdate(job.payload.update as TgUpdate)));
   },
   async notify_members(job) {
     const text = str(job.payload.text);
@@ -85,3 +88,19 @@ export const HANDLERS: Record<JobType, Handler> = {
     return tgSafe(() => absentDigest(needTenant(job), date));
   },
 };
+
+/**
+ * Urinishlar tugab yiqilgan ish (vaqtinchalik xato takrorlandi — Telegram/baza/servis ishlamadi): Telegram xabari bo'lsa —
+ * yuborgan odamga «qayta yuboring» (aks holda video jim yo'qoladi), egasiga — ish turi va xato (shaxsiy ma'lumotsiz).
+ */
+export async function onFinalFailure(job: JobRow, error: string): Promise<void> {
+  if (job.type === 'tg_update') {
+    const u = job.payload.update as TgUpdate | undefined;
+    const chat = u?.message?.chat.id ?? u?.callback_query?.message?.chat.id;
+    if (chat) {
+      const what = u?.message?.video_note || u?.message?.video ? 'Videongiz' : u?.message?.photo ? 'Rasmingiz' : 'Xabaringiz';
+      await send(chat, `⚠️ ${what} qabul qilinmadi — Telegram bilan aloqa uzildi. Iltimos, qaytadan yuboring.`).catch(() => undefined);
+    }
+  }
+  await alertOwner(`job:${job.type}`, `Ish yiqildi: ${job.type} (${job.id.slice(0, 8)}, ${job.attempts} urinish)\n${error.slice(0, 200)}`);
+}
