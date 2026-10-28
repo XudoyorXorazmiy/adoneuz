@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { can, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from '@adone/core';
 import type { TgMember } from '@/lib/tg/session';
-import { MANAGER_TASK_TABS, managerDecisions, managerShell, managerTasks } from '@/server/manager';
+import { MANAGER_TASK_TABS, managerPendingCount, managerShell, managerTasks } from '@/server/manager';
 import type { TaskListRow, TaskTab, TaskView } from '@/server/task-queries';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
@@ -14,7 +14,7 @@ type SP = Record<string, string | string[] | undefined>;
 export async function ManagerTasks({ m, sp }: { m: TgMember; sp: SP }) {
   const view: TaskView = sp.kor === 'ozi' ? 'ozi' : sp.kor === 'mening' ? 'mening' : 'berilgan';
   const tab: TaskTab = MANAGER_TASK_TABS.some((t) => t.id === sp.tab) ? (sp.tab as TaskTab) : 'all';
-  const [{ rows, counts, batches }, d] = await Promise.all([managerTasks(m, view, tab), managerDecisions(m)]);
+  const [{ rows, counts, batches }, d] = await Promise.all([managerTasks(m, view, tab), managerPendingCount(m)]);
   const url = (patch: { kor?: TaskView; tab?: TaskTab }) => {
     const p = new URLSearchParams();
     const k = patch.kor ?? view;
@@ -25,7 +25,7 @@ export async function ManagerTasks({ m, sp }: { m: TgMember; sp: SP }) {
     return `/tg/vazifalar${s ? `?${s}` : ''}`;
   };
   return (
-    <TgPage manager={managerShell(m, d.total)}>
+    <TgPage manager={managerShell(m, d)}>
       <div className="flex flex-col gap-3 px-4 pt-4">
         <div className="flex items-center justify-between">
           <h1 className="m-0 text-2xl font-bold tracking-[-0.02em]">Vazifalar</h1>

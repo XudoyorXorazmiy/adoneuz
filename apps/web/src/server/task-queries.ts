@@ -4,7 +4,7 @@ import { aliasedTable, and, asc, desc, eq, gte, inArray, or, sql } from 'drizzle
 import { departments, employees, media, taskBatches, taskEvents, taskReports, taskTemplates, tasks, users, withTenant, type Tx } from '@adone/db';
 import { assignableMemberRoles, isOpenTask, isOverdue, kanbanColumn, localDate, MEMBER_ROLE_LABELS, onTime, type MemberRole, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
-import { departmentScope } from './scope';
+import { departmentScope, inTenant } from './scope';
 import { actorRole, loadTask } from './tasks';
 import { pendingDeadlineFor } from './deadline';
 import type { AssignOption } from '@/components/tasks/assign-fields';
@@ -247,9 +247,9 @@ export async function employeeJournal(user: TenantUser, employeeId: string, mont
 }
 
 /** Bosh sahifa «Vazifalar bajarilishi»: oy bo'yicha o'z vaqtida %, o'tgan oy bilan farq va bo'limlar kesimi (4 ta). */
-export async function onTimeStats(user: TenantUser, month: string, prevMonth: string) {
+export async function onTimeStats(user: TenantUser, month: string, prevMonth: string, tx0?: Tx) {
   const tz = user.tenantTimezone;
-  return withTenant(user.tenantId, async (tx) => {
+  return inTenant(user.tenantId, tx0, async (tx) => {
     const scope = await departmentScope(tx, user);
     const { rows } = await tx.execute<{ m: string; dep: string | null; total: number; ok: number }>(sql`
       select to_char(t.submitted_at at time zone ${tz}, 'YYYY-MM') as m, d.name as dep, count(*)::int as total,

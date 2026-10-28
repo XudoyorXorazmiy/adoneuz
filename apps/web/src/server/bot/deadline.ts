@@ -90,12 +90,14 @@ export async function onDeadlineCallback(cb: TgCallback): Promise<JobOutcome> {
     await answerCallback(cb.id);
     return { skip: `noma'lum: ${data}` };
   }
+  // Baza xatosi «Ruxsat yo'q» bo'lib ketmasin — alohida ushlanadi
+  let failed: unknown = null;
   for (const link of await memberLinks(uid)) {
     const res = await withTenant(link.tenantId, async (tx) => {
       const [mem] = await tx.select({ role: memberships.role, active: memberships.isActive }).from(memberships).where(eq(memberships.userId, link.userId)).limit(1);
       if (!mem?.active) return null;
       return decideDeadlineRequest(tx, { tenantId: link.tenantId, id: m[2]!, to: m[1] === 'ok' ? 'approved' : 'rejected', actor: { userId: link.userId, role: mem.role } });
-    }).catch(() => null);
+    }).catch((e) => { failed = e; return null; });
     if (!res) continue;
     await answerCallback(cb.id, 'error' in res ? res.error : m[1] === 'ok' ? 'Uzaytirildi' : 'Rad etildi');
     if (cb.message) await editMarkup(chat, cb.message.message_id);
@@ -103,6 +105,11 @@ export async function onDeadlineCallback(cb: TgCallback): Promise<JobOutcome> {
     kick();
     await send(chat, m[1] === 'ok' ? '✅ Muddat uzaytirildi — xodimga xabar ketdi.' : '❌ Rad etildi — xodimga xabar ketdi.');
     return {};
+  }
+  if (failed) {
+    console.error('[bot] qaror saqlanmadi', (failed as Error).message);
+    await answerCallback(cb.id, 'Xatolik — birozdan keyin qayta bosing');
+    return { skip: 'baza xatosi' };
   }
   await answerCallback(cb.id, "Ruxsat yo'q");
   return { skip: 'rahbar emas' };

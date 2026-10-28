@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { arrivalText, hhmm, periodLabel, ppDelta, REPORT_PRESET_LABELS, shortDuration, type ReportPreset } from '@adone/core';
 import type { TgMember } from '@/lib/tg/session';
-import { managerDecisions, managerReport, managerShell } from '@/server/manager';
+import { managerPendingCount, managerReport, managerShell } from '@/server/manager';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { TgPage } from './tg-shell';
@@ -13,9 +13,9 @@ const card = 'flex flex-col gap-3 rounded-[24px] bg-card p-[18px] shadow-[var(--
 
 /** Rahbar Mini App'i — «Hisobot» (egasi, admin): davr tanlovi, davomat va vazifalar yig'masi, reyting. Hisob — panel /hisobotlar bilan bir xil. */
 export async function ManagerReport({ m, preset }: { m: TgMember; preset?: string }) {
-  const [r, d] = await Promise.all([managerReport(m, preset), managerDecisions(m)]);
+  const [r, d] = await Promise.all([managerReport(m, preset), managerPendingCount(m)]);
   if (!r) redirect('/tg');
-  const shell = managerShell(m, d.total);
+  const shell = managerShell(m, d);
   const { period, report, today } = r;
   const a = report.attendance.total;
   const ap = report.attendance.prev;

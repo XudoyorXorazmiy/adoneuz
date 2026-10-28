@@ -5,6 +5,7 @@ import 'server-only';
  */
 import { processUpdate } from '@/server/bot';
 import type { TgUpdate } from '@/server/telegram/types';
+import { pool } from '@adone/db';
 import { send, TelegramError } from '@/server/telegram/api';
 import { withUpdateContext } from '@/server/bot/context';
 import { alertOwner } from '@/server/alerts';
@@ -40,8 +41,11 @@ export const HANDLERS: Record<JobType, Handler> = {
     return {};
   },
   async tg_update(job) {
-    // Vaqt — webhook qabul qilgan payt (qayta urinishda ham), «qabul qilindi» — faqat birinchi urinishda (bot/context)
-    return withUpdateContext({ receivedAt: new Date(job.created_at).getTime(), attempt: job.attempts }, () => tgSafe(() => processUpdate(job.payload.update as TgUpdate)));
+    // Vaqt — webhook qabul qilgan payt (qayta urinishda ham), «qabul qilindi» — faqat birinchi urinishda (bot/context).
+    // Bir chat — ketma-ket (jarayonlar orasida ham): lokatsiya va video bir vaqtda ishlansa sessiya holati buziladi
+    const u = job.payload.update as TgUpdate;
+    const chat = u.message?.chat.id ?? u.callback_query?.message?.chat.id ?? u.callback_query?.from.id ?? null;
+    return withChatLock(chat, () => withUpdateContext({ receivedAt: new Date(job.created_at).getTime(), attempt: job.attempts }, () => tgSafe(() => processUpdate(u))));
   },
   async notify_members(job) {
     const text = str(job.payload.text);
@@ -102,5 +106,39 @@ export async function onFinalFailure(job: JobRow, error: string): Promise<void> 
       await send(chat, `⚠️ ${what} qabul qilinmadi — Telegram bilan aloqa uzildi. Iltimos, qaytadan yuboring.`).catch(() => undefined);
     }
   }
+  // Yuz namunasi qayta ishlanmadi (servis ishlamadi) — xodim ham, rahbar ham bilsin (aks holda keldi-ketdilar «namuna yo'q» bo'lib qoladi)
+  if (job.type === 'face_enroll' && job.tenant_id) {
+    const employeeId = str(job.payload.employeeId);
+    if (employeeId) {
+      await notifyEmployee(job.tenant_id, employeeId, "⚠️ Yuz namunangizni hozir qayta ishlay olmadik. Birozdan keyin /yuz buyrug'ini bosib, 3–5 soniyalik dumaloq videoni qayta yuboring.").catch(() => undefined);
+      await notifyMembers(job.tenant_id, '⚠️ Bir xodimning yuz namunasi qayta ishlanmadi (yuz servisi javob bermadi) — xodimga /yuz orqali qayta yuborish aytildi.', null).catch(() => undefined);
+    }
+  }
   await alertOwner(`job:${job.type}`, `Ish yiqildi: ${job.type} (${job.id.slice(0, 8)}, ${job.attempts} urinish)\n${error.slice(0, 200)}`);
+}
+
+/**
+ * Chat bo'yicha qulf (Postgres advisory lock, sessiya darajasida — alohida ulanish): bir chatning update'lari bir vaqtda
+ * ishlanmaydi. Jarayonda ishchi bitta (jobs/runner mutex), bu — bir nechta jarayon/konteyner bo'lganda ham. 30 s ichida
+ * olinmasa — qayta urinish (ish keyinroq qaytadi).
+ */
+async function withChatLock<T>(chat: number | null, fn: () => Promise<T>): Promise<T> {
+  if (chat == null) return fn();
+  const client = await pool.connect();
+  const key = `tg-chat:${chat}`;
+  try {
+    for (let i = 0; ; i++) {
+      const { rows } = await client.query<{ ok: boolean }>('select pg_try_advisory_lock(hashtext($1)) as ok', [key]);
+      if (rows[0]?.ok) break;
+      if (i >= 30) throw new Error('chat band — keyinroq');
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    try {
+      return await fn();
+    } finally {
+      await client.query('select pg_advisory_unlock(hashtext($1))', [key]).catch(() => undefined);
+    }
+  } finally {
+    client.release();
+  }
 }

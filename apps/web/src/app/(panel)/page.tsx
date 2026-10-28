@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { addDays, formatMinutes, formatTime, isoWeekday, monthDays, MONTHS, WEEKDAY_SHORT, zonedParts } from '@adone/core';
+import { withTenant } from '@adone/db';
 import { requireArea } from '@/lib/auth/guard';
 import { listDay, summarize, today } from '@/server/attendance';
 import { dailyAgg, deltaPct, memberLinked, pendingEmployees, setupState, weekStart } from '@/server/dashboard';
@@ -36,14 +37,15 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
   const prevWs = addDays(ws, -7);
   const from = [`${month}-01`, prevWs].sort()[0]!;
   const monthEnd = monthDays(month).at(-1)!;
-  const [setup, rows, agg, linked, pending, ot] = await Promise.all([
-    setupState(user.tenantId),
-    listDay(user, { date: t }),
-    dailyAgg(user, from, addDays(ws, 6) > monthEnd ? addDays(ws, 6) : monthEnd),
-    memberLinked(user.tenantId, user.id),
-    pendingEmployees(user),
-    onTimeStats(user, t.slice(0, 7), shiftMonthKey(t.slice(0, 7), -1)),
-  ]);
+  // Bitta tranzaksiya (oldin 6 ta parallel — har biri pool'dan alohida ulanish; 09:00 da 10 rahbar = 60 ulanish)
+  const { setup, rows, agg, linked, pending, ot } = await withTenant(user.tenantId, async (tx) => ({
+    setup: await setupState(user.tenantId, tx),
+    rows: await listDay(user, { date: t }, tx),
+    agg: await dailyAgg(user, from, addDays(ws, 6) > monthEnd ? addDays(ws, 6) : monthEnd, tx),
+    linked: await memberLinked(user.tenantId, user.id, tx),
+    pending: await pendingEmployees(user, 6, tx),
+    ot: await onTimeStats(user, t.slice(0, 7), shiftMonthKey(t.slice(0, 7), -1), tx),
+  }));
   const hour = zonedParts(new Date(), tz).h;
   const header = (decisions: number) => (
     <PageHeader

@@ -1,6 +1,6 @@
 import 'server-only';
 import { and, arrayContains, eq, inArray, ne } from 'drizzle-orm';
-import { departments, employees, memberships, tgLinks, withPlatform, withTenant, type Tx } from '@adone/db';
+import { departments, employees, jobs, memberships, tgLinks, withPlatform, withTenant, type Tx } from '@adone/db';
 import { notifyTargets, type NotifyEvent, type NotifyRole } from '@adone/core';
 import { readSettings } from '@/server/settings';
 import { publicApiOrigin } from '@/lib/host';
@@ -178,4 +178,25 @@ export async function deliver(chats: Array<{ chatId: number }>, fn: (chatId: num
   if (transient) console.warn(`[notify] ba'zi qabul qiluvchilarga yetmadi: ${(transient as Error).message}`);
   if (sent === 0 && dead.length) return { skip: 'hamma qabul qiluvchi botni bloklagan' };
   return {};
+}
+
+/** Bir soatda ishxona bo'yicha «shubhali» xabarlari chegarasi (yuz servisi ishlamasa har «Keldim» shubhali — rahbar ko'mib tashlanmasin). */
+const SUSPICIOUS_PER_HOUR = 5;
+
+/**
+ * «Shubhali keldi-ketdi» xabari — soatiga ishxona bo'yicha ko'pi bilan 5 ta, keyin bitta umumiy («yana bor — Qarorlar»).
+ * Hisob navbat yozuvlarining `dedupe_key` uyalari bilan (tranzaksiyaviy, alohida jadval shart emas).
+ */
+export async function queueSuspicious(tx: Tx, tenantId: string, text: string, departmentId: string | null) {
+  const hour = new Date().toISOString().slice(0, 13);
+  const payload = (t: string) => ({ text: t, departmentId, event: 'suspicious', miniPath: '/tg/qarorlar' });
+  for (let slot = 0; slot < SUSPICIOUS_PER_HOUR; slot++) {
+    const r = await tx.insert(jobs).values({ tenantId, type: 'notify_members', payload: payload(text), maxAttempts: 3, dedupeKey: `susp:${tenantId}:${hour}:${slot}` })
+      .onConflictDoNothing().returning({ id: jobs.id });
+    if (r.length) return;
+  }
+  await tx.insert(jobs).values({
+    tenantId, type: 'notify_members', maxAttempts: 3, dedupeKey: `susp:${tenantId}:${hour}:more`,
+    payload: payload('🔎 Bu soatda shubhali keldi-ketdilar ko‘p — har biri haqida alohida yozmaymiz. Hammasi: Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».'),
+  }).onConflictDoNothing();
 }

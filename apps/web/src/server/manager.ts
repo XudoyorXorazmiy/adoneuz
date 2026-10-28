@@ -4,6 +4,7 @@ import 'server-only';
  * vazifalar nazorati va berish, xodim kartasi, hisobot, ish haqi. Hammasi panelning o'sha server funksiyalari orqali
  * (`TenantUser` ko'rinishida) — rol va bo'lim cheklovi bir xil.
  */
+import { sql } from 'drizzle-orm';
 import { withTenant } from '@adone/db';
 import { addDays, can, reportPeriod } from '@adone/core';
 import { appOrigin } from '@/lib/host';
@@ -60,6 +61,35 @@ export async function managerDecisions(m: TgMember) {
     employees, leaves: leaves.rows, tasks, suspicious, deadlines,
     total: employees.length + leaves.rows.length + tasks.length + suspicious.length + deadlines.length,
   };
+}
+
+/**
+ * Menyu belgisi uchun YENGIL son (2-bosqich 2.1): oldin har rahbar sahifasi to'liq `managerDecisions` ni (ikki kunlik davomat,
+ * vazifalar ro'yxatlari — ~6 tranzaksiya) faqat shu son uchun chaqirardi. Endi bitta tranzaksiya, 5 ta COUNT — o'sha qoidalar:
+ * yangi xodim, ruxsat so'rovi, tekshiruvdagi hisobot, muddat so'rovi, hal qilinmagan shubhali keldi-ketdi (bugun/kecha).
+ * Menejer — o'z bo'limi (+ o'zi bergan/o'ziga berilgan vazifa).
+ */
+export async function managerPendingCount(m: TgMember): Promise<number> {
+  const tu = memberAsTenantUser(m);
+  const t = today(tu);
+  return withTenant(m.tenantId, async (tx) => {
+    const scope = await departmentScope(tx, tu);
+    const dep = (col: ReturnType<typeof sql>) => (scope === null ? sql`true` : scope.length ? sql`${col} in (${sql.join(scope.map((s) => sql`${s}::uuid`), sql`, `)})` : sql`false`);
+    const { rows } = await tx.execute<{ n: number }>(sql`
+      select
+        (select count(*) from employees e where e.status = 'pending' and ${dep(sql`e.department_id`)})
+      + (select count(*) from leave_requests l join employees e on e.id = l.employee_id where l.status = 'pending' and ${dep(sql`e.department_id`)})
+      + (select count(*) from tasks t join task_batches b on b.id = t.batch_id left join employees e on e.id = t.assignee_employee_id
+           where t.status = 'submitted' and (${dep(sql`e.department_id`)} or b.created_by_user_id = ${m.userId}::uuid)
+             and t.assignee_user_id is distinct from ${m.userId}::uuid and e.user_id is distinct from ${m.userId}::uuid)
+      + (select count(*) from deadline_requests r join tasks t on t.id = r.task_id join task_batches b on b.id = t.batch_id join employees e on e.id = r.employee_id
+           where r.status = 'pending' and (${dep(sql`e.department_id`)} or b.created_by_user_id = ${m.userId}::uuid))
+      + (select count(*) from attendance_events a join employees e on e.id = a.employee_id
+           where a.check_status = 'suspicious' and a.work_date >= ${addDays(t, -1)}::date and e.status = 'active' and ${dep(sql`e.department_id`)}
+             and not exists (select 1 from attendance_events c where c.employee_id = a.employee_id and c.work_date = a.work_date and c.kind = 'correction' and c.meta->>'target' = a.id::text))
+      as n`);
+    return Number(rows[0]?.n ?? 0);
+  });
 }
 
 /** Pastki menyu uchun: panel manzili, kutilayotgan qarorlar soni, «Hisobot» tabi (faqat `reports` — egasi, admin). */

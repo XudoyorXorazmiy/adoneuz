@@ -1,10 +1,10 @@
 import 'server-only';
 /** Davomat ko'rinishlari (panel). Hisob — core computeDay(); jurnal — attendance_events (append-only). */
 import { and, asc, eq, gte, inArray, lte, ne } from 'drizzle-orm';
-import { attendanceDays, attendanceEvents, branches, departments, employees, leavesOn, media, schedules, toRule, withTenant } from '@adone/db';
+import { attendanceDays, attendanceEvents, branches, departments, employees, leavesOn, media, schedules, toRule, withTenant, type Tx } from '@adone/db';
 import { computeDay, localDate, monthDays, shiftFor, type DayResult, type DayStatus, type Shift } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
-import { departmentScope, inScope } from './scope';
+import { departmentScope, inScope, inTenant } from './scope';
 
 export interface DayRow {
   id: string;
@@ -32,9 +32,9 @@ export interface DayFilter {
 }
 
 /** Bir kunlik davomat — har faol xodim uchun hisob xotirada (ochiq kunlar «hozirgacha» bilan). */
-export async function listDay(user: TenantUser, f: DayFilter): Promise<DayRow[]> {
+export async function listDay(user: TenantUser, f: DayFilter, tx0?: Tx): Promise<DayRow[]> {
   const tz = user.tenantTimezone;
-  return withTenant(user.tenantId, async (tx) => {
+  return inTenant(user.tenantId, tx0, async (tx) => {
     const scope = await departmentScope(tx, user);
     const emps = await tx
       .select({ e: employees, s: schedules, departmentName: departments.name, branchName: branches.name, branchRadiusM: branches.radiusM })

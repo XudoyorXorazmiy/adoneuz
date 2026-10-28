@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { formatSom, MONTHS } from '@adone/core';
 import type { TgMember } from '@/lib/tg/session';
-import { managerDecisions, managerPayroll, managerShell } from '@/server/manager';
+import { managerPendingCount, managerPayroll, managerShell } from '@/server/manager';
 import { Avatar } from '@/components/ui/avatar';
 import { Icon } from '@/components/ui/icon';
 import { TgHeader } from './tg-shell';
@@ -14,9 +14,9 @@ const shiftMonth = (m: string, n: number) => {
 
 /** Rahbar Mini App'i — «Ish haqi» (egasi, admin): oylik vedomost ko'rinishi (faqat o'qish; tuzatish va yopish — panelda). */
 export async function ManagerPayroll({ m, month }: { m: TgMember; month: string }) {
-  const [v, d] = await Promise.all([managerPayroll(m, month), managerDecisions(m)]);
+  const [v, d] = await Promise.all([managerPayroll(m, month), managerPendingCount(m)]);
   if (!v) redirect('/tg');
-  const shell = managerShell(m, d.total);
+  const shell = managerShell(m, d);
   const sum = (k: 'total' | 'base' | 'penaltyTotal' | 'bonusTotal' | 'adjustment') => v.rows.reduce((s, r) => s + r[k], 0);
   const [y, mo] = month.split('-').map(Number) as [number, number];
   const closed = v.period?.status === 'closed';

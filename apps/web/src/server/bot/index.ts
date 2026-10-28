@@ -6,13 +6,13 @@ import 'server-only';
  */
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
-import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor, UUID_SRC } from '@adone/core';
+import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor, UUID_SRC, workdayFor } from '@adone/core';
 import { appOrigin } from '@/lib/host';
 import { issueTelegramLogin } from '@/server/team';
 import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
 import type { TgCallback, TgMessage, TgUpdate } from '@/server/telegram/types';
 import { saveMedia } from '@/server/media';
-import { queueNotifyMembers } from '@/server/notify';
+import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
 import type { JobOutcome } from '@/server/jobs/types';
@@ -358,7 +358,7 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
 
   const out = await withTenant(state.tenantId, async (tx) => {
     const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
-    const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).limit(1);
+    const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).for('update').limit(1); // Mini App bilan bir vaqtda — ketma-ket
     if (!e?.branchId) return { kind: 'error' as const, text: T.noBranch };
     const [b] = await tx.select().from(branches).where(eq(branches.id, e.branchId)).limit(1);
     if (!b) return { kind: 'error' as const, text: T.noBranch };
@@ -377,6 +377,8 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
       return { kind: 'error' as const, text: T.outside(formatDistance(g.distanceM), esc(b.name)) };
     }
     if (state.action === 'check_out') {
+      // Ikki marta «Ketdim» (qayta yuborilgan lokatsiya / Mini App bilan bir vaqtda) — xodim qatori qulflangan, holat qayta tekshiriladi
+      if (nextAction(await dayEvents(tx, e.id, wd.date)) !== 'check_out') return { kind: 'error' as const, text: 'Siz allaqachon «Ketdim» qilgansiz.' };
       await tx.insert(attendanceEvents).values({ ...base, kind: 'check_out', checkStatus: 'ok' });
       const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
       return { kind: 'out' as const, time: formatTime(at, t!.tz), worked: formatMinutes(r.workedMinutes) };
@@ -415,7 +417,7 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
   );
   const res = await withTenant(state.tenantId, async (tx) => {
     const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
-    const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).limit(1);
+    const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).for('update').limit(1); // Mini App bilan bir vaqtda — ketma-ket
     if (!e || e.status !== 'active') return null;
     const at = new Date(arrivedAt());
     const wd = await workdayOf(tx, e.id, at, t!.tz);
@@ -431,7 +433,7 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
       await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId, 'late', '/tg');
     }
     if (verdict.status === 'suspicious') {
-      await queueNotifyMembers(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${verdict.reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious', '/tg/qarorlar');
+      await queueSuspicious(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${verdict.reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId);
     }
     return { already: false as const, time: formatTime(r.firstIn ?? at, t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious' };
   });
@@ -462,8 +464,9 @@ async function showToday(msg: TgMessage): Promise<JobOutcome> {
     const line = await withTenant(l.tenantId, async (tx) => {
       const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
       const tz = t!.tz;
-      const wd = await workdayOf(tx, l.employeeId, new Date(), tz);
+      // Qoida bir marta o'qiladi (oldin workdayOf ichida ham — ikki marta)
       const rule = await employeeRule(tx, l.employeeId);
+      const wd = workdayFor(rule, new Date(), tz);
       const shift = rule ? shiftFor(rule, wd.date, tz) : null;
       const r = computeDay({ events: await dayEvents(tx, l.employeeId, wd.date), shift, now: new Date(), onLeave: await onLeave(tx, l.employeeId, wd.date) });
       const s = shift ? `Smena: ${formatTime(shift.start, tz)}–${formatTime(shift.end, tz)}` : 'Smena: erkin grafik / dam';

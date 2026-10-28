@@ -13,7 +13,9 @@ import 'server-only';
  * Tugatilgan, lekin bajarilmagan ish (masalan bot ulanmagan) — done + last_error'da «skip: …» izohi.
  */
 import { sql } from 'drizzle-orm';
-import { withPlatform } from '@adone/db';
+import { tenants, withPlatform, withTenant } from '@adone/db';
+import { outsideQuietHours } from '@adone/core';
+import { readSettings } from '@/server/settings';
 import { HANDLERS, onFinalFailure, PermanentError, type JobRow } from './handlers';
 
 export interface RunResult {
@@ -31,6 +33,28 @@ export const JOB_TIMEOUT_MS = 120_000;
 const TG_UPDATE_RETRY_SEC = [30, 60, 120, 240, 480];
 
 class JobTimeout extends Error {}
+
+/**
+ * Tinch vaqt (Sozlamalar → Vazifalar, standart 22:00–08:00) ishchida ham: rahbarlarga tarqatish (`notify_members` — kechikdi,
+ * shubhali, yangi xodim…) va bildirishnoma ishlarining QAYTA urinishlari tunda yuborilmaydi — tinch vaqt tugashiga suriladi.
+ * Foydalanuvchining o'z amaliga birinchi javobi (vazifa berildi, so'rovga qaror) — surilmaydi.
+ */
+const NOTIFY_TYPES = new Set(['notify_members', 'notify_employee', 'task_notify', 'leave_notify', 'deadline_notify', 'absent_digest']);
+
+async function quietUntil(job: JobRow, cache: Map<string, { tz: string; quiet: { from: number; to: number } }>): Promise<Date | null> {
+  if (!job.tenant_id || !NOTIFY_TYPES.has(job.type) || (job.type !== 'notify_members' && job.attempts <= 1)) return null;
+  let q = cache.get(job.tenant_id);
+  if (!q) {
+    q = await withTenant(job.tenant_id, async (tx) => {
+      const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
+      return { tz: t?.tz ?? 'Asia/Tashkent', quiet: (await readSettings(tx)).quietHours };
+    });
+    cache.set(job.tenant_id, q);
+  }
+  const now = new Date();
+  const until = outsideQuietHours(now, q.tz, q.quiet);
+  return until.getTime() > now.getTime() + 60_000 ? until : null;
+}
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   let t: NodeJS.Timeout;
@@ -54,6 +78,7 @@ async function loop(opts: { limit?: number; budgetMs?: number }): Promise<RunRes
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 25);
   const deadline = Date.now() + (opts.budgetMs ?? 20_000);
   const res: RunResult = { claimed: 0, done: 0, retried: 0, failed: 0, details: [] };
+  const quietCache = new Map<string, { tz: string; quiet: { from: number; to: number } }>();
 
   // Bir chaqiriqda bir necha aylanma: ish o'zidan keyingisini navbatga qo'ysa —
   // keyingi cron daqiqasini kutmasdan shu yerda davom etadi
@@ -84,6 +109,13 @@ async function loop(opts: { limit?: number; budgetMs?: number }): Promise<RunRes
         continue;
       }
       const handler = (HANDLERS as Record<string, (j: JobRow) => Promise<{ skip?: string }>>)[job.type];
+      const wait = await quietUntil(job, quietCache).catch(() => null);
+      if (wait) {
+        // Urinish hisoblanmaydi — tinch vaqt tugagach ketadi
+        await withPlatform((tx) => tx.execute(sql`update jobs set status = 'queued', locked_at = null, attempts = greatest(attempts - 1, 0), run_at = ${wait.toISOString()}::timestamptz where ${mine}`));
+        res.details.push({ id: job.id, type: job.type, result: `quiet → ${wait.toISOString().slice(11, 16)}Z` });
+        continue;
+      }
       try {
         if (!handler) throw new PermanentError(`noma'lum ish turi: ${job.type}`);
         const out = await withTimeout(handler(job), JOB_TIMEOUT_MS);

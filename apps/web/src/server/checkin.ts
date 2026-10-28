@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { attendanceEvents, branches, dayEvents, employees, rebuildDay, tenants, workdayOf, type Tx } from '@adone/db';
 import { checkGeofence, effectiveEvents, facePercent, formatTime, nextAction, type FaceDecision } from '@adone/core';
 import { escHtml as esc } from '@/lib/task-text';
-import { queueNotifyMembers } from '@/server/notify';
+import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { readSettings } from '@/server/settings';
 
 export type CheckAction = 'check_in' | 'check_out';
@@ -36,7 +36,9 @@ export async function recordCheck(tx: Tx, input: {
 }): Promise<CheckResult> {
   const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
   const tz = t!.tz;
-  const [e] = await tx.select().from(employees).where(eq(employees.id, input.employeeId)).limit(1);
+  // Xodim qatori qulflanadi: ikki bosish yoki bot + Mini App bir vaqtda — ikkinchisi birinchisi tugashini kutadi va
+  // «allaqachon ishdasiz» oladi (ikki marta «Keldim» yozilmaydi)
+  const [e] = await tx.select().from(employees).where(eq(employees.id, input.employeeId)).for('update').limit(1);
   if (!e || e.status !== 'active') return { ok: false, reason: 'inactive', message: 'Hisobingiz faol emas yoki hali tasdiqlanmagan.' };
   if (!e.branchId) return { ok: false, reason: 'no_branch', message: 'Sizga filial biriktirilmagan. Rahbaringizga murojaat qiling.' };
   const [b] = await tx.select().from(branches).where(eq(branches.id, e.branchId)).limit(1);
@@ -69,7 +71,7 @@ export async function recordCheck(tx: Tx, input: {
     await queueNotifyMembers(tx, input.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, tz)}, Mini App).`, e.departmentId, 'late', '/tg');
   }
   if (checkStatus === 'suspicious') {
-    await queueNotifyMembers(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId, 'suspicious', '/tg/qarorlar');
+    await queueSuspicious(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId);
   }
   return {
     ok: true, time: formatTime(new Date(), tz), lateMinutes: input.action === 'check_in' ? r.lateMinutes : 0, workedMinutes: r.workedMinutes, distanceM: g.distanceM, branchName: b.name,
@@ -80,6 +82,7 @@ export async function recordCheck(tx: Tx, input: {
 /** Tanaffus: faqat ishda bo'lganda; boshlangan bo'lsa — tugatadi. */
 export async function toggleBreak(tx: Tx, tenantId: string, employeeId: string): Promise<{ ok: boolean; onBreak?: boolean; message?: string }> {
   const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
+  await tx.select({ id: employees.id }).from(employees).where(eq(employees.id, employeeId)).for('update'); // ikki bosish — ketma-ket
   const wd = await workdayOf(tx, employeeId, new Date(), t!.tz);
   const evs = await dayEvents(tx, employeeId, wd.date);
   if (nextAction(evs) !== 'check_out') return { ok: false, message: 'Avval «Keldim» qiling.' };

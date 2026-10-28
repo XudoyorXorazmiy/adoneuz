@@ -1,6 +1,6 @@
 import 'server-only';
 import { eq, inArray, sql } from 'drizzle-orm';
-import { departments, memberships, type Tx } from '@adone/db';
+import { departments, memberships, withTenant, type Tx } from '@adone/db';
 import type { TenantUser } from '@/lib/auth/session';
 
 /**
@@ -21,3 +21,11 @@ export function inScope(column: Parameters<typeof inArray>[0], scope: string[] |
   return inArray(column, scope);
 }
 
+
+/**
+ * Berilgan tranzaksiyada yoki (yo'q bo'lsa) yangisida. Bir sahifa bir nechta o'qishni BITTA tranzaksiyada qilishi uchun
+ * (bosh sahifa: oldin 6 ta parallel `withTenant` — pool'dan 6 ulanish). Bitta `tx` ichida so'rovlar ketma-ket bo'lsin.
+ */
+export function inTenant<T>(tenantId: string, tx: Tx | undefined, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return tx ? fn(tx) : withTenant(tenantId, fn);
+}

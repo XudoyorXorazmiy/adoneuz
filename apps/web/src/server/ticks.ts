@@ -6,7 +6,7 @@ import 'server-only';
  *   - kunlik «Kelmaganlar» ro'yxati rahbarlarga (standart 10:00, `tenants.settings.absentDigestAt`).
  */
 import { and, eq, inArray } from 'drizzle-orm';
-import { attendanceEvents, employees, onLeave, rebuildDay, tenants, withPlatform, withTenant, dayEvents, employeeRule } from '@adone/db';
+import { attendanceEvents, employees, eventsFor, leavesFor, rebuildDays, rulesFor, tenants, withPlatform, withTenant } from '@adone/db';
 import { addDays, computeDay, formatTime, localDate, shiftFor, tenantSettings, zonedParts } from '@adone/core';
 import { esc } from '@/server/telegram/api';
 import { enqueue } from '@/server/jobs/enqueue';
@@ -24,6 +24,11 @@ export async function scheduleTicks(now = new Date()): Promise<number> {
   });
 }
 
+/**
+ * Tick to'plam bilan (2-bosqich 2.2): oldin har xodim × kun uchun ~11 so'rov edi (60 xodim ≈ 700, bitta uzun tranzaksiya —
+ * «Keldim» shuni kutardi). Endi: xodimlar + qoidalar + hodisalar + ruxsatlar (4 o'qish), hisob xotirada, avto-yopish yozuvlari,
+ * bitta upsert — xodim soniga bog'liq emas.
+ */
 export async function attendanceTick(tenantId: string, now = new Date()): Promise<JobOutcome> {
   let closed = 0;
   await withTenant(tenantId, async (tx) => {
@@ -31,27 +36,31 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
     const tz = t!.tz;
     const settings = tenantSettings(t!.settings);
     const today = localDate(now, tz);
+    const dates = [addDays(today, -1), today];
     const emps = await tx.select({ id: employees.id, fullName: employees.fullName, departmentId: employees.departmentId }).from(employees).where(eq(employees.status, 'active'));
+    const ids = emps.map((e) => e.id);
+    const [rules, events, leaves] = [await rulesFor(tx, ids), await eventsFor(tx, ids, dates), await leavesFor(tx, ids, dates)];
     for (const e of emps) {
-      const rule = await employeeRule(tx, e.id);
-      for (const date of [addDays(today, -1), today]) {
+      const rule = rules.get(e.id) ?? null;
+      for (const date of dates) {
         const shift = rule ? shiftFor(rule, date, tz) : null;
-        const evs = await dayEvents(tx, e.id, date);
+        const evs = events.get(`${e.id}|${date}`) ?? [];
         const r = computeDay({ events: evs, shift, now });
-        if (r.open) {
-          const lastIn = [...evs].reverse().find((x) => x.kind === 'check_in' && x.checkStatus !== 'rejected');
-          const closeAt = shift ? new Date(shift.end.getTime() + settings.autoCloseHours * 3600_000) : lastIn ? new Date(lastIn.at.getTime() + settings.freeAutoCloseHours * 3600_000) : null;
-          if (closeAt && now >= closeAt) {
-            const at = shift ? shift.end : closeAt;
-            await tx.insert(attendanceEvents).values({ tenantId, employeeId: e.id, workDate: date, kind: 'auto_close', serverAt: at, source: 'admin', checkStatus: 'ok', reasons: ['forgot_checkout'] });
-            await queueNotifyEmployee(tx, tenantId, e.id, `ℹ️ ${date.split('-').reverse().join('.')} kuni «Ketdim» bosilmadi — tizim ${formatTime(at, tz)} da avtomatik yopdi. Xato bo'lsa rahbaringizga ayting.`);
-            await queueNotifyMembers(tx, tenantId, `ℹ️ <b>${esc(e.fullName)}</b> «Ketdim» bosmagan — ${formatTime(at, tz)} da avto-yopildi.`, e.departmentId, undefined, '/tg');
-            closed++;
-          }
-        }
-        await rebuildDay(tx, { tenantId, employeeId: e.id, workDate: date, tz, now });
+        if (!r.open) continue;
+        const lastIn = [...evs].reverse().find((x) => x.kind === 'check_in' && x.checkStatus !== 'rejected');
+        const closeAt = shift ? new Date(shift.end.getTime() + settings.autoCloseHours * 3600_000) : lastIn ? new Date(lastIn.at.getTime() + settings.freeAutoCloseHours * 3600_000) : null;
+        if (!closeAt || now < closeAt) continue;
+        const at = shift ? shift.end : closeAt;
+        const [ev] = await tx.insert(attendanceEvents).values({ tenantId, employeeId: e.id, workDate: date, kind: 'auto_close', serverAt: at, source: 'admin', checkStatus: 'ok', reasons: ['forgot_checkout'] })
+          .returning({ id: attendanceEvents.id });
+        // Yig'ma xotiradagi ro'yxatdan quriladi — yangi hodisa ham unda bo'lsin
+        events.set(`${e.id}|${date}`, [...evs, { id: ev!.id, kind: 'auto_close' as const, at, checkStatus: 'ok' as const, meta: null }].sort((a, b) => a.at.getTime() - b.at.getTime()));
+        await queueNotifyEmployee(tx, tenantId, e.id, `ℹ️ ${date.split('-').reverse().join('.')} kuni «Ketdim» bosilmadi — tizim ${formatTime(at, tz)} da avtomatik yopdi. Xato bo'lsa rahbaringizga ayting.`);
+        await queueNotifyMembers(tx, tenantId, `ℹ️ <b>${esc(e.fullName)}</b> «Ketdim» bosmagan — ${formatTime(at, tz)} da avto-yopildi.`, e.departmentId, undefined, '/tg');
+        closed++;
       }
     }
+    await rebuildDays(tx, { tenantId, tz, now, items: emps.flatMap((e) => dates.map((workDate) => ({ employeeId: e.id, workDate }))), preloaded: { rules, events, leaves } });
     // Takrorlanuvchi vazifalar (kuniga bir marta, last_run_date bilan)
     await runTaskTemplates(tx, tenantId, now);
     // Kelmaganlar ro'yxati — kuniga bir marta, belgilangan vaqtdan keyin
@@ -66,13 +75,16 @@ export async function absentDigest(tenantId: string, date: string): Promise<JobO
   const text = await withTenant(tenantId, async (tx) => {
     const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
     const emps = await tx.select({ id: employees.id, fullName: employees.fullName, phone: employees.phone }).from(employees).where(and(eq(employees.status, 'active')));
+    const ids = emps.map((e) => e.id);
+    // To'plam: 3 ta so'rov (xodim soniga bog'liq emas)
+    const [rules, events, leaves] = [await rulesFor(tx, ids), await eventsFor(tx, ids, [date]), await leavesFor(tx, ids, [date])];
     const absent: string[] = [];
     const late: string[] = [];
     for (const e of emps) {
-      const rule = await employeeRule(tx, e.id);
+      const rule = rules.get(e.id) ?? null;
       const shift = rule ? shiftFor(rule, date, t!.tz) : null;
       if (!shift) continue;
-      const r = computeDay({ events: await dayEvents(tx, e.id, date), shift, now: new Date(), onLeave: await onLeave(tx, e.id, date) });
+      const r = computeDay({ events: events.get(`${e.id}|${date}`) ?? [], shift, now: new Date(), onLeave: leaves.has(`${e.id}|${date}`) });
       if (r.status === 'absent') absent.push(`• ${esc(e.fullName)}${e.phone ? ` — +${e.phone}` : ''} (smena ${formatTime(shift.start, t!.tz)})`);
       else if (r.lateMinutes > 0) late.push(`• ${esc(e.fullName)} — ${r.lateMinutes} daq`);
     }

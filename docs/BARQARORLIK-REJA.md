@@ -54,6 +54,30 @@
 | 2.5 | Bot holat xatolari: `tk:send` taskId tekshiruvi, `task_revise` holati tozalanishi, ro'yxatdan o'tish TTL 15 daq → 24 soat, `leave/deadline` da DB xatosi «Ruxsat yo'q» bo'lib ketmasin | `bot/tasks.ts`, `bot/leave.ts`, `bot/deadline.ts`, `bot/session.ts` |
 | 2.6 | Tinch vaqt ishchida (hozir faqat eslatmalarda, retry va `notify_members` 03:00 da ham boradi); `face_enroll` oxirgi yiqilishda xodim + rahbarga xabar; «shubhali» xabarlari tenant/soat bo'yicha cheklov | `jobs/runner.ts`, `server/face.ts`, `notify.ts` |
 
+### 2-bosqich — bajarildi (2026-10-29), o'lchovlar (lokal seed, 9 faol xodim)
+
+| Nima | Oldin | Keyin |
+|---|---|---|
+| `attendanceTick` (har 10 daq, har ishxona) | 104 so'rov (≈ 11 / xodim → 60 xodim ≈ 690) | 8–9 so'rov (xodim soniga bog'liq emas) |
+| `absentDigest` | 30 so'rov | 10 (shundan 3 — hisob, qolgani tarqatish) |
+| Panel bosh sahifa | 6 tranzaksiya (6 ulanish) | 1 tranzaksiya, so'rovlar ketma-ket |
+| Rahbar Mini App menyu belgisi (Vazifalar, Hisobot, Ish haqi) | 14 so'rov / 7 tranzaksiya | 1 / 1 (qiymat bir xil: egasi 6=6, menejer 4=4) |
+| `/ish-haqi` ochilishi, o'zgarish yo'q | 20 so'rov + barcha qatorlar qayta yoziladi | 6 so'rov, yozuv yo'q |
+
+- **2.1** `inTenant(tenantId, tx, fn)` (`server/scope.ts`) — o'qish funksiyalari ixtiyoriy `tx` oladi; bosh sahifa bitta `withTenant`.
+  `managerPendingCount` — bitta SQL (5 ta COUNT, `managerDecisions` qoidalari bilan). «Qarorlar» va «Bugun» to'liq ro'yxatni ko'rsatgani uchun o'zgarmadi.
+- **2.2** `packages/db/attendance.ts`: `rulesFor`, `eventsFor`, `leavesFor`, `rebuildDays` (bitta upsert); `rebuildDay` endi shu orqali (yagona yozuvchi).
+  Tick avto-yopish hodisasini xotiradagi ro'yxatga ham qo'shadi. `showToday` — qoida bir marta.
+- **2.3** `isStale`: hisobdan keyin qoidalar, shu oy davomati, vazifalar, xodimlar, jadvallar, ruxsatlar, ishxona sozlamasi o'zgarganmi yoki hisob 6 soatdan
+  eskimi. Yopishda — har doim qayta hisob.
+- **2.4** Mini App va bot «Keldim/Ketdim» — xodim qatori `FOR UPDATE`; bot «Ketdim» holatni qayta tekshiradi. `tg_update` — chat bo'yicha
+  `pg_try_advisory_lock` (30 s, alohida ulanish).
+- **2.5** `tk:send` faqat o'z vazifasining hisobot sessiyasida; boshqa qaror bosilsa «qaytarish sababi» holati tozalanadi; ro'yxatdan o'tish
+  sessiyasi 24 soat; bot `lv:`/`dl:` qarorida baza xatosi — «Xatolik — qayta bosing» (oldin «Ruxsat yo'q»).
+- **2.6** Ishchida tinch vaqt: `notify_members` va bildirishnomalarning qayta urinishlari tunda ertalabga suriladi (urinish hisoblanmaydi);
+  `face_enroll` urinishlari tugasa — xodimga «/yuz bilan qayta yuboring», rahbarlarga xabar; «shubhali» — soatiga ishxonaga 5 ta, keyin bitta umumiy.
+- Eslatma: `test-payroll` toza seed'ni kutadi (audit soni) — ketma-ket ikki marta ishga tushirilsa yiqiladi (2-bosqichga bog'liq emas).
+
 ## 3-bosqich — uzoq muddat: disk, eksploatatsiya (uchinchi push)
 
 | # | Nima | Qayerda |

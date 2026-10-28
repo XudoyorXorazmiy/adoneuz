@@ -4,7 +4,7 @@ import 'server-only';
  * natija — `payroll_lines` snapshot. Qoralama davr ko'rilganda qayta hisoblanadi (qo'lda tuzatish saqlanadi), yopilgan davr o'zgarmaydi.
  * Har qoida o'zgarishi, tuzatish, yopish / qayta ochish — audit_log.
  */
-import { and, asc, eq, gte, inArray, lt, ne } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt, ne, sql } from 'drizzle-orm';
 import {
   attendanceDays, auditLog, departments, employees, payRules, payrollLines, payrollPeriods, schedules, taskBatches, tasks, tenants, toRule, users,
   withTenant, type Tx,
@@ -70,11 +70,33 @@ async function calculate(tx: Tx, month: string, tz: string, rules: PayRules, emp
 const tzOf = async (tx: Tx) => (await tx.select({ tz: tenants.timezone }).from(tenants).limit(1))[0]!.tz;
 
 /** Qoralama davrni (bo'lmasa yaratib) qayta hisoblaydi. Yopilgan davrga tegmaydi. */
-export async function recomputePeriod(tx: Tx, tenantId: string, month: string) {
+/**
+ * Qoralama eskirganmi (2-bosqich 2.3): oldin `/ish-haqi` har ochilganda butun oy qayta hisoblanardi (xodim × kun, vazifalar).
+ * Endi faqat hisobdan keyin manba o'zgargan bo'lsa: qoidalar, shu oyning davomat yig'masi (tick ham yangilaydi — joriy oy ko'pi
+ * bilan ~10 daqiqada bir), vazifalar, xodim (stavka, holat, jadval), jadvallar, ruxsatlar; yoki hisob 6 soatdan eski.
+ */
+async function isStale(tx: Tx, p: typeof payrollPeriods.$inferSelect, month: string): Promise<boolean> {
+  if (!p.computedAt) return true;
+  const at = p.computedAt.toISOString();
+  const from = `${month}-01`;
+  const { rows } = await tx.execute<{ stale: boolean }>(sql`
+    select (${at}::timestamptz < now() - interval '6 hours')
+      or exists (select 1 from pay_rules where updated_at > ${at}::timestamptz)
+      or exists (select 1 from attendance_days where work_date >= ${from}::date and work_date < (${from}::date + interval '1 month') and updated_at > ${at}::timestamptz)
+      or exists (select 1 from tasks where updated_at > ${at}::timestamptz)
+      or exists (select 1 from employees where updated_at > ${at}::timestamptz)
+      or exists (select 1 from schedules where updated_at > ${at}::timestamptz)
+      or exists (select 1 from leave_requests where updated_at > ${at}::timestamptz)
+      or exists (select 1 from tenants where updated_at > ${at}::timestamptz) as stale`);
+  return rows[0]?.stale !== false;
+}
+
+export async function recomputePeriod(tx: Tx, tenantId: string, month: string, opts: { force?: boolean } = {}) {
   const rules = await loadPayRules(tx);
   await tx.insert(payrollPeriods).values({ tenantId, month }).onConflictDoNothing();
   const [p] = await tx.select().from(payrollPeriods).where(eq(payrollPeriods.month, month)).for('update').limit(1);
   if (!p || p.status === 'closed') return p!;
+  if (!opts.force && !(await isStale(tx, p, month))) return p;
   const calc = await calculate(tx, month, await tzOf(tx), rules);
   const existing = await tx.select({ id: payrollLines.id, emp: payrollLines.employeeId, adj: payrollLines.adjustment }).from(payrollLines).where(eq(payrollLines.periodId, p.id));
   const adj = new Map(existing.map((x) => [x.emp, x.adj]));
@@ -149,7 +171,7 @@ export async function setPeriodStatus(tx: Tx, input: { tenantId: string; userId:
   if (!p) return { error: 'Davr topilmadi' };
   if (input.to === 'closed') {
     if (p.status === 'closed') return { error: 'Davr allaqachon yopilgan' };
-    await recomputePeriod(tx, input.tenantId, input.month);
+    await recomputePeriod(tx, input.tenantId, input.month, { force: true });
   }
   const from: PayrollStatus = input.to === 'closed' ? 'draft' : 'closed';
   const upd = await tx.update(payrollPeriods)

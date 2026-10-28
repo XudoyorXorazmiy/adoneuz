@@ -148,6 +148,9 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
       await answerCallback(cb.id, 'Ruxsat yo‘q');
       return { skip: 'rahbar emas' };
     }
+    // «Qaytarish» bosilib sabab yozilmagan bo'lsa — boshqa qaror qilinganda o'sha holat tozalanadi (keyingi matn sabab bo'lib ketmasin)
+    const cur = await getState(uid);
+    if (cur.step === 'task_revise' && (act !== 'rev' || cur.taskId !== taskId)) await clearState(uid);
     if (act === 'ok') {
       await answerCallback(cb.id);
       await send(chat, 'Baho qo‘ying:', { inline_keyboard: [[5, 4, 3, 2, 1].map((x) => ({ text: `${x}⭐️`, callback_data: `tk:rt:${taskId}:${x}` }))] });
@@ -230,8 +233,13 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
     ].join('\n'), sendKb(taskId));
     return {};
   }
-  // send
+  // send: tugma shu vazifaning hisobot sessiyasiga tegishli bo'lsin (eski xabardagi tugma boshqa vazifani topshirib yubormasin)
   await answerCallback(cb.id);
+  const st = await getState(uid);
+  if (st.step !== 'task_report' || st.taskId !== taskId) {
+    await send(chat, 'Bu hisobot sessiyasi tugagan. Vazifada «✅ Bajardim»ni qaytadan bosing.', f.link.employeeId ? menuKeyboard : undefined);
+    return { skip: 'boshqa vazifa sessiyasi' };
+  }
   return finishReport(uid, chat);
 }
 

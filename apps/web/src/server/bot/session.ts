@@ -30,11 +30,14 @@ export type BotState =
   | { step: 'idle' };
 
 export const SESSION_TTL_MS = 15 * 60_000;
+/** Ro'yxatdan o'tish (kontakt → rozilik → video) — xodim kechroq davom ettirishi mumkin: 24 soat. */
+const REGISTRATION_TTL_MS = 24 * 3600_000;
+const ttlFor = (s: BotState) => (s.step === 'reg_contact' || s.step === 'reg_consent' || s.step === 'reg_face' ? REGISTRATION_TTL_MS : SESSION_TTL_MS);
 
 /** `at` — xabar serverga kelgan vaqt (qayta urinishda kechikkan ish sessiyani «eskirgan» deb hisoblamasin, bot/context). */
 export async function getState(tgUserId: number, at: number = arrivedAt()): Promise<BotState> {
   const [r] = await withPlatform((tx) => tx.select().from(botSessions).where(eq(botSessions.telegramUserId, tgUserId)).limit(1));
-  if (!r || at - r.updatedAt.getTime() > SESSION_TTL_MS) return { step: 'idle' };
+  if (!r || at - r.updatedAt.getTime() > ttlFor(r.state as BotState)) return { step: 'idle' };
   return r.state as BotState;
 }
 
