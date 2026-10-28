@@ -294,7 +294,7 @@ export default async function EmployeeProfilePage({ params, searchParams }: Page
                   <a key={i} href={f ? `/api/media/${f.id}` : undefined} target="_blank" rel="noreferrer"
                     className="relative flex aspect-square items-end justify-center overflow-hidden rounded-[14px] bg-gradient-to-br from-[#DCE1EA] to-[#C5CCD8]">
                     {f?.mime.startsWith('video/') ? <video src={`/api/media/${f.id}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 size-full object-cover" />
-                      : f ? <img src={`/api/media/${f.id}`} alt="" className="absolute inset-0 size-full object-cover" />
+                      : f ? <img src={`/api/media/${f.id}?w=320`} alt="" className="absolute inset-0 size-full object-cover" />
                         : <Icon name="person" fill size={64} className="-mb-2 text-[#A9B2C2]" />}
                     {f && <span className="tnum absolute top-1.5 left-1.5 rounded bg-ink/65 px-[5px] py-px text-[9px] font-bold text-white">{formatDate(f.createdAt, tz).slice(0, 5)}</span>}
                   </a>

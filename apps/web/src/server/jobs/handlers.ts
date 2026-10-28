@@ -9,6 +9,8 @@ import { pool } from '@adone/db';
 import { send, TelegramError } from '@/server/telegram/api';
 import { withUpdateContext } from '@/server/bot/context';
 import { alertOwner } from '@/server/alerts';
+import { cleanup } from '@/server/cleanup';
+import { dailyReport } from '@/server/ops';
 import { miniAppKeyboard, notifyEmployee, notifyMembers } from '@/server/notify';
 import { deadlineNotify } from '@/server/deadline';
 import { absentDigest, attendanceTick } from '@/server/ticks';
@@ -20,7 +22,7 @@ import type { NotifyEvent } from '@adone/core';
 
 export { PermanentError, type JobRow };
 
-export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify', 'deadline_notify'] as const;
+export const JOB_TYPES = ['ping', 'tg_update', 'notify_members', 'notify_employee', 'attendance_tick', 'absent_digest', 'task_notify', 'face_enroll', 'leave_notify', 'deadline_notify', 'cleanup', 'daily_report'] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
 type Handler = (job: JobRow) => Promise<JobOutcome>;
@@ -85,6 +87,14 @@ export const HANDLERS: Record<JobType, Handler> = {
     const kind = str(job.payload.kind);
     if (!id || !kind) throw new PermanentError('payload noto‘g‘ri');
     return tgSafe(() => deadlineNotify(needTenant(job), id, kind));
+  },
+  /** Kunlik tozalash (server/cleanup.ts). Natija `last_error` ga «skip: …» izohi sifatida — kunlik xulosa shuni ko'rsatadi. */
+  async cleanup() {
+    const r = await cleanup();
+    return { skip: `${r.media} ta isbot fayli (${r.mediaMb} MB), ${r.orphans} yetim fayl, ${r.thumbs} kichik nusxa, ${r.jobs} ish, ${r.tgUpdates} update, ${r.throttle} cheklov yozuvi o'chirildi` };
+  },
+  async daily_report() {
+    return tgSafe(() => dailyReport());
   },
   async absent_digest(job) {
     const date = str(job.payload.date);

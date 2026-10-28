@@ -20,6 +20,11 @@ export async function scheduleTicks(now = new Date()): Promise<number> {
   return withPlatform(async (tx) => {
     const list = await tx.select({ id: tenants.id }).from(tenants).where(inArray(tenants.status, ['trial', 'active', 'past_due']));
     for (const t of list) await enqueue(tx, t.id, 'attendance_tick', {}, { dedupeKey: `tick:${t.id}:${bucket}`, maxAttempts: 2 });
+    // Platforma ishlari (Toshkent vaqti): 03:00 dan keyin tozalash, 09:00 dan keyin egasiga kunlik xulosa — kuniga bir marta
+    const day = localDate(now, 'Asia/Tashkent');
+    const hour = zonedParts(now, 'Asia/Tashkent').h;
+    if (hour >= 3) await enqueue(tx, null, 'cleanup', {}, { dedupeKey: `cleanup:${day}`, maxAttempts: 3 });
+    if (hour >= 9) await enqueue(tx, null, 'daily_report', {}, { dedupeKey: `report:${day}`, maxAttempts: 3 });
     return list.length;
   });
 }

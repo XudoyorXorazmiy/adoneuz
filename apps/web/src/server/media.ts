@@ -13,17 +13,32 @@ export function mediaRoot(): string {
   return path.resolve(process.env.MEDIA_DIR || './media-data');
 }
 
-export async function saveMedia(tx: Tx, input: { tenantId: string; employeeId: string | null; kind: MediaKind; data: Buffer; mime: string; ext: string; durationSec?: number | null }) {
+/** Kichik nusxalar (ro'yxatlardagi 320 px rasm) — MEDIA_DIR/.thumbs/<tenant>/<id>.jpg (api/media ?w=320, cleanup). */
+export function thumbsRoot(): string {
+  return path.join(mediaRoot(), '.thumbs');
+}
+
+export type StoredMedia = typeof media.$inferInsert & { id: string };
+
+/**
+ * Faylni diskka yozish — TRANZAKSIYADAN TASHQARIDA (disk sekin bo'lsa baza ulanishi/qulflar ushlab turilmasin).
+ * Bazaga yozuv keyin tranzaksiyada `insertMedia`. Tranzaksiya bekor bo'lsa fayl yetim qoladi — kunlik tozalash o'chiradi (cleanup).
+ */
+export async function writeMediaFile(input: { tenantId: string; employeeId: string | null; kind: MediaKind; data: Buffer; mime: string; ext: string; durationSec?: number | null }): Promise<StoredMedia> {
   const id = randomUUID();
   const rel = path.join(input.tenantId, new Date().toISOString().slice(0, 7), `${id}.${input.ext}`);
   const full = path.join(mediaRoot(), rel);
   await mkdir(path.dirname(full), { recursive: true });
   await writeFile(full, input.data);
-  await tx.insert(media).values({
+  return {
     id, tenantId: input.tenantId, employeeId: input.employeeId, kind: input.kind, path: rel, mime: input.mime,
     sizeBytes: input.data.length, sha256: createHash('sha256').update(input.data).digest('hex'), durationSec: input.durationSec ?? null,
-  });
-  return id;
+  };
+}
+
+export async function insertMedia(tx: Tx, f: StoredMedia): Promise<string> {
+  await tx.insert(media).values(f);
+  return f.id;
 }
 
 export class MediaTooLarge extends Error {}

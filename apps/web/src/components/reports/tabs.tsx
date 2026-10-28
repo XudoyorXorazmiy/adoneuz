@@ -480,7 +480,7 @@ export function JournalTab({ j, today, tz, label, filtered, filters }: { j: Jour
                           <div className="flex gap-1.5">
                             {e.photos.map((ph) => (
                               <a key={ph.id} href={`/api/media/${ph.id}`} target="_blank" rel="noreferrer" className="flex size-14 items-center justify-center overflow-hidden rounded-[10px] bg-[linear-gradient(150deg,#E3E7EE,#CDD3DD)] text-[#A9B2C2]">
-                                {ph.video ? <Icon name="play_circle" size={22} /> : <img src={`/api/media/${ph.id}`} alt="" loading="lazy" className="size-full object-cover" />}
+                                {ph.video ? <Icon name="play_circle" size={22} /> : <img src={`/api/media/${ph.id}?w=320`} alt="" loading="lazy" className="size-full object-cover" />}
                               </a>
                             ))}
                           </div>

@@ -54,7 +54,7 @@ function Proof({ e, tz, radiusM, branchName }: { e: DayRow['events'][number]; tz
           className="relative flex size-16 shrink-0 items-end justify-center overflow-hidden rounded-[14px] bg-gradient-to-br from-[#DCE1EA] to-[#C5CCD8]">
           {e.mediaId ? (
             // Mini App — selfi (rasm), bot — dumaloq video
-            e.source === 'miniapp' ? <img src={`/api/media/${e.mediaId}`} alt="Selfi" className="absolute inset-0 size-full object-cover" /> : (
+            e.source === 'miniapp' ? <img src={`/api/media/${e.mediaId}?w=320`} alt="Selfi" className="absolute inset-0 size-full object-cover" /> : (
               <>
                 <video src={`/api/media/${e.mediaId}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 size-full object-cover" />
                 <Icon name="play_circle" size={22} fill className="relative mb-1 text-white drop-shadow" />

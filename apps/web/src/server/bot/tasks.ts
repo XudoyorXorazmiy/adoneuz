@@ -9,7 +9,7 @@ import { memberships, taskBatches, tasks, tenants, withTenant, type Tx } from '@
 import { formatTime, localDate, TASK_PROOF_LABELS, TASK_STATUS_LABELS, type TaskProof, type TaskStatus, UUID_SRC } from '@adone/core';
 import { answerCallback, downloadFile, editMarkup, send, type Keyboard } from '@/server/telegram/api';
 import type { TgCallback, TgMessage } from '@/server/telegram/types';
-import { saveMedia } from '@/server/media';
+import { insertMedia, writeMediaFile } from '@/server/media';
 import { kick } from '@/server/jobs/enqueue';
 import type { JobOutcome } from '@/server/jobs/types';
 import { commentTask, createTasks, proofFlags, selfTasksNeedApproval, transitionTask, type ActorRef } from '@/server/tasks';
@@ -299,7 +299,8 @@ export async function onTaskMessage(msg: TgMessage, state: BotState): Promise<Jo
   if (file) {
     if (state.mediaIds.length >= MAX_FILES) { await send(chat, `Ko‘pi bilan ${MAX_FILES} ta fayl.`); return { skip: 'ko‘p fayl' }; }
     const dl = await downloadFile(file.id);
-    const id = await withTenant(state.tenantId, (tx) => saveMedia(tx, { tenantId: state.tenantId, employeeId: state.employeeId, kind: 'task_report', data: dl.data, mime: file.mime, ext: file.ext }));
+    const stored = await writeMediaFile({ tenantId: state.tenantId, employeeId: state.employeeId, kind: 'task_report', data: dl.data, mime: file.mime, ext: file.ext });
+    const id = await withTenant(state.tenantId, (tx) => insertMedia(tx, stored));
     const next = { ...state, mediaIds: [...state.mediaIds, id], text: text || state.text };
     await setState(uid, next);
     await send(chat, `📎 Qabul qilindi (${next.mediaIds.length}). Yana yuboring, izoh yozing yoki «✅ Yuborish».`, sendKb(state.taskId));

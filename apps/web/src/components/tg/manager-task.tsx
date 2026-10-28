@@ -103,7 +103,7 @@ export async function ManagerTask({ m, id }: { m: TgMember; id: string }) {
                       <a key={mid} href={`/api/media/${mid}`} target="_blank" rel="noreferrer" className="relative aspect-square overflow-hidden rounded-xl bg-subtle">
                         {d.mime.get(mid)?.startsWith('video/')
                           ? <><video src={`/api/media/${mid}#t=0.5`} muted playsInline preload="metadata" className="size-full object-cover" /><Icon name="play_circle" fill size={28} className="absolute inset-0 m-auto h-fit w-fit text-white drop-shadow" /></>
-                          : <img src={`/api/media/${mid}`} alt="Hisobot" className="size-full object-cover" />}
+                          : <img src={`/api/media/${mid}?w=320`} alt="Hisobot" className="size-full object-cover" />}
                       </a>
                     ))}
                     {r.lat != null && r.lng != null && (

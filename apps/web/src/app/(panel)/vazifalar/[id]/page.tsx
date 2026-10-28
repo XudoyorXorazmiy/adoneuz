@@ -149,7 +149,7 @@ export default async function TaskPage({ params }: PageProps<'/vazifalar/[id]'>)
                         <a key={m} href={`/api/media/${m}`} target="_blank" rel="noreferrer" className="relative size-28 overflow-hidden rounded-xl bg-subtle">
                           {d.mime.get(m)?.startsWith('video/')
                             ? <><video src={`/api/media/${m}#t=0.5`} muted playsInline preload="metadata" className="size-full object-cover" /><Icon name="play_circle" fill size={28} className="absolute inset-0 m-auto h-fit w-fit text-white drop-shadow" /></>
-                            : <img src={`/api/media/${m}`} alt="Hisobot" className="size-full object-cover" />}
+                            : <img src={`/api/media/${m}?w=320`} alt="Hisobot" className="size-full object-cover" />}
                         </a>
                       ))}
                       {r.lat != null && r.lng != null && (

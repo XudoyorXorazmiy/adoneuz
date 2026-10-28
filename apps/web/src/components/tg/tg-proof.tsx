@@ -16,7 +16,7 @@ export function TgProof({ e, tz, radiusM }: { e: DayRow['events'][number]; tz: s
       <a href={e.mediaId ? `/api/media/${e.mediaId}` : undefined} target="_blank" rel="noreferrer" className="relative flex size-[72px] shrink-0 items-end justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#DCE1EA] to-[#C5CCD8]">
         {e.mediaId ? (
           e.source === 'miniapp'
-            ? <img src={`/api/media/${e.mediaId}`} alt="Selfi" className="absolute inset-0 size-full object-cover" />
+            ? <img src={`/api/media/${e.mediaId}?w=320`} alt="Selfi" className="absolute inset-0 size-full object-cover" />
             : <><video src={`/api/media/${e.mediaId}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 size-full object-cover" /><Icon name="play_circle" size={22} fill className="relative mb-1 text-white drop-shadow" /></>
         ) : <Icon name="person" fill size={52} className="-mb-1.5 text-[#A9B2C2]" />}
       </a>

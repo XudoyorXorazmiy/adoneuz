@@ -11,7 +11,7 @@ import { appOrigin } from '@/lib/host';
 import { issueTelegramLogin } from '@/server/team';
 import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
 import type { TgCallback, TgMessage, TgUpdate } from '@/server/telegram/types';
-import { saveMedia } from '@/server/media';
+import { insertMedia, writeMediaFile } from '@/server/media';
 import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
@@ -195,11 +195,12 @@ async function finishRegistration(msg: TgMessage, state: Extract<BotState, { ste
   const uid = msg.from!.id;
   const chat = msg.chat.id;
   const file = await downloadFile(msg.video_note!.file_id);
+  const stored = await writeMediaFile({ tenantId: state.tenantId, employeeId: state.employeeId, kind: 'face_sample', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
   const res = await withTenant(state.tenantId, async (tx) => {
     const [t] = await tx.select({ name: tenants.name, settings: tenants.settings }).from(tenants).limit(1);
     const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).limit(1);
     if (!t || !e) return null;
-    const sampleId = await saveMedia(tx, { tenantId: state.tenantId, employeeId: e.id, kind: 'face_sample', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
+    const sampleId = await insertMedia(tx, stored);
     await enqueue(tx, state.tenantId, 'face_enroll', { employeeId: e.id, mediaId: sampleId }, { maxAttempts: 5 });
     const autoApprove = t.settings?.autoApprove === true;
     await tx.update(employees).set({ status: autoApprove ? 'active' : 'pending', joinedAt: autoApprove ? new Date() : e.joinedAt }).where(eq(employees.id, e.id));
@@ -415,6 +416,7 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     fc.templates.length ? await verifyFace([{ data: file.data, mime: 'video/mp4', name: 'checkin.mp4' }], fc.templates) : null,
     { templates: fc.templates.length, challenge: false, settings: fc.settings },
   );
+  const stored = await writeMediaFile({ tenantId: state.tenantId, employeeId: state.employeeId, kind: 'checkin_video', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
   const res = await withTenant(state.tenantId, async (tx) => {
     const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
     const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).for('update').limit(1); // Mini App bilan bir vaqtda — ketma-ket
@@ -422,7 +424,7 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     const at = new Date(arrivedAt());
     const wd = await workdayOf(tx, e.id, at, t!.tz);
     if (nextAction(await dayEvents(tx, e.id, wd.date)) === 'check_out') return { already: true as const };
-    const mediaId = await saveMedia(tx, { tenantId: state.tenantId, employeeId: e.id, kind: 'checkin_video', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
+    const mediaId = await insertMedia(tx, stored);
     await tx.insert(attendanceEvents).values({
       tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, kind: 'check_in', branchId: state.loc.branchId,
       lat: state.loc.lat, lng: state.loc.lng, accuracyM: state.loc.accuracyM, distanceM: state.loc.distanceM, isLiveLocation: state.loc.live,
@@ -502,8 +504,9 @@ async function startResample(msg: TgMessage): Promise<JobOutcome> {
 
 async function finishResample(msg: TgMessage, state: Extract<BotState, { step: 'face_resample' }>): Promise<JobOutcome> {
   const file = await downloadFile(msg.video_note!.file_id);
+  const stored = await writeMediaFile({ tenantId: state.tenantId, employeeId: state.employeeId, kind: 'face_sample', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
   await withTenant(state.tenantId, async (tx) => {
-    const mediaId = await saveMedia(tx, { tenantId: state.tenantId, employeeId: state.employeeId, kind: 'face_sample', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
+    const mediaId = await insertMedia(tx, stored);
     await enqueue(tx, state.tenantId, 'face_enroll', { employeeId: state.employeeId, mediaId, replace: true }, { maxAttempts: 5 });
   });
   await clearState(msg.from!.id);

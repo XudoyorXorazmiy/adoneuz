@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { runJobs } from '@/server/jobs/runner';
 import { scheduleTicks } from '@/server/ticks';
+import { watchdog } from '@/server/ops';
 
 /** Server cron har daqiqa: curl -H "Authorization: Bearer $CRON_SECRET" https://app.adone.uz/api/cron/jobs */
 export async function GET(req: Request) {
@@ -10,6 +11,7 @@ export async function GET(req: Request) {
     return new Response('Unauthorized', { status: 401 });
   }
   const tenants = await scheduleTicks();
-  const r = await runJobs({ limit: 50, budgetMs: 50_000 });
+  const r = await runJobs({ limit: 50, budgetMs: 45_000 });
+  await watchdog().catch((e) => console.error('[watchdog]', (e as Error).message));
   return Response.json({ ...r, tenants });
 }

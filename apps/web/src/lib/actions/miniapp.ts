@@ -13,7 +13,7 @@ import { resolveSuspicious } from '@/server/attendance-correct';
 import { createDeadlineRequest, decideDeadlineRequest } from '@/server/deadline';
 import { today } from '@/server/attendance';
 import { escHtml as esc } from '@/lib/task-text';
-import { saveMedia } from '@/server/media';
+import { insertMedia, writeMediaFile } from '@/server/media';
 import { previewGeofence, recordCheck, toggleBreak, type CheckResult } from '@/server/checkin';
 import { commentTask, createTasks, proofFlags, selfTasksNeedApproval, transitionTask } from '@/server/tasks';
 import { createTaskFromForm } from '@/server/tasks-form';
@@ -75,8 +75,9 @@ export async function tgCheckAction(f: FormData): Promise<CheckResult> {
     const r = fc.templates.length ? await verifyFace(frames.map((x, i) => ({ data: x.data, mime: x.mime, name: `f${i}.${x.ext}` })), fc.templates) : null;
     face = faceDecision(r, { templates: fc.templates.length, challenge: frames.length > 1, settings: fc.settings });
   }
+  const stored = frames[0] ? await writeMediaFile({ tenantId: u.tenantId, employeeId: u.employeeId, kind: 'checkin_photo', ...frames[0] }) : null;
   const res = await withTenant(u.tenantId, async (tx) => {
-    const mediaId = frames[0] ? await saveMedia(tx, { tenantId: u.tenantId, employeeId: u.employeeId, kind: 'checkin_photo', ...frames[0] }) : null;
+    const mediaId = stored ? await insertMedia(tx, stored) : null;
     return recordCheck(tx, { tenantId: u.tenantId, employeeId: u.employeeId, action, ...c, mediaId, source: 'miniapp', face, device });
   });
   revalidatePath('/tg');
@@ -107,6 +108,7 @@ export async function tgTaskAction(f: FormData): Promise<{ ok?: boolean; error?:
   const text = String(f.get('text') ?? '').trim().slice(0, 1000) || null;
   // Oldindan yuklangan video (/api/tg/upload): shu ishxonaning (RLS), hisobot fayli, shu ijrochi yuklagan, oxirgi 6 soatda
   const uploaded = [...new Set(f.getAll('media').map(String).filter(isUuid))].slice(0, 5);
+  const stored = await Promise.all(files.map((img) => writeMediaFile({ tenantId: a.tenantId, employeeId: a.employeeId, kind: 'task_report', ...img })));
   const res = await withTenant(a.tenantId, async (tx) => {
     const mediaIds: string[] = [];
     if (uploaded.length) {
@@ -115,7 +117,7 @@ export async function tgTaskAction(f: FormData): Promise<{ ok?: boolean; error?:
       if (ok.length !== uploaded.length) return { error: 'Video topilmadi — qaytadan yozib oling' };
       mediaIds.push(...uploaded);
     }
-    for (const img of files) mediaIds.push(await saveMedia(tx, { tenantId: a.tenantId, employeeId: a.employeeId, kind: 'task_report', ...img }));
+    for (const f of stored) mediaIds.push(await insertMedia(tx, f));
     const got = await proofFlags(tx, mediaIds, !!c);
     return transitionTask(tx, {
       tenantId: a.tenantId, taskId, to: to.data, actor: a.actor, comment: to.data === 'submitted' ? text : null,
@@ -166,9 +168,10 @@ export async function tgAddWorkAction(f: FormData): Promise<{ ok?: boolean; erro
     const img = await readImage(p);
     if (img) files.push(img);
   }
+  const stored = await Promise.all(files.map((img) => writeMediaFile({ tenantId: u.tenantId, employeeId: u.employeeId, kind: 'task_report', ...img })));
   const needs = await withTenant(u.tenantId, async (tx) => {
     const mediaIds: string[] = [];
-    for (const img of files) mediaIds.push(await saveMedia(tx, { tenantId: u.tenantId, employeeId: u.employeeId, kind: 'task_report', ...img }));
+    for (const f of stored) mediaIds.push(await insertMedia(tx, f));
     const needsApproval = await selfTasksNeedApproval(tx);
     await createTasks(tx, {
       tenantId: u.tenantId, source: plan ? 'self_plan' : 'self_done', title, description: plan ? note : null, priority: 'medium', proofs: ['button'], checklist: [],

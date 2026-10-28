@@ -35,6 +35,13 @@ KEY = os.environ.get("FACE_SERVICE_KEY", "")
 
 slots = threading.BoundedSemaphore(INFER_SLOTS)
 app = FastAPI(title="adone-face")
+
+
+@app.on_event("startup")
+def require_key():
+    """Kalitsiz servis ichki tarmoqdagi har kimga yuz vektorini beradi — ishga tushmaydi (sinov: FACE_ALLOW_NO_KEY=1)."""
+    if not KEY and os.environ.get("FACE_ALLOW_NO_KEY") != "1":
+        raise RuntimeError("FACE_SERVICE_KEY sozlanmagan — servis ishga tushmaydi")
 fa = FaceAnalysis(name="buffalo_l", allowed_modules=["detection", "recognition", "landmark_3d_68"], providers=["CPUExecutionProvider"])
 fa.prepare(ctx_id=-1, det_size=(640, 640))
 

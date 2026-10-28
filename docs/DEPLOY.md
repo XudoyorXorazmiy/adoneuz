@@ -39,16 +39,16 @@ NS o'tgach serverda `docker restart coolify-proxy` va SSL'ni tekshirish (chaat t
 1. **Project** `adone` yaratish.
 2. **Postgres** resursi: image `pgvector/pgvector:pg18`, db/user `adone`, kuchli parol. Faqat ichki tarmoq. Tungi zaxira yoqiladi (UTC 23:00, 14 nusxa).
 3. **Ilova** (Application → GitHub App `xudoyor-coolify` → repo `adoneuz`, branch `main`): build pack **Dockerfile** (`/Dockerfile`), port **3000**, health check `/api/health` (`health_check_host=127.0.0.1`), domains: `https://adone.uz,https://www.adone.uz,https://app.adone.uz,https://admin.adone.uz`. `ROOT_DOMAIN` va `PUBLIC_URL` ni «Build Variable» ham qiling (proxy build paytida oladi).
-4. Persistent storage: `/data/adone/media` → `/app/media-data`.
+4. Persistent storage: Docker volume `rwsu4i5qshtgp9wumch8efrl-adone-media` → `/app/media-data` (serverda `/var/lib/docker/volumes/rwsu4i5qshtgp9wumch8efrl-adone-media/_data`; `/data/adone/media` EMAS — Coolify API `host_path` qabul qilmadi).
 5. Environment Variables (qiymatlar faqat Coolify'da, chatga chiqarilmaydi):
    - `DATABASE_URL=postgres://adone_app:…@<db-host>:5432/adone?sslmode=disable` (**`sslmode=disable` shart**)
    - `DATABASE_URL_MIGRATE=postgres://adone:…@<db-host>:5432/adone?sslmode=disable`
    - `ROOT_DOMAIN=adone.uz`, `PUBLIC_URL=https://app.adone.uz` (webhook va Mini App manzili — `/tg` faqat `app.` hostda ochiladi, `adone.uz` bo'lsa Mini App 404)
    - `TELEGRAM_WEBHOOK_IP=109.199.121.164` (setWebhook `ip_address` — Telegram DNS'ga qaramaydi)
    - `AUTH_SECRET`, `SECRET_KEY` (AES-GCM), `CRON_SECRET` — har biri `openssl rand -hex 32`
-   - `MEDIA_DIR=/app/media-data`, `DB_POOL_MAX=10`
+   - `MEDIA_DIR=/app/media-data`, `DB_POOL_MAX=20` (2026-10-28)
    - Bot: `PLATFORM_BOT_TOKEN` (@BotFather'dan, `@adoneuz_bot`), `PLATFORM_BOT_USERNAME=adoneuz_bot`
-   - Landing: `PLATFORM_OWNER_CHAT_ID` (yangi ariza egasiga Telegram'da), ixtiyoriy `NEXT_PUBLIC_SUPPORT_TELEGRAM`, `NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_INSTAGRAM`, `NEXT_PUBLIC_YOUTUBE` — landing statik yig'iladi, shuning uchun bular va `PLATFORM_BOT_USERNAME` ham «Build Variable» bo'lsin
+   - `PLATFORM_OWNER_CHAT_ID` — egasining Telegram ID'si (2026-10-29: 927967819 — egasining @adoneuz_bot'ga kontakt bilan bog'langan Telegram'i): yangi ariza, yiqilgan ishlar va sog'liq ogohlantirishlari, kunlik xulosa (09:00), ixtiyoriy `NEXT_PUBLIC_SUPPORT_TELEGRAM`, `NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_INSTAGRAM`, `NEXT_PUBLIC_YOUTUBE` — landing statik yig'iladi, shuning uchun bular va `PLATFORM_BOT_USERNAME` ham «Build Variable» bo'lsin
    - Yuz servisi: `FACE_SERVICE_URL=http://<adone-face konteyner nomi>:8000`, `FACE_SERVICE_KEY=…` (ikkala ilovada bir xil, `openssl rand -hex 24`). Servis o'chiq bo'lsa ham keldi/ketdi ishlaydi — «shubhali» bo'lib tushadi
 6. Cron (serverda): `/etc/cron.d/adone` → har daqiqa `curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://app.adone.uz/api/cron/jobs`.
 
@@ -69,9 +69,21 @@ Baza tashqaridan ko'rinmaydi — ilova konteyneri ichidan (openstore usuli):
 ```bash
 ssh -i ~/.ssh/mvps_main root@109.199.121.164
 C=$(docker ps --format '{{.Names}}' | grep ^<app-uuid> | head -1)
-docker exec $C sh -c 'cd /app && pnpm db:migrate && pnpm --filter @adone/db set-app-password && pnpm db:check'
+# 2026-10-29 dan image — Next standalone; baza vositalari /app/db da (pnpm deploy, tsx bilan)
+docker exec $C sh -c 'cd /app/db && npx tsx src/migrate.ts && npx tsx src/set-app-password.ts && npx tsx src/db-check.ts'
 # bir marta: tariflar + super admin (parolni chatga yozmang)
-docker exec -e BOOTSTRAP_ADMIN_PHONE=998XXXXXXXXX -e BOOTSTRAP_ADMIN_PASSWORD='…' $C sh -c 'cd /app && pnpm --filter @adone/db bootstrap'
+docker exec -e BOOTSTRAP_ADMIN_PHONE=998XXXXXXXXX -e BOOTSTRAP_ADMIN_PASSWORD='…' $C sh -c 'cd /app/db && npx tsx src/bootstrap.ts'
 ```
 
 Tartib: avval push, deploy tugagach migrate. **Birinchi deploy'da** `adone_app` roli hali yo'q — ilova bazaga ulana olmaydi (health check o'tadi, sahifalar 500), migrate + `set-app-password` dan keyin ishlaydi. `set-app-password` `DATABASE_URL` dagi parolni `adone_app` ga qo'yadi (Postgres'da qo'lda rol yaratish shart emas). Prod bazada seed ISHLATILMAYDI.
+
+## Zaxira va saqlash (2026-10-29, BARQARORLIK 3.1, 3.5)
+
+- **Baza:** Coolify `adone-pg` tungi zaxirasi (22:15, 14 nusxa).
+- **Media:** `/etc/cron.d/adone-media-backup` — har kecha 02:30 volume → `/data/backups/adone-media` (rsync, ko'zgu). Hozircha SHU serverda;
+  serverdan tashqariga (S3-mos saqlash) — kalit bo'lgach (egasi beradi), shu cron'ga qo'shiladi.
+- **Tozalash** (`cleanup` ishi, har kuni 03:00 dan keyin): keldi-ketdi isboti (dumaloq video, selfi) 60 kundan keyin o'chadi (egasi qarori),
+  yuz namunasi va vazifa hisobotlari saqlanadi; navbat yozuvlari 14 kun, `tg_updates` 7 kun; yozuvsiz yetim fayllar (1 kundan eski).
+  Natija — egasiga kunlik xulosada (09:00).
+- **Kuzatuv:** `/api/health` — baza (`select 1`), media papkasi (yozish, bo'sh joy), yuz servisi, navbat; cron har 5 daqiqada muammo bo'lsa
+  egasiga darhol (`server/ops.ts watchdog`).

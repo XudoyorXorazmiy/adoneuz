@@ -18,3 +18,14 @@ export async function alertOwner(key: string, text: string): Promise<void> {
   if (!chat || !process.env.PLATFORM_BOT_TOKEN) return;
   await send(chat, `⚠️ <b>adone</b> · ${esc(text)}`).catch((e) => console.error('[alert] yuborilmadi', (e as Error).message));
 }
+
+/** Egasiga oddiy xabar (kunlik xulosa). Sozlanmagan bo'lsa — false. */
+export async function sendOwner(text: string): Promise<boolean> {
+  const chat = Number(process.env.PLATFORM_OWNER_CHAT_ID);
+  if (!chat || !process.env.PLATFORM_BOT_TOKEN) {
+    console.log(`[owner] ${text.replace(/<[^>]+>/g, '')}`);
+    return false;
+  }
+  await send(chat, text);
+  return true;
+}
