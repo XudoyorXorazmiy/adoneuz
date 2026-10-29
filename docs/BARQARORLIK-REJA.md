@@ -129,6 +129,9 @@ Har bosqich: lokal brauzer (egasi/menejer/xodim), core testlar, `db:check`, `tes
 - **3.6** `services/face/app.py` startup: `FACE_SERVICE_KEY` bo'sh → ishga tushmaydi (`FACE_ALLOW_NO_KEY=1` — faqat sinov). Push'dan oldin
   Coolify'da ikkala ilovada kalit borligi tekshirildi (48 belgi, bir xil). Media route: menejer — faqat o'z bo'limi xodimlarining fayli
   (`departmentScope`), aks holda 404.
+- **Deploy (2026-10-29 12:07 Toshkent, `600aa0b`):** build+deploy ~3 daq, konteyner healthy, health `db 3 ms`, `face ok`, `/kirish` `/tg` `admin./kirish` `/` 200,
+  webhook pending 0. Birinchi `cleanup` (qo'lda emas — cron o'zi, 03:00 dan keyin bo'lgani uchun): 0 isbot fayli (media hali 60 kundan yosh), 0 yetim,
+  11 ta `auth_throttle` yozuvi; `daily_report` egasiga yuborildi. Eski image'lar o'chirildi (`docker image prune -a`, 5,7 GB): disk 74 % → 65 %.
 - `PLATFORM_OWNER_CHAT_ID` Coolify'da (egasining xodim sifatida bog'langan Telegram'i, prod `employees` dan tasdiqlandi) — shu deploy bilan jonli.
 
 Qolgan (3-bosqichdan tashqari): media zaxirasi serverdan tashqariga (S3 kaliti), reyting og'irliklari sozlamasi, `task_categories` — alohida ishlar.
