@@ -69,11 +69,17 @@ Baza tashqaridan ko'rinmaydi — ilova konteyneri ichidan (openstore usuli):
 ```bash
 ssh -i ~/.ssh/mvps_main root@109.199.121.164
 C=$(docker ps --format '{{.Names}}' | grep ^<app-uuid> | head -1)
-# 2026-10-29 dan image — Next standalone; baza vositalari /app/db da (pnpm deploy, tsx bilan)
-docker exec $C sh -c 'cd /app/db && npx tsx src/migrate.ts && npx tsx src/set-app-password.ts && npx tsx src/db-check.ts'
+# 2026-10-29 dan image — Next standalone (388 MB, oldin 1,33 GB); baza vositalari /app/db da (`pnpm deploy`, o'z tsx'i bilan).
+# Hammasi idempotent — qo'llangan migratsiya qayta ishlamaydi, parol o'sha qiymatga qayta qo'yiladi (2026-10-29 prod bazada sinalgan).
+docker exec $C sh -c 'cd /app/db && T=node_modules/.bin/tsx && $T src/migrate.ts && $T src/set-app-password.ts && $T src/db-check.ts'
 # bir marta: tariflar + super admin (parolni chatga yozmang)
-docker exec -e BOOTSTRAP_ADMIN_PHONE=998XXXXXXXXX -e BOOTSTRAP_ADMIN_PASSWORD='…' $C sh -c 'cd /app/db && npx tsx src/bootstrap.ts'
+docker exec -e BOOTSTRAP_ADMIN_PHONE=998XXXXXXXXX -e BOOTSTRAP_ADMIN_PASSWORD='…' $C sh -c 'cd /app/db && node_modules/.bin/tsx src/bootstrap.ts'
 ```
+
+Image'ni deploy'dan oldin sinash (Dockerfile o'zgarganda): serverda `docker build -t adone-sa-test --build-arg ROOT_DOMAIN=adone.uz --build-arg PUBLIC_URL=https://app.adone.uz --build-arg PLATFORM_BOT_USERNAME=adoneuz_bot <repo nusxasi>`
+(`DATABASE_URL` build'da shart emas — `next build` paytida pool soxta manzil bilan yaratiladi, ulanmaydi), keyin prod env bilan
+(`docker inspect` dan, vaqtinchalik env-fayl) `--network coolify` da ishga tushirib `/api/health`, sahifalar, `_next/static`, `/app/db` buyruqlari va
+`docker stop` (SIGTERM → «[server] SIGTERM…», exit 0) tekshiriladi; oxirida `docker rmi adone-sa-test; docker builder prune -f`.
 
 Tartib: avval push, deploy tugagach migrate. **Birinchi deploy'da** `adone_app` roli hali yo'q — ilova bazaga ulana olmaydi (health check o'tadi, sahifalar 500), migrate + `set-app-password` dan keyin ishlaydi. `set-app-password` `DATABASE_URL` dagi parolni `adone_app` ga qo'yadi (Postgres'da qo'lda rol yaratish shart emas). Prod bazada seed ISHLATILMAYDI.
 

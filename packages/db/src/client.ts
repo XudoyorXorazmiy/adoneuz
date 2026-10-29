@@ -13,7 +13,9 @@ declare global {
 }
 
 function createPool(): Pool {
-  const url = process.env.DATABASE_URL;
+  // `next build` («collecting page data») route modullarini import qiladi — pool shu paytda yaratiladi, ulanmaydi.
+  // Build muhitida DATABASE_URL bo'lmasa (Docker image sinovi) soxta manzil — ulanish faqat ishga tushgach kerak.
+  const url = process.env.DATABASE_URL || (process.env.NEXT_PHASE === 'phase-production-build' ? 'postgres://build@localhost:5432/build' : '');
   if (!url) throw new Error('DATABASE_URL sozlanmagan');
   // sslmode=disable — o'z serverdagi ichki baza (TLS'siz)
   const local = url.includes('localhost') || url.includes('127.0.0.1') || url.includes('sslmode=disable');

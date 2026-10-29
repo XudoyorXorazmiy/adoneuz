@@ -1,7 +1,7 @@
 # adone — barqarorlik rejasi (qotishlarsiz ishlash)
 
 > 2026-10-29. Manba: prod server dalillari + 5 yo'nalishdagi kod auditi (baza, bot/navbat, panel, Mini App, yuz servisi/infra).
-> Holat: egasining tasdig'i kutilmoqda. Tasdiqlangach bosqichma-bosqich bajariladi, har bosqich = alohida push + prod tekshiruvi.
+> Holat (2026-10-29): **uchala bosqich bajarildi va prod'da** (1 — `1be430f`, 2 — `d6db0f5`, 3 — pastda). Qolgan ochiq ishlar — 3-bosqich bo'limi oxirida.
 
 ## Prod'da ko'rilgan haqiqiy qotish
 
@@ -97,3 +97,39 @@
 ## Tartib va tekshiruv
 
 Har bosqich: lokal brauzer (egasi/menejer/xodim), core testlar, `db:check`, `test-rls`, `test-bot`, build — haqiqiy exit kodi bilan; push oldidan `df -h /`; deploy'dan keyin prod health va sahifalar; 1-bosqichdan keyin haqiqiy telefonda bot va Mini App sinovi (egasi).
+
+### 3-bosqich — bajarildi (2026-10-29)
+
+| Nima | Oldin | Keyin |
+|---|---|---|
+| Ilova image'i (`adone-web`) | 1,33 GB (butun repo + node_modules) | **388 MB** (Next standalone + `/app/db`); build ~2 daq |
+| Media ro'yxatlardagi rasm | to'liq fayl (5 MB gacha) | `?w=320` kichik nusxa (~20 KB), bir marta yasalib `.thumbs` da |
+| `/api/health` | `{ok:true}` | baza (`select 1`, ms), media papkasi (yozish, bo'sh joy %), yuz servisi, navbat (24 soat yiqilgan, kutayotgan) |
+| Saqlash | cheksiz | isbot 60 kun, `jobs` 14 kun, `tg_updates` 7 kun, yetim fayllar 1 kun |
+
+- **3.1** `server/cleanup.ts` — `cleanup` ishi (platforma, kuniga bir marta 03:00 dan keyin, `dedupe cleanup:<sana>`): keldi-ketdi isboti
+  (`checkin_video`, `checkin_photo`) 60 kundan keyin — yozuv + fayl + kichik nusxa (hodisa qoladi, `media_id` NULL); `face_sample` va vazifa
+  hisobotlari saqlanadi; `jobs` done/failed 14 kun, `tg_updates` 7 kun, `auth_throttle`; diskda bor, bazada yo'q fayllar (>1 kun).
+  `writeMediaFile` + `insertMedia` — fayl tranzaksiyadan tashqarida yoziladi (bekor bo'lsa yetim → ertasi tozalanadi). Natija `last_error` da
+  «skip: …» izohi sifatida — kunlik xulosada ko'rinadi.
+- **3.2** `/api/media/<id>?w=320` (sharp, `MEDIA_DIR/.thumbs/<tenant>/<id>.jpg`, `Cache-Control: private, max-age=86400`); 7 ta ro'yxat/kartochka `<img>`.
+- **3.3** `server/ops.ts`: `checkDb` (2 s), `checkMedia` (yozish + `statfs`), `checkFace` (3 s), `queueStats`; `/api/health` 503 — faqat baza yoki
+  media ishlamasa (yuz servisi/navbat — ma'lumot, 30 s kesh). `watchdog` — cron har daqiqa chaqiradi, 5 daqiqada bir: yuz servisi yo'q, media
+  yozilmaydi, disk < 10 %, navbat ≥ 20 ta 5 daqiqadan beri → egasiga darhol (`alertOwner`, 10 daqiqada bir marta). `daily_report` ishi —
+  09:00 dan keyin egasiga xulosa (baza, yuz, disk, navbat, tozalash natijasi). `instrumentation.ts` + `server/env-check.ts`: prod'da
+  `DATABASE_URL, AUTH_SECRET, ROOT_DOMAIN, PLATFORM_BOT_TOKEN, CRON_SECRET, MEDIA_DIR` yo'q bo'lsa server ishga tushmaydi (healthcheck o'tmaydi,
+  eski konteyner qoladi); `FACE_SERVICE_URL`, `PLATFORM_OWNER_CHAT_ID`, `FACE_SERVICE_KEY` yo'q — ogohlantirish.
+- **3.4** `next.config` `output: 'standalone'` + `outputFileTracingRoot` (monorepo); Dockerfile: build bosqichi → `.next/standalone` + `.next/static`
+  + `/app/db` (`pnpm --filter @adone/db deploy --prod --legacy`, `tsx` dependencies'da); `tini` PID 1; `NEXT_MANUAL_SIG_HANDLE` — SIGTERM'da
+  3 s kutib pool yopiladi, exit 0. `client.ts`: `next build` paytida `DATABASE_URL` bo'lmasa soxta manzil (ulanmaydi) — image'ni Coolify'siz ham
+  yig'ish mumkin. Sinov (2026-10-29, serverda, prod env, `--network coolify`): health ok (db 73 ms, face ok), `/kirish` `/tg` `/` `admin./kirish`
+  200, css/woff2 200, `/app/db` dan migrate/set-app-password/db-check/bootstrap exit 0, SIGTERM → exit 0.
+- **3.5** `/etc/cron.d/adone-media-backup` — 02:30 rsync volume → `/data/backups/adone-media` (birinchi nusxa 15 MB). DEPLOY.md: volume yo'li,
+  `/app/db` buyruqlari, zaxira bo'limi. Serverdan tashqariga — S3 kaliti bo'lgach.
+- **3.6** `services/face/app.py` startup: `FACE_SERVICE_KEY` bo'sh → ishga tushmaydi (`FACE_ALLOW_NO_KEY=1` — faqat sinov). Push'dan oldin
+  Coolify'da ikkala ilovada kalit borligi tekshirildi (48 belgi, bir xil). Media route: menejer — faqat o'z bo'limi xodimlarining fayli
+  (`departmentScope`), aks holda 404.
+- `PLATFORM_OWNER_CHAT_ID` Coolify'da (egasining xodim sifatida bog'langan Telegram'i, prod `employees` dan tasdiqlandi) — shu deploy bilan jonli.
+
+Qolgan (3-bosqichdan tashqari): media zaxirasi serverdan tashqariga (S3 kaliti), reyting og'irliklari sozlamasi, `task_categories` — alohida ishlar.
+
