@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { can, canUsePanel, checkGeofence, distanceMeters, formatMinutes, formatPhone, formatSom, normalizePhone, slugify } from '../src/index';
+import { can, canUsePanel, checkGeofence, distanceMeters, formatMinutes, formatPhone, formatSom, normalizePhone, phoneFromForm, slugify } from '../src/index';
 
 test('telefon', () => {
   assert.equal(normalizePhone('90 123 45 67'), '998901234567');
@@ -9,6 +9,19 @@ test('telefon', () => {
   assert.equal(normalizePhone('12345'), null);
   assert.equal(normalizePhone('998101234567'), null);
   assert.equal(formatPhone('998901234567'), '+998 90 123 45 67');
+  // Xalqaro (2026-10-30): Rossiya +7
+  assert.equal(normalizePhone('+7 977 865 78 71'), '79778657871');
+  assert.equal(normalizePhone('79778657871'), '79778657871');
+  assert.equal(normalizePhone('8 977 865 78 71'), '79778657871');
+  assert.equal(normalizePhone('+7 977 865 78'), null);
+  assert.equal(normalizePhone('+998 10 123 45 67'), null);
+  assert.equal(normalizePhone('+44 20 7946 0958'), '442079460958');
+  assert.equal(formatPhone('79778657871'), '+7 977 865 78 71');
+  assert.equal(formatPhone('442079460958'), '+442079460958');
+  assert.equal(phoneFromForm('7', '977 865 78 71'), '79778657871');
+  assert.equal(phoneFromForm('998', '90 123 45 67'), '998901234567');
+  assert.equal(phoneFromForm('7', '+998 90 123 45 67'), '998901234567');
+  assert.equal(phoneFromForm('998', ''), null);
 });
 
 test('slug', () => {

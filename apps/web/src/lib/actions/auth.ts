@@ -1,7 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { normalizePhone, homeFor } from '@adone/core';
+import { phoneFromForm, homeFor } from '@adone/core';
 import { loginPlatformAdmin, loginTenantUser } from '@/lib/auth/login';
 import { setSessionCookie } from '@/lib/auth/session';
 import { allow } from '@/server/rate-limit';
@@ -13,7 +13,7 @@ export async function loginAction(_prev: LoginState, form: FormData): Promise<Lo
   const password = String(form.get('password') ?? '');
   const mode = form.get('mode') === 'platform' ? 'platform' : 'tenant';
   const next = String(form.get('next') ?? '');
-  const phone = normalizePhone(raw);
+  const phone = phoneFromForm(String(form.get('cc') ?? ''), raw);
   if (!phone) return { error: "Telefon raqamni to'liq kiriting", phone: raw };
   if (!password) return { error: 'Parolni kiriting', phone: raw };
 

@@ -3,7 +3,7 @@
 import { startTransition, useActionState, useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { unstable_rethrow } from 'next/navigation';
-import { formatPhone } from '@adone/core';
+import { formatPhone, PHONE_COUNTRIES } from '@adone/core';
 import type { FormState } from '@/components/ui/form-drawer';
 import { Icon } from '@/components/ui/icon';
 import { Avatar } from '@/components/ui/avatar';
@@ -211,6 +211,7 @@ function MemberDrawer({ edit, departments, branches, canAddAdmin, onClose, onAdd
   const [method, setMethod] = useState<'password' | 'telegram'>('password');
   const [password, setPassword] = useState(genPassword);
   const [hint, setHint] = useState<{ employee: string | null; member: boolean } | null>(null);
+  const [cc, setCc] = useState<string>('998');
   const [copied, setCopied] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState<MemberFormState | FormState, FormData>(async (p, f) => {
@@ -247,9 +248,11 @@ function MemberDrawer({ edit, departments, branches, canAddAdmin, onClose, onAdd
             <label className="flex flex-col gap-1.5">
               <span className="text-[13px] font-semibold">Telefon</span>
               <span className="flex h-11 items-center overflow-hidden rounded-xl border border-line focus-within:border-[1.5px] focus-within:border-primary focus-within:ring-4 focus-within:ring-primary-tint">
-                <span className="flex h-full items-center border-r border-line bg-page px-3 text-sm font-semibold">+998</span>
-                <input name="phone" inputMode="tel" placeholder="90 123 45 67" required className="tnum min-w-0 flex-1 px-3 text-sm outline-none"
-                  onBlur={async (e) => { const v = e.currentTarget.value; setHint(v.replace(/\D/g, '').length >= 9 ? await lookupPhoneAction(`+998${v}`).catch(() => null) : null); }} />
+                <select name="cc" value={cc} onChange={(e) => setCc(e.target.value)} aria-label="Mamlakat kodi" className="h-full cursor-pointer border-r border-line bg-page px-2 text-sm font-semibold outline-none">
+                  {PHONE_COUNTRIES.map((c) => <option key={c.cc} value={c.cc}>{c.label}</option>)}
+                </select>
+                <input name="phone" inputMode="tel" placeholder={PHONE_COUNTRIES.find((c) => c.cc === cc)?.placeholder} required className="tnum min-w-0 flex-1 px-3 text-sm outline-none"
+                  onBlur={async (e) => { const v = e.currentTarget.value; setHint(v.replace(/\D/g, '').length >= 9 ? await lookupPhoneAction(v.trim().startsWith('+') ? v : `+${cc}${v}`).catch(() => null) : null); }} />
               </span>
               {hint?.employee && <span className="flex items-center gap-1.5 text-xs font-semibold text-primary"><Icon name="info" size={16} />Bu raqam xodimlar ro&apos;yxatida ham bor — {hint.employee}</span>}
               {hint?.member && <span className="flex items-center gap-1.5 text-xs font-semibold text-danger-text"><Icon name="error" size={16} />Bu raqam jamoada allaqachon bor</span>}

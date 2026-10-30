@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import QRCode from 'qrcode';
 import {
-  NOT_ACCEPTED_OPTIONS, NOTIFY_EVENTS, NOTIFY_EVENT_META, NOTIFY_ROLES, normalizePhone, tenantSettings, isValidTime,
+  NOT_ACCEPTED_OPTIONS, NOTIFY_EVENTS, NOTIFY_EVENT_META, NOTIFY_ROLES, normalizePhone, phoneFromForm, tenantSettings, isValidTime,
   type NotifyEvent, type NotifyRole, type TenantSettings,
 } from '@adone/core';
 import { withTenant } from '@adone/db';
@@ -180,7 +180,7 @@ export async function addMemberAction(_p: MemberFormState, f: FormData): Promise
   const user = await assertArea('settings');
   const name = str(f, 'name');
   if (name.length < 3) return { error: 'Ism-familiyani kiriting' };
-  const phone = normalizePhone(str(f, 'phone'));
+  const phone = phoneFromForm(str(f, 'cc'), str(f, 'phone'));
   if (!phone) return { error: "Telefon raqamni to'liq kiriting" };
   const role = str(f, 'role') === 'admin' ? 'admin' : 'manager';
   const method = str(f, 'method') === 'telegram' ? 'telegram' : 'password';

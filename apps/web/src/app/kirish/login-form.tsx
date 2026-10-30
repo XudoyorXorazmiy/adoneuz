@@ -2,12 +2,14 @@
 import { useActionState, useState } from 'react';
 import { Logo } from '@/components/ui/logo';
 import { Icon } from '@/components/ui/icon';
+import { PHONE_COUNTRIES } from '@adone/core';
 import { loginAction, type LoginState } from '@/lib/actions/auth';
 
 /** Dizayn: design/panel/Kirish.dc.html */
 export function LoginForm({ mode, next }: { mode: 'tenant' | 'platform'; next?: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(loginAction, undefined);
   const [show, setShow] = useState(false);
+  const [cc, setCc] = useState<string>('998');
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-canvas p-4">
       <form action={action} className="flex w-full max-w-[440px] flex-col gap-6 rounded-3xl bg-card p-7 shadow-[var(--shadow-frame)] sm:p-10">
@@ -21,8 +23,10 @@ export function LoginForm({ mode, next }: { mode: 'tenant' | 'platform'; next?: 
         <label className="flex flex-col gap-2">
           <span className="text-[13px] font-semibold">Telefon raqam</span>
           <div className="flex h-12 items-center overflow-hidden rounded-xl border border-line focus-within:border-[1.5px] focus-within:border-primary focus-within:shadow-[0_0_0_4px_var(--color-primary-tint)]">
-            <span className="tnum flex h-full items-center gap-1.5 border-r border-line bg-page px-3 text-sm font-semibold">🇺🇿 +998</span>
-            <input name="phone" defaultValue={state?.phone ?? ''} placeholder="90 123 45 67" inputMode="tel" autoComplete="tel" className="tnum h-full min-w-0 flex-1 bg-transparent px-3 text-[15px] font-medium outline-none" required />
+            <select name="cc" value={cc} onChange={(e) => setCc(e.target.value)} aria-label="Mamlakat kodi" className="tnum h-full cursor-pointer border-r border-line bg-page px-2 text-sm font-semibold outline-none">
+              {PHONE_COUNTRIES.map((c) => <option key={c.cc} value={c.cc}>{c.label}</option>)}
+            </select>
+            <input name="phone" defaultValue={state?.phone ?? ''} placeholder={PHONE_COUNTRIES.find((c) => c.cc === cc)?.placeholder} inputMode="tel" autoComplete="tel" className="tnum h-full min-w-0 flex-1 bg-transparent px-3 text-[15px] font-medium outline-none" required />
           </div>
         </label>
         <label className="flex flex-col gap-2">
