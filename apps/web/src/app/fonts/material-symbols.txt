@@ -53,6 +53,7 @@ event_available
 event_busy
 event_note
 event_repeat
+expand_less
 expand_more
 face
 face_retouching_off
@@ -112,6 +113,7 @@ pending
 pending_actions
 person
 person_add
+person_check
 person_off
 person_pin
 person_remove

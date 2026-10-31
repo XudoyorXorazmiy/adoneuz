@@ -20,7 +20,7 @@ import { createTaskFromForm } from '@/server/tasks-form';
 import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
 import { createLeave, decideLeave } from '@/server/leave';
-import { saveInspection, type SaveResult } from '@/server/inspections';
+import { saveInspection, setResponsible, type SaveResult } from '@/server/inspections';
 
 /**
  * Mini App amallari. Kim — FAQAT Mini App sessiyasidan (initData bilan berilgan cookie), formadan emas.
@@ -346,7 +346,8 @@ export async function tgInspectionAction(f: FormData): Promise<SaveResult> {
   const m = await assertTgMember();
   if (!can(m.role, 'inspections')) return { ok: false, error: "Ruxsat yo'q" };
   const departmentId = String(f.get('departmentId') ?? '');
-  if (!isUuid(departmentId)) return { ok: false, error: "Bo'limni tanlang" };
+  const employeeId = String(f.get('employeeId') ?? '');
+  if (!isUuid(departmentId) && !isUuid(employeeId)) return { ok: false, error: "Bo'lim yoki xodimni tanlang" };
   const items: Parameters<typeof saveInspection>[1]['items'] = [];
   for (const [k, v] of f.entries()) {
     if (!k.startsWith('ok_') || typeof v !== 'string') continue;
@@ -361,7 +362,20 @@ export async function tgInspectionAction(f: FormData): Promise<SaveResult> {
     items.push({ criterion, ok, note: ok ? null : String(f.get(`note_${criterion}`) ?? ''), photo });
   }
   if (!items.length) return { ok: false, error: 'Hech bir mezon belgilanmadi' };
-  const r = await saveInspection(memberAsTenantUser(m), { departmentId, items });
+  const r = await saveInspection(memberAsTenantUser(m), isUuid(employeeId) ? { employeeId, items } : { departmentId, items });
   if (r.ok) { kick(); revalidatePath('/tg/nazorat'); }
   return r;
+}
+
+/** Tekshiruv ekranidan bo'limga «Nazorat» javobgarini biriktirish (egasi, admin). Bo'sh — olib tashlash. */
+export async function tgSetResponsibleAction(departmentId: string, employeeId: string | null): Promise<{ ok: true } | { ok: false; error: string }> {
+  const m = await assertTgMember();
+  if (!can(m.role, 'inspections')) return { ok: false, error: "Ruxsat yo'q" };
+  if (!isUuid(departmentId) || (employeeId !== null && !isUuid(employeeId))) return { ok: false, error: "Noto'g'ri so'rov" };
+  const err = await setResponsible(memberAsTenantUser(m), departmentId, employeeId);
+  if (err) return { ok: false, error: err };
+  revalidatePath('/tg/nazorat');
+  revalidatePath('/tg/nazorat/tekshirish');
+  revalidatePath('/xodimlar');
+  return { ok: true };
 }

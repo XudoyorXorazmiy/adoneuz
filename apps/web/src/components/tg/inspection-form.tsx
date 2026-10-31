@@ -2,17 +2,22 @@
 import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { InspectionCriterion } from '@adone/core';
-import { tgInspectionAction } from '@/lib/actions/miniapp';
+import { tgInspectionAction, tgSetResponsibleAction } from '@/lib/actions/miniapp';
 import { Icon } from '@/components/ui/icon';
 import { haptic } from './webapp';
 
 type Mark = { ok: boolean | null; note: string; photo: File | null; preview: string | null };
 
+export type Subject =
+  | { kind: 'department'; id: string; name: string; responsible: { id: string; name: string } | null }
+  | { kind: 'employee'; id: string; name: string; departmentName: string | null };
+export type Candidate = { id: string; name: string; departmentId: string | null };
+
 /**
- * «Nazorat» tekshiruv formasi (Mini App, egasi/admin): har mezonga ✓ / ✗; ✗ da ixtiyoriy izoh va kamera bilan rasm.
- * Saqlangach — natija: nechta ✗, javobgarga nechta vazifa ketdi.
+ * «Nazorat» tekshiruv formasi (Mini App, egasi/admin): bo'lim yoki xodim; har mezonga ✓ / ✗; ✗ da ixtiyoriy izoh va kamera bilan rasm.
+ * Bo'limda javobgar bo'lmasa (yoki almashtirish kerak bo'lsa) — shu yerdan biriktiriladi. Saqlangach — natija: nechta ✗, kimga nechta vazifa ketdi.
  */
-export function InspectionForm({ department, criteria, responsible }: { department: { id: string; name: string }; criteria: InspectionCriterion[]; responsible: string | null }) {
+export function InspectionForm({ subject, criteria, candidates }: { subject: Subject; criteria: InspectionCriterion[]; candidates: Candidate[] }) {
   const [marks, setMarks] = useState<Record<string, Mark>>(() => Object.fromEntries(criteria.map((c) => [c.id, { ok: null, note: '', photo: null, preview: null }])));
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +32,9 @@ export function InspectionForm({ department, criteria, responsible }: { departme
         <span className={`flex size-16 items-center justify-center rounded-full ${done.fail ? 'bg-warning-tint text-warning' : 'bg-success-tint text-success'}`}><Icon name={done.fail ? 'report' : 'check_circle'} size={36} fill /></span>
         <p className="m-0 text-lg font-bold">{done.fail ? `${done.fail} ta kamchilik belgilandi` : 'Hammasi joyida'}</p>
         <p className="m-0 text-sm text-muted">
-          {done.fail === 0 ? `${department.name} — barcha mezonlar ✓.`
+          {done.fail === 0 ? `${subject.name} — barcha mezonlar ✓.`
             : done.tasks ? `${done.responsible} ga ${done.tasks} ta vazifa yuborildi (muddat 1 soat, rasm bilan hisobot).`
-              : done.responsible ? "Shu kamchiliklar bo'yicha ochiq vazifa allaqachon bor — yangisi ochilmadi." : "Bo'limga javobgar biriktirilmagan — vazifa ketmadi. Xodimlar → bo'lim → «Javobgar»."}
+              : done.responsible ? "Shu kamchiliklar bo'yicha ochiq vazifa allaqachon bor — yangisi ochilmadi." : "Bo'limga javobgar biriktirilmagan — vazifa ketmadi. Yuqorida «Javobgar»ni biriktiring."}
         </p>
         <Link href="/tg/nazorat" className="btn-primary mt-2 h-12 w-full text-sm shadow-none">Nazoratga qaytish</Link>
         <button type="button" onClick={() => { setDone(null); setMarks(Object.fromEntries(criteria.map((c) => [c.id, { ok: null, note: '', photo: null, preview: null }]))); }} className="btn-secondary h-12 w-full text-sm">Yana tekshirish</button>
@@ -39,7 +44,7 @@ export function InspectionForm({ department, criteria, responsible }: { departme
 
   const submit = () => {
     const fd = new FormData();
-    fd.append('departmentId', department.id);
+    fd.append(subject.kind === 'employee' ? 'employeeId' : 'departmentId', subject.id);
     for (const c of criteria) {
       const m = marks[c.id]!;
       if (m.ok == null) continue;
@@ -65,10 +70,14 @@ export function InspectionForm({ department, criteria, responsible }: { departme
 
   return (
     <div className="flex flex-1 flex-col gap-3 px-4 pt-3 pb-40">
-      <div className="rounded-[20px] bg-card px-4 py-3 shadow-[var(--shadow-card)]">
-        <div className="text-[15px] font-bold">{department.name}</div>
-        <div className="text-xs text-muted">{responsible ? `Javobgar: ${responsible}` : 'Javobgar biriktirilmagan — ✗ bo‘yicha vazifa ketmaydi'}</div>
-      </div>
+      {subject.kind === 'department' ? (
+        <ResponsibleCard department={subject} candidates={candidates} />
+      ) : (
+        <div className="rounded-[20px] bg-card px-4 py-3 shadow-[var(--shadow-card)]">
+          <div className="text-[15px] font-bold">{subject.name}</div>
+          <div className="text-xs text-muted">{subject.departmentName ?? "Bo'limsiz"} · ✗ bo‘yicha vazifa xodimning o‘ziga</div>
+        </div>
+      )}
       {criteria.map((c) => {
         const m = marks[c.id]!;
         return (
@@ -108,6 +117,54 @@ export function InspectionForm({ department, criteria, responsible }: { departme
           <button type="button" disabled={pending || marked === 0} onClick={submit} className="btn-primary h-12 flex-1 text-[15px] shadow-none disabled:opacity-50"><Icon name="save" size={18} />{pending ? 'Saqlanmoqda…' : 'Saqlash'}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Bo'lim kartasi: javobgar ko'rsatiladi; yo'q bo'lsa yoki «O'zgartirish» — xodim tanlash (shu bo'limniki oldin) va biriktirish. */
+function ResponsibleCard({ department, candidates }: { department: Extract<Subject, { kind: 'department' }>; candidates: Candidate[] }) {
+  const [current, setCurrent] = useState(department.responsible);
+  const [editing, setEditing] = useState(!department.responsible);
+  const [choice, setChoice] = useState(department.responsible?.id ?? '');
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const own = candidates.filter((c) => c.departmentId === department.id);
+  const rest = candidates.filter((c) => c.departmentId !== department.id);
+  const save = () => {
+    if (!choice) return;
+    setError(null);
+    start(async () => {
+      const r = await tgSetResponsibleAction(department.id, choice);
+      if (!r.ok) { haptic('error'); setError(r.error); return; }
+      haptic('success');
+      setCurrent(candidates.find((c) => c.id === choice) ?? null);
+      setEditing(false);
+    });
+  };
+  return (
+    <div className="flex flex-col gap-2.5 rounded-[20px] bg-card px-4 py-3 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-[15px] font-bold">{department.name}</div>
+          <div className="text-xs text-muted">{current ? `Javobgar: ${current.name}` : 'Javobgar biriktirilmagan — ✗ bo‘yicha vazifa ketmaydi'}</div>
+        </div>
+        {!editing && <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-[13px] font-semibold text-primary">O&apos;zgartirish</button>}
+      </div>
+      {editing && (
+        <div className="flex flex-col gap-2">
+          <select value={choice} onChange={(e) => setChoice(e.target.value)} className="input h-11">
+            <option value="">— xodimni tanlang —</option>
+            {own.length > 0 && <optgroup label="Shu bo'lim xodimlari">{own.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
+            {rest.length > 0 && <optgroup label={own.length ? 'Boshqa xodimlar' : 'Xodimlar'}>{rest.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
+          </select>
+          <div className="flex gap-2">
+            <button type="button" disabled={pending || !choice} onClick={save} className="btn-primary h-11 flex-1 text-sm shadow-none disabled:opacity-50"><Icon name="person_check" size={18} />{pending ? 'Saqlanmoqda…' : 'Javobgar qilish'}</button>
+            {current && <button type="button" onClick={() => { setEditing(false); setChoice(current.id); setError(null); }} className="btn-secondary h-11 px-4 text-sm">Bekor</button>}
+          </div>
+          {error && <p className="m-0 text-[13px] font-semibold text-danger-text">{error}</p>}
+          <p className="m-0 text-xs text-muted">Javobgar — ✗ chiqsa vazifa oladigan xodim. Rahbar huquqi bermaydi.</p>
+        </div>
+      )}
     </div>
   );
 }

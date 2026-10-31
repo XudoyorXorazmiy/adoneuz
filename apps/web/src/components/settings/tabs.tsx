@@ -185,11 +185,14 @@ export function TasksTab({ s, countSelfTasks, audit, tz }: { s: TenantSettings; 
 
 // ---------- Nazorat ----------
 
-export function InspectionTab({ criteria, departments, audit, tz }: { criteria: InspectionCriterion[]; departments: Array<{ id: string; name: string }>; audit: Audit; tz: string }) {
+export function InspectionTab({ criteria, employeeCriteria, departments, audit, tz }: { criteria: InspectionCriterion[]; employeeCriteria: InspectionCriterion[]; departments: Array<{ id: string; name: string }>; audit: Audit; tz: string }) {
   return (
     <SettingsForm action={saveInspectionSettingsAction}>
-      <SettingsCard icon="checklist" title="Nazorat mezonlari" desc="Admin bo'limni shu mezonlar bo'yicha tekshiradi (Mini App → Nazorat). ✗ — bo'lim javobgariga avtomatik vazifa" audit={audit['settings.inspection'] ?? null} tz={tz}>
+      <SettingsCard icon="checklist" title="Bo'lim mezonlari" desc="Admin bo'limni shu mezonlar bo'yicha tekshiradi (Mini App → Nazorat). ✗ — bo'lim javobgariga avtomatik vazifa" audit={audit['settings.inspection'] ?? null} tz={tz}>
         <CriteriaEditor criteria={criteria} departments={departments} />
+      </SettingsCard>
+      <SettingsCard icon="person_check" title="Xodim mezonlari" desc="Admin alohida xodimni shu mezonlar bo'yicha tekshiradi (Mini App → Nazorat → Xodimlar). ✗ — vazifa xodimning o'ziga. Bo'lim tanlansa — faqat shu bo'lim xodimlariga" audit={undefined}>
+        <CriteriaEditor criteria={employeeCriteria} departments={departments} prefix="e_" />
       </SettingsCard>
       <SettingsCard icon="person_pin" title="Javobgarlar" desc="Har bo'limning javobgari — Xodimlar → Bo'limlar → bo'lim formasi «Nazorat javobgari». Jarima — Ish haqi → Qoidalar → «Nazorat ✗»" audit={undefined}>
         <p className="m-0 text-sm text-muted">Javobgar bo&apos;lmasa, bo&apos;lim boshlig&apos;i xodim bo&apos;lsa — u. Hisobot: <Link href="/nazorat" className="font-semibold text-primary">Nazorat</Link>.</p>

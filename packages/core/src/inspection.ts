@@ -27,12 +27,21 @@ export const DEFAULT_INSPECTION_CRITERIA: InspectionCriterion[] = [
   { id: 'kiyim', label: 'Kiyim turishi', departments: null },
 ];
 
+/** Xodim tekshiruvi mezonlari (admin alohida xodimni tekshiradi; ✗ → vazifa xodimning o'ziga). `departments` — xodimning bo'limi bo'yicha. */
+export const DEFAULT_EMPLOYEE_CRITERIA: InspectionCriterion[] = [
+  { id: 'forma', label: "Forma va tashqi ko'rinish", departments: null },
+  { id: 'joyida', label: "O'z joyida bo'lishi", departments: null },
+  { id: 'muomala', label: 'Mijozga muomala', departments: null },
+  { id: 'telefon', label: 'Telefon bilan band emasligi', departments: null },
+  { id: 'ish_joyi', label: 'Ish joyi tartibi', departments: null },
+];
+
 export const MAX_CRITERIA = 30;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Sozlamadan (yoki formadan) kelgan mezonlar: id — lotin/raqam/chiziqcha, yorliq ≤ 60, bo'limlar — uuid ro'yxati yoki null. */
-export function normalizeCriteria(raw: unknown): InspectionCriterion[] {
-  if (!Array.isArray(raw)) return DEFAULT_INSPECTION_CRITERIA.map((c) => ({ ...c }));
+export function normalizeCriteria(raw: unknown, defaults: InspectionCriterion[] = DEFAULT_INSPECTION_CRITERIA): InspectionCriterion[] {
+  if (!Array.isArray(raw)) return defaults.map((c) => ({ ...c }));
   const out: InspectionCriterion[] = [];
   const seen = new Set<string>();
   for (const r of raw) {
@@ -51,9 +60,9 @@ export function normalizeCriteria(raw: unknown): InspectionCriterion[] {
   return out;
 }
 
-/** Bo'limga tegishli mezonlar (hammaga tegishlilar + shu bo'lim uchun belgilanganlar). */
-export function criteriaFor(criteria: InspectionCriterion[], departmentId: string): InspectionCriterion[] {
-  return criteria.filter((c) => !c.departments || c.departments.includes(departmentId));
+/** Bo'limga tegishli mezonlar (hammaga tegishlilar + shu bo'lim uchun belgilanganlar). Bo'limsiz xodim — faqat umumiylar. */
+export function criteriaFor(criteria: InspectionCriterion[], departmentId: string | null): InspectionCriterion[] {
+  return criteria.filter((c) => !c.departments || (departmentId != null && c.departments.includes(departmentId)));
 }
 
 /** Formadan kelgan belgilar: mezon bo'limga tegishli bo'lishi shart; ✓ da izoh/rasm saqlanmaydi. Bitta ham bo'lmasa — null. */
@@ -70,7 +79,8 @@ export function buildItems(allowed: InspectionCriterion[], raw: Array<{ criterio
   return items.length ? items : null;
 }
 
-export interface InspectionLike { departmentId: string; responsibleEmployeeId: string | null; items: InspectionItem[]; at: Date }
+/** `employeeId` bo'lsa — xodim tekshiruvi (bo'lim — xodimniki, javobgar — xodimning o'zi); aks holda bo'lim tekshiruvi. */
+export interface InspectionLike { departmentId: string | null; employeeId: string | null; responsibleEmployeeId: string | null; items: InspectionItem[]; at: Date }
 
 export interface InspectionStats { checks: number; items: number; ok: number; fail: number; /** ✓ ulushi, % (0–100); tekshiruv bo'lmasa null */ pct: number | null }
 

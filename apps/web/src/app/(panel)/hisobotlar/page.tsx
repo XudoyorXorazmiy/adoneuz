@@ -106,7 +106,7 @@ async function TabBody({ tab, user, f, query, today, label, employees, prevHref,
   return (
     <>
       <AttendanceTab r={r} compare={f.compare} tabelHref={tabelHref} prevLabel={prevLabel} />
-      {insp && insp.stats.checks > 0 && <InspectionBlock o={insp} month={f.period.to.slice(0, 7)} />}
+      {insp && insp.stats.checks + insp.employeeStats.checks > 0 && <InspectionBlock o={insp} month={f.period.to.slice(0, 7)} />}
     </>
   );
 }

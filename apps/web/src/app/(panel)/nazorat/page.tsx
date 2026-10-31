@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { addDays, formatDate, formatTime, isUuid, MONTHS, monthDays } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { today as todayOf } from '@/server/attendance';
-import { inspectionOverview } from '@/server/inspections';
+import { inspectionOverview, inspectionSubject } from '@/server/inspections';
 import { getSettings } from '@/server/settings';
 import { EmptyState, PageHeader, StatCard } from '@/components/ui/page-header';
 import { Icon } from '@/components/ui/icon';
@@ -12,8 +12,8 @@ import { Avatar } from '@/components/ui/avatar';
 export const metadata: Metadata = { title: 'Nazorat' };
 
 /**
- * «Nazorat» (egasi, admin): bo'limlar tekshiruvi hisoboti — oy bo'yicha: KPI, kun × bo'lim jadvali, javobgarlar ✓/✗ ulushi,
- * bo'limlar reytingi, oxirgi tekshiruvlar. Tekshiruvning o'zi — rahbar Mini App'ida («Nazorat» tabi).
+ * «Nazorat» (egasi, admin): bo'limlar va xodimlar tekshiruvi hisoboti — oy bo'yicha: KPI, kun × bo'lim jadvali, javobgarlar ✓/✗ ulushi,
+ * bo'limlar reytingi, xodimlar reytingi, oxirgi tekshiruvlar. Tekshiruvning o'zi — rahbar Mini App'ida («Nazorat» tabi).
  */
 export default async function InspectionsPage({ searchParams }: PageProps<'/nazorat'>) {
   const user = await requireArea('inspections');
@@ -36,7 +36,7 @@ export default async function InspectionsPage({ searchParams }: PageProps<'/nazo
 
   return (
     <>
-      <PageHeader title="Nazorat" subtitle="Bo'limlar tekshiruvi — mezonlar bo'yicha ✓ / ✗, javobgarlar"
+      <PageHeader title="Nazorat" subtitle="Bo'limlar va xodimlar tekshiruvi — mezonlar bo'yicha ✓ / ✗"
         actions={
           <div className="flex items-center gap-2">
             <Link href={href({ oy: prev })} className="btn-icon" title="Oldingi oy"><Icon name="chevron_left" /></Link>
@@ -53,13 +53,13 @@ export default async function InspectionsPage({ searchParams }: PageProps<'/nazo
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon="checklist" tone="primary" label="Tekshiruvlar" value={o.stats.checks} caption={`${monthLabel} · ${o.stats.items} ta belgi`} />
-        <StatCard icon="check_circle" tone="success" label="Joyida" value={pct(o.stats.pct)} caption={`${o.stats.ok} ta ✓`} />
-        <StatCard icon="report" tone="danger" label="Kamchilik" value={o.stats.fail} caption="✗ belgilar" />
+        <StatCard icon="checklist" tone="primary" label="Tekshiruvlar" value={o.stats.checks + o.employeeStats.checks} caption={`${o.stats.checks} bo'lim · ${o.employeeStats.checks} xodim`} />
+        <StatCard icon="check_circle" tone="success" label="Joyida" value={pct(o.stats.pct)} caption={`bo'limlar ${o.stats.ok} ✓ · xodimlar ${pct(o.employeeStats.pct)}`} />
+        <StatCard icon="report" tone="danger" label="Kamchilik" value={o.stats.fail + o.employeeStats.fail} caption={`${o.stats.fail} bo'lim · ${o.employeeStats.fail} xodim`} />
         <StatCard icon="pending_actions" tone="warning" label="Ochiq vazifalar" value={o.openTasks} caption="✗ bo'yicha hali bajarilmagan" href="/vazifalar?kor=berilgan" />
       </div>
 
-      {o.stats.checks === 0 ? (
+      {o.stats.checks === 0 && o.employeeStats.checks === 0 ? (
         <EmptyState text={`${monthLabel} uchun tekshiruv yo'q`} />
       ) : (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -92,9 +92,9 @@ export default async function InspectionsPage({ searchParams }: PageProps<'/nazo
                 {o.rows.slice(0, 40).map((r) => (
                   <div key={r.id} className="flex flex-col gap-1.5 py-3 text-sm">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="font-bold">{r.departmentName}</span>
+                      <span className="flex items-center gap-1 font-bold">{r.employeeId && <Icon name="person" size={16} className="text-muted" />}{inspectionSubject(r)}</span>
                       <span className="tnum text-xs text-muted">{formatDate(`${r.workDate}T12:00:00Z`)} {formatTime(r.at, tz)}</span>
-                      <span className="text-xs text-muted">{r.inspectorName ?? '—'}{r.responsibleName ? ` → ${r.responsibleName}` : ''}</span>
+                      <span className="text-xs text-muted">{r.inspectorName ?? '—'}{r.employeeId ? (r.departmentName ? ` · ${r.departmentName}` : '') : r.responsibleName ? ` → ${r.responsibleName}` : ''}</span>
                       <span className="tnum ml-auto font-bold">{r.okCount} ✓ <span className={r.failCount ? 'text-danger' : 'text-placeholder'}>{r.failCount} ✗</span></span>
                     </div>
                     {r.items.some((i) => !i.ok) && (
@@ -137,6 +137,20 @@ export default async function InspectionsPage({ searchParams }: PageProps<'/nazo
                   </Link>
                 ))}
                 {o.responsible.length === 0 && <p className="m-0 py-2 text-sm text-muted">Javobgar biriktirilgan bo&apos;lim tekshirilmagan.</p>}
+              </div>
+            </section>
+            <section className={card}>
+              <div className="mb-3 flex items-center justify-between"><h2 className="m-0 text-base font-bold">Xodimlar reytingi</h2><span className={`tnum text-sm font-bold ${tone(o.employeeStats.pct)}`}>{pct(o.employeeStats.pct)}</span></div>
+              <div className="flex flex-col divide-y divide-line-soft">
+                {o.employees.filter((e) => e.stats.checks > 0).map((e, i) => (
+                  <Link key={e.id} href={`/xodimlar/${e.id}`} className="flex items-center gap-3 py-2.5 text-sm">
+                    <span className="tnum w-5 text-muted">{i + 1}</span>
+                    <Avatar name={e.name} size={32} />
+                    <div className="min-w-0 flex-1"><div className="truncate font-semibold">{e.name}</div><div className="tnum truncate text-xs text-muted">{e.departmentName ?? "Bo'limsiz"} · {e.stats.ok} ✓ · {e.stats.fail} ✗ · {e.stats.checks} tekshiruv{e.openTasks ? ` · ${e.openTasks} ochiq` : ''}</div></div>
+                    <span className={`tnum font-bold ${tone(e.stats.pct)}`}>{pct(e.stats.pct)}</span>
+                  </Link>
+                ))}
+                {o.employeeStats.checks === 0 && <p className="m-0 py-2 text-sm text-muted">Xodim tekshiruvi hali yo&apos;q — Mini App → Nazorat → Xodimlar.</p>}
               </div>
             </section>
           </div>

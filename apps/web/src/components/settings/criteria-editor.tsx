@@ -6,7 +6,7 @@ import { Icon } from '@/components/ui/icon';
 type Row = { key: number; id: string; label: string; departments: string[] | null };
 
 /** Nazorat mezonlari ro'yxati: yorliq + qaysi bo'limlarga tegishli (hech biri tanlanmasa — hammasiga). Qatorlar `label_<n>`, `id_<n>`, `dep_<n>`. */
-export function CriteriaEditor({ criteria, departments }: { criteria: InspectionCriterion[]; departments: Array<{ id: string; name: string }> }) {
+export function CriteriaEditor({ criteria, departments, prefix = '' }: { criteria: InspectionCriterion[]; departments: Array<{ id: string; name: string }>; prefix?: string }) {
   const [rows, setRows] = useState<Row[]>(() => criteria.map((c, i) => ({ key: i, ...c })));
   const [next, setNext] = useState(criteria.length);
   const update = (key: number, patch: Partial<Row>) => setRows((r) => r.map((x) => (x.key === key ? { ...x, ...patch } : x)));
@@ -21,8 +21,8 @@ export function CriteriaEditor({ criteria, departments }: { criteria: Inspection
         <div key={row.key} className="flex flex-col gap-2 rounded-2xl border border-line p-3">
           <div className="flex items-center gap-2">
             <span className="tnum w-6 text-sm text-muted">{i + 1}</span>
-            <input type="hidden" name={`id_${i}`} value={row.id} />
-            <input name={`label_${i}`} value={row.label} onChange={(e) => update(row.key, { label: e.target.value })} maxLength={60} placeholder="Mezon nomi" className="input h-10 flex-1" />
+            <input type="hidden" name={`${prefix}id_${i}`} value={row.id} />
+            <input name={`${prefix}label_${i}`} value={row.label} onChange={(e) => update(row.key, { label: e.target.value })} maxLength={60} placeholder="Mezon nomi" className="input h-10 flex-1" />
             <button type="button" onClick={() => setRows((r) => r.filter((x) => x.key !== row.key))} className="btn-icon" title="O'chirish"><Icon name="delete" size={18} /></button>
           </div>
           {departments.length > 0 && (
@@ -32,7 +32,7 @@ export function CriteriaEditor({ criteria, departments }: { criteria: Inspection
                 const on = !!row.departments?.includes(d.id);
                 return (
                   <label key={d.id} className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold ${on ? 'bg-primary text-white' : 'bg-subtle text-muted'}`}>
-                    <input type="checkbox" name={`dep_${i}`} value={d.id} checked={on} onChange={() => toggleDep(row, d.id)} className="hidden" />{d.name}
+                    <input type="checkbox" name={`${prefix}dep_${i}`} value={d.id} checked={on} onChange={() => toggleDep(row, d.id)} className="hidden" />{d.name}
                   </label>
                 );
               })}

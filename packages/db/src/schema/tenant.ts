@@ -53,7 +53,10 @@ export const inspections = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
-    departmentId: uuid().notNull().references(() => departments.id, { onDelete: 'cascade' }),
+    /** Bo'lim tekshiruvi — tekshirilgan bo'lim; xodim tekshiruvida — xodimning bo'limi (snapshot, bo'lishi shart emas). */
+    departmentId: uuid().references(() => departments.id, { onDelete: 'cascade' }),
+    /** Xodim tekshiruvi (2026-10-31): tekshirilgan xodim; ✗ → vazifa shu xodimga, `responsibleEmployeeId` ham u. */
+    employeeId: uuid().references((): AnyPgColumn => employees.id, { onDelete: 'cascade' }),
     inspectorUserId: uuid().references(() => users.id, { onDelete: 'set null' }),
     responsibleEmployeeId: uuid().references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),
     at: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -65,7 +68,7 @@ export const inspections = pgTable(
     taskIds: uuid().array().notNull().default(sql`'{}'::uuid[]`),
     createdAt: createdAt(),
   },
-  (t) => [index('inspections_day_idx').on(t.tenantId, t.workDate), index('inspections_dep_idx').on(t.tenantId, t.departmentId, t.at)],
+  (t) => [index('inspections_day_idx').on(t.tenantId, t.workDate), index('inspections_dep_idx').on(t.tenantId, t.departmentId, t.at), index('inspections_emp_idx').on(t.tenantId, t.employeeId, t.at)],
 );
 
 export const schedules = pgTable(

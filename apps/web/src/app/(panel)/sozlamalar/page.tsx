@@ -111,7 +111,7 @@ async function TabContent({ tab, user, tz }: { tab: TabId; user: Awaited<ReturnT
     }
     case 'nazorat': {
       const [s, deps, audit] = await Promise.all([getSettings(user.tenantId), listDepartments(user.tenantId), lastChanges(user.tenantId, ['settings.inspection'])]);
-      return <InspectionTab criteria={s.inspection.criteria} departments={deps.map((d) => ({ id: d.id, name: d.name }))} audit={audit} tz={tz} />;
+      return <InspectionTab criteria={s.inspection.criteria} employeeCriteria={s.inspection.employeeCriteria} departments={deps.map((d) => ({ id: d.id, name: d.name }))} audit={audit} tz={tz} />;
     }
     case 'ish-haqi': {
       const [rules, closed, audit] = await Promise.all([withTenant(user.tenantId, loadPayRules), lastClosedPeriod(user.tenantId), lastChanges(user.tenantId, ['payroll.rules'])]);

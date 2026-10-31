@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { can, canUsePanel, checkGeofence, distanceMeters, formatMinutes, formatPhone, formatSom, normalizePhone, phoneFromForm, slugify, normalizeCriteria, criteriaFor, buildItems, inspectionStats, statsBy, rankInspections, DEFAULT_INSPECTION_CRITERIA } from '../src/index';
+import { can, canUsePanel, checkGeofence, distanceMeters, formatMinutes, formatPhone, formatSom, normalizePhone, phoneFromForm, slugify, normalizeCriteria, criteriaFor, buildItems, inspectionStats, statsBy, rankInspections, DEFAULT_INSPECTION_CRITERIA, DEFAULT_EMPLOYEE_CRITERIA } from '../src/index';
 
 test('telefon', () => {
   assert.equal(normalizePhone('90 123 45 67'), '998901234567');
@@ -125,14 +125,16 @@ test('nazorat mezonlari va statistika (2026-10-31)', () => {
   assert.deepEqual(cs.map((c) => [c.id, c.label, c.departments]), [['tozalik', 'Tozalik', [D1]], ['m2', 'Tartib', null], ['tozalik_', 'Takror id', null]]);
   assert.deepEqual(criteriaFor(cs, D2).map((c) => c.id), ['m2', 'tozalik_']);
   assert.deepEqual(criteriaFor(cs, D1).map((c) => c.id), ['tozalik', 'm2', 'tozalik_']);
+  assert.deepEqual(criteriaFor(cs, null).map((c) => c.id), ['m2', 'tozalik_']); // bo'limsiz xodim — faqat umumiylar
+  assert.equal(normalizeCriteria(undefined, DEFAULT_EMPLOYEE_CRITERIA)[0]!.id, 'forma');
   const items = buildItems(criteriaFor(cs, D1), [{ criterion: 'tozalik', ok: false, note: ' chang ', mediaId: 'bad' }, { criterion: 'm2', ok: true, note: 'x' }, { criterion: 'yoq', ok: false }, { criterion: 'm2', ok: false }]);
   assert.deepEqual(items, [{ criterion: 'tozalik', ok: false, note: 'chang', mediaId: null }, { criterion: 'm2', ok: true, note: null, mediaId: null }]);
   assert.equal(buildItems(cs, []), null);
   const at = new Date();
   const list = [
-    { departmentId: D1, responsibleEmployeeId: 'e1', at, items: items! },
-    { departmentId: D2, responsibleEmployeeId: 'e2', at, items: [{ criterion: 'm2', ok: true, note: null, mediaId: null }] },
-    { departmentId: D1, responsibleEmployeeId: null, at, items: [{ criterion: 'm2', ok: true, note: null, mediaId: null }, { criterion: 'tozalik', ok: true, note: null, mediaId: null }] },
+    { departmentId: D1, employeeId: null, responsibleEmployeeId: 'e1', at, items: items! },
+    { departmentId: D2, employeeId: null, responsibleEmployeeId: 'e2', at, items: [{ criterion: 'm2', ok: true, note: null, mediaId: null }] },
+    { departmentId: D1, employeeId: null, responsibleEmployeeId: null, at, items: [{ criterion: 'm2', ok: true, note: null, mediaId: null }, { criterion: 'tozalik', ok: true, note: null, mediaId: null }] },
   ];
   assert.deepEqual(inspectionStats(list), { checks: 3, items: 5, ok: 4, fail: 1, pct: 80 });
   assert.equal(inspectionStats([]).pct, null);

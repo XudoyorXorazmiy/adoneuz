@@ -2,7 +2,7 @@
  * Ishxona sozlamalari (`tenants.settings` jsonb, Sozlamalar sahifasi). Baza qanday bo'lmasin — `tenantSettings()`
  * har doim to'liq, chegaralangan qiymat qaytaradi; standartlar = sozlama paydo bo'lishidan oldingi xatti-harakat.
  */
-import { DEFAULT_INSPECTION_CRITERIA, normalizeCriteria, type InspectionCriterion } from './inspection';
+import { DEFAULT_EMPLOYEE_CRITERIA, DEFAULT_INSPECTION_CRITERIA, normalizeCriteria, type InspectionCriterion } from './inspection';
 import { faceSettings, type FaceSettings } from './face';
 import { isValidTime } from './time';
 
@@ -57,8 +57,8 @@ export interface TenantSettings {
   /** Tinch vaqt (soat): bu oraliqda xodimga eslatma yuborilmaydi, ertalabga suriladi. */
   quietHours: { from: number; to: number };
   notifications: Record<NotifyEvent, NotifyRule>;
-  /** «Nazorat» mezonlari (admin bo'limlarni tekshiradi) — core inspection.ts. */
-  inspection: { criteria: InspectionCriterion[] };
+  /** «Nazorat» mezonlari: `criteria` — bo'lim tekshiruvi, `employeeCriteria` — xodim tekshiruvi (core inspection.ts). */
+  inspection: { criteria: InspectionCriterion[]; employeeCriteria: InspectionCriterion[] };
 }
 
 const ALL: NotifyRole[] = ['owner', 'admin', 'manager'];
@@ -74,7 +74,7 @@ export const DEFAULT_SETTINGS: TenantSettings = {
   reminders: { notAccepted: true, notAcceptedMin: 30, dueSoon: true, overdue: true, reviewStale: true },
   quietHours: { from: 22, to: 8 },
   notifications: Object.fromEntries(NOTIFY_EVENTS.map((e) => [e, { on: true, to: [...ALL] }])) as Record<NotifyEvent, NotifyRule>,
-  inspection: { criteria: DEFAULT_INSPECTION_CRITERIA },
+  inspection: { criteria: DEFAULT_INSPECTION_CRITERIA, employeeCriteria: DEFAULT_EMPLOYEE_CRITERIA },
 };
 
 const obj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
@@ -114,7 +114,7 @@ export function tenantSettings(raw: unknown): TenantSettings {
     // Bir xil soat — tinch vaqt yo'q degani emas, xato kiritish: standartga qaytadi
     quietHours: quiet.from === quiet.to ? { ...d.quietHours } : quiet,
     notifications: Object.fromEntries(NOTIFY_EVENTS.map((e) => [e, rule(n[e], e)])) as Record<NotifyEvent, NotifyRule>,
-    inspection: { criteria: normalizeCriteria(obj(s.inspection).criteria) },
+    inspection: { criteria: normalizeCriteria(obj(s.inspection).criteria), employeeCriteria: normalizeCriteria(obj(s.inspection).employeeCriteria, DEFAULT_EMPLOYEE_CRITERIA) },
   };
 }
 
