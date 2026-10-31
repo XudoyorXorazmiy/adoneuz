@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeDay, retimePlan, describeSchedule, isWorkday, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
+import { computeDay, retimePlan, describeSchedule, isAltWeek, isWorkday, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
 
 const TZ = 'Asia/Tashkent';
-const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', breakMinutes: 60, graceMinutes: 10 };
+const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', dayTimes: [], alt: null, breakMinutes: 60, graceMinutes: 10 };
 const at = (d: string, t: string) => zonedTime(d, t, TZ);
 let n = 0;
 const ev = (kind: DayEvent['kind'], d: Date, extra: Partial<DayEvent> = {}): DayEvent => ({ id: `e${++n}`, kind, at: d, checkStatus: 'ok', ...extra });
@@ -157,4 +157,22 @@ test('vaqt normallashtirish (forma)', () => {
   assert.equal(normalizeTime('9:05'), '09:05');
   assert.equal(normalizeTime('24:00'), null);
   assert.equal(normalizeTime('abc'), null);
+});
+
+test('kunlar bo\'yicha vaqt va haftalik almashinuv', () => {
+  // Umidjon: Du/Ch/Ju 08–20, qolgan kunlar 11–23
+  const r: ScheduleRule = { ...base, weekdays: [1, 2, 3, 4, 5, 6, 7], startTime: '11:00', endTime: '23:00', dayTimes: [{ weekdays: [1, 3, 5], startTime: '08:00', endTime: '20:00' }] };
+  assert.deepEqual(timesFor(r, '2026-10-26'), { startTime: '08:00', endTime: '20:00' }); // dushanba
+  assert.deepEqual(timesFor(r, '2026-10-27'), { startTime: '11:00', endTime: '23:00' }); // seshanba
+  assert.equal(shiftFor(r, '2026-10-26', TZ)!.start.toISOString(), '2026-10-26T03:00:00.000Z');
+  // Almashinuv: anchor haftasi (26.10) 11–23, keyingi hafta (2.11) 08–20, undan keyin yana 11–23
+  const a: ScheduleRule = { ...base, weekdays: [1, 2, 3, 4, 5, 6, 7], startTime: '11:00', endTime: '23:00', alt: { startTime: '08:00', endTime: '20:00', anchor: '2026-10-26' } };
+  assert.equal(isAltWeek(a, '2026-10-28'), false);
+  assert.equal(isAltWeek(a, '2026-11-01'), false); // yakshanba hali anchor haftasi
+  assert.equal(isAltWeek(a, '2026-11-02'), true);
+  assert.equal(isAltWeek(a, '2026-11-09'), false);
+  assert.equal(isAltWeek(a, '2026-10-19'), true); // orqaga ham to'g'ri
+  assert.deepEqual(timesFor(a, '2026-11-03'), { startTime: '08:00', endTime: '20:00' });
+  assert.equal(describeSchedule(a), '7/0 · 11:00–23:00 ⇄ 08:00–20:00');
+  assert.equal(describeSchedule(r), '7/0 · 11:00–23:00 (Du,Ch,Ju 08:00–20:00)');
 });

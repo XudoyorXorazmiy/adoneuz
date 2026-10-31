@@ -125,10 +125,36 @@ export async function saveScheduleAction(_p: FormState, f: FormData): Promise<Fo
   if (kind.data === 'cycle' && (cycleOn < 1 || cycleOn > 14 || cycleOff < 0 || cycleOff > 14 || !cycleStart || !isValidDate(cycleStart))) {
     return { error: "Navbatli jadval: ish kunlari (1–14), dam kunlari (0–14) va boshlanish sanasi" };
   }
+  // Ayrim kunlarda boshqa vaqt (faqat weekly): dtDays[i] — "2,4,6", dtStart[i], dtEnd[i]
+  const dayTimes: Array<{ weekdays: number[]; startTime: string; endTime: string }> = [];
+  if (kind.data === 'weekly') {
+    const seen = new Set<number>();
+    for (let i = 0; i < 7; i++) {
+      const days = str(f, `dtDays${i}`);
+      if (days === '' && !str(f, `dtStart${i}`)) continue;
+      const wd = days.split(',').map(Number).filter((d) => d >= 1 && d <= 7 && weekdays.includes(d));
+      const st = str(f, `dtStart${i}`);
+      const en = str(f, `dtEnd${i}`);
+      if (wd.length === 0) return { error: `Qo'shimcha vaqt ${i + 1}: kunlarni tanlang` };
+      if (!isValidTime(st) || !isValidTime(en)) return { error: `Qo'shimcha vaqt ${i + 1}: vaqtni 09:00 ko'rinishida kiriting` };
+      if (wd.some((d) => seen.has(d))) return { error: 'Bir kun ikki qo\'shimcha vaqtda takrorlanmasin' };
+      wd.forEach((d) => seen.add(d));
+      dayTimes.push({ weekdays: wd, startTime: st, endTime: en });
+    }
+  }
+  // Haftalik almashinuv
+  const altOn = kind.data !== 'free' && str(f, 'altOn') === '1';
+  const altStartTime = altOn ? str(f, 'altStartTime') : '';
+  const altEndTime = altOn ? str(f, 'altEndTime') : '';
+  const altAnchor = altOn ? str(f, 'altAnchor') : '';
+  if (altOn && (!isValidTime(altStartTime) || !isValidTime(altEndTime) || !isValidDate(altAnchor))) return { error: 'Almashinuv: ikkinchi hafta vaqti va asosiy vaqt haftasining sanasi kerak' };
   const breakMinutes = Number(str(f, 'breakMinutes') || 0);
   const graceMinutes = Number(str(f, 'graceMinutes') || 0);
-  if (!(breakMinutes >= 0 && breakMinutes <= 240 && graceMinutes >= 0 && graceMinutes <= 120)) return { error: 'Tanaffus 0–240, kechikish chegarasi 0–120 daqiqa' };
-  const values = { name, kind: kind.data, weekdays: kind.data === 'weekly' ? weekdays : [], cycleOn, cycleOff, cycleStart: kind.data === 'cycle' ? cycleStart : null, startTime, endTime, breakMinutes, graceMinutes };
+  if (!(breakMinutes >= 0 && breakMinutes <= 600 && graceMinutes >= 0 && graceMinutes <= 120)) return { error: 'Tanaffus 0–600, kechikish chegarasi 0–120 daqiqa' };
+  const values = {
+    name, kind: kind.data, weekdays: kind.data === 'weekly' ? weekdays : [], cycleOn, cycleOff, cycleStart: kind.data === 'cycle' ? cycleStart : null, startTime, endTime, dayTimes,
+    altStartTime: altOn ? altStartTime : null, altEndTime: altOn ? altEndTime : null, altAnchor: altOn ? altAnchor : null, breakMinutes, graceMinutes,
+  };
   await withTenant(user.tenantId, async (tx) => {
     if (id) {
       const [r] = await tx.update(schedules).set(values).where(eq(schedules.id, id)).returning({ id: schedules.id });

@@ -1,5 +1,5 @@
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
-import { addDays, computeDay, nextAction, openWorkday, shiftFor, workdayFor, type DayEvent, type DayResult, type ScheduleRule, type Shift } from '@adone/core';
+import { addDays, computeDay, nextAction, openWorkday, shiftFor, toRuleLike, workdayFor, type DayEvent, type DayResult, type ScheduleRule, type Shift } from '@adone/core';
 import type { Tx } from './client';
 import { attendanceDays, attendanceEvents, employees, leaveRequests, schedules } from './schema/index';
 
@@ -9,17 +9,7 @@ import { attendanceDays, attendanceEvents, employees, leaveRequests, schedules }
  */
 
 export function toRule(s: typeof schedules.$inferSelect): ScheduleRule {
-  return {
-    kind: s.kind,
-    weekdays: s.weekdays,
-    cycleOn: s.cycleOn,
-    cycleOff: s.cycleOff,
-    cycleStart: s.cycleStart,
-    startTime: s.startTime,
-    endTime: s.endTime,
-    breakMinutes: s.breakMinutes,
-    graceMinutes: s.graceMinutes,
-  };
+  return toRuleLike(s);
 }
 
 export async function employeeRule(tx: Tx, employeeId: string): Promise<ScheduleRule | null> {

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { addDays, describeSchedule, formatDate, isWorkday, isoWeekday, localDate, WEEKDAY_SHORT } from '@adone/core';
+import { addDays, describeSchedule, formatDate, isAltWeek, isWorkday, isoWeekday, localDate, timesFor, toRuleLike, WEEKDAY_SHORT } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import { listSchedules } from '@/server/structure';
 import { archiveScheduleAction, saveScheduleAction } from '@/lib/actions/structure';
@@ -40,6 +40,8 @@ export default async function SchedulesPage() {
 
 function ScheduleCard({ s, today }: { s: Sched; today: string }) {
   const night = s.kind !== 'free' && s.endTime <= s.startTime;
+  const rule = toRuleLike(s);
+  const monday = addDays(today, 1 - isoWeekday(today));
   const chip = 'inline-flex h-7 items-center gap-1.5 rounded-full bg-subtle px-3 text-xs font-semibold text-ink-2';
   return (
     <section className="card flex flex-col gap-4 p-5 max-sm:p-4">
@@ -58,14 +60,31 @@ function ScheduleCard({ s, today }: { s: Sched; today: string }) {
         </FormDrawer>
       </div>
 
-      <div className="tnum text-[26px] leading-8 font-extrabold tracking-[-0.03em]">{describeSchedule(s)}</div>
+      <div className="tnum text-[26px] leading-8 font-extrabold tracking-[-0.03em]">{s.kind === 'free' ? 'Erkin grafik' : `${s.startTime}–${s.endTime}`}</div>
 
       {s.kind === 'weekly' && (
         <div className="flex gap-1.5">
           {WEEKDAY_SHORT.map((d, i) => {
             const on = s.weekdays.includes(i + 1);
-            return <span key={d} className={`flex h-11 flex-1 items-center justify-center rounded-full text-[13px] font-semibold ${on ? 'bg-navy text-white' : 'bg-subtle text-placeholder'}`}>{d}</span>;
+            const t = on ? timesFor(rule, addDays(monday, i)) : null;
+            const other = t && (t.startTime !== s.startTime || t.endTime !== s.endTime);
+            return (
+              <span key={d} className={`flex h-12 flex-1 flex-col items-center justify-center rounded-2xl text-[13px] leading-4 font-semibold ${on ? (other ? 'bg-primary text-white' : 'bg-navy text-white') : 'bg-subtle text-placeholder'}`}>
+                {d}
+                {other && <span className="tnum text-[10px] opacity-80">{t.startTime}</span>}
+              </span>
+            );
           })}
+        </div>
+      )}
+      {s.dayTimes.length > 0 && (
+        <div className="flex flex-col gap-1 text-[13px] text-ink-2">
+          {s.dayTimes.map((dt, i) => <span key={i}><b>{dt.weekdays.map((w) => WEEKDAY_SHORT[w - 1]).join(', ')}</b> — {dt.startTime}–{dt.endTime}</span>)}
+        </div>
+      )}
+      {rule.alt && (
+        <div className="rounded-xl bg-page px-3.5 py-3 text-[13px] text-ink-2">
+          Haftalik almashinuv: {s.startTime}–{s.endTime} ⇄ {rule.alt.startTime}–{rule.alt.endTime}. Bu hafta: <b className="tnum">{isAltWeek(rule, today) ? `${rule.alt.startTime}–${rule.alt.endTime}` : `${s.startTime}–${s.endTime}`}</b>
         </div>
       )}
       {s.kind === 'cycle' && (
@@ -73,7 +92,7 @@ function ScheduleCard({ s, today }: { s: Sched; today: string }) {
           <div className="grid grid-cols-7 gap-1.5">
             {Array.from({ length: 14 }, (_, i) => {
               const date = addDays(today, i);
-              const on = isWorkday(s, date);
+              const on = isWorkday(rule, date);
               return (
                 <span key={date} className={`flex flex-col items-center rounded-2xl py-1.5 text-[11px] leading-4 font-semibold ${on ? 'bg-navy text-white' : 'bg-subtle text-placeholder'} ${i === 0 ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
                   <span className="opacity-70">{WEEKDAY_SHORT[isoWeekday(date) - 1]}</span>

@@ -81,6 +81,12 @@ export const schedules = pgTable(
     cycleStart: date({ mode: 'string' }),
     startTime: text().notNull().default('09:00'),
     endTime: text().notNull().default('18:00'),
+    /** Ayrim kunlarda boshqa vaqt (weekly): [{weekdays:[2,4,6,7], startTime:'11:00', endTime:'23:00'}] — bazaviy vaqt ustidan */
+    dayTimes: jsonb().$type<Array<{ weekdays: number[]; startTime: string; endTime: string }>>().notNull().default([]),
+    /** Haftalik almashinuv: altAnchor haftasida bazaviy vaqt, keyingi haftada alt vaqt, va hokazo (ikki xodim smena almashadi) */
+    altStartTime: text(),
+    altEndTime: text(),
+    altAnchor: date({ mode: 'string' }),
     breakMinutes: smallint().notNull().default(60),
     graceMinutes: smallint().notNull().default(10),
     isActive: boolean().notNull().default(true),
