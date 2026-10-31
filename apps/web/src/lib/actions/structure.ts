@@ -3,7 +3,7 @@ import { flashError } from '@/lib/flash';
 import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { auditLog, branches, departments, schedules, withTenant, type Tx } from '@adone/db';
+import { auditLog, branches, departments, employees, schedules, withTenant, type Tx } from '@adone/db';
 import { isValidDate, isValidTime, parseCoordinates } from '@adone/core';
 import { assertArea } from '@/lib/auth/guard';
 import type { FormState } from '@/components/ui/form-drawer';
@@ -69,15 +69,21 @@ export async function saveDepartmentAction(_p: FormState, f: FormData): Promise<
   if (name.length < 2) return { error: "Bo'lim nomini kiriting" };
   const raw = str(f, 'head');
   const head: HeadChoice = raw.startsWith('e:') && optUuid(raw.slice(2)) ? { employeeId: raw.slice(2) } : raw.startsWith('u:') && optUuid(raw.slice(2)) ? { userId: raw.slice(2) } : null;
+  const responsibleEmployeeId = optUuid(str(f, 'responsible')) ?? null;
   const res = await withTenant(user.tenantId, async (tx): Promise<string | { id: string }> => {
+    // «Nazorat» javobgari — shu ishxonaning faol xodimi (RLS: begona xodim topilmaydi)
+    if (responsibleEmployeeId) {
+      const [e] = await tx.select({ id: employees.id }).from(employees).where(and(eq(employees.id, responsibleEmployeeId), eq(employees.status, 'active'))).limit(1);
+      if (!e) return 'Javobgar xodim topilmadi yoki faol emas';
+    }
     if (id) {
-      const [r] = await tx.update(departments).set({ name }).where(eq(departments.id, id)).returning({ id: departments.id });
+      const [r] = await tx.update(departments).set({ name, responsibleEmployeeId }).where(eq(departments.id, id)).returning({ id: departments.id });
       if (!r) return "Bo'lim topilmadi";
-      await audit(tx, user.tenantId, user.id, 'department.update', id, { name });
+      await audit(tx, user.tenantId, user.id, 'department.update', id, { name, responsibleEmployeeId });
       return { id };
     }
-    const [r] = await tx.insert(departments).values({ tenantId: user.tenantId, name }).returning({ id: departments.id });
-    await audit(tx, user.tenantId, user.id, 'department.create', r!.id, { name });
+    const [r] = await tx.insert(departments).values({ tenantId: user.tenantId, name, responsibleEmployeeId }).returning({ id: departments.id });
+    await audit(tx, user.tenantId, user.id, 'department.create', r!.id, { name, responsibleEmployeeId });
     return { id: r!.id };
   });
   if (typeof res === 'string') return { error: res };

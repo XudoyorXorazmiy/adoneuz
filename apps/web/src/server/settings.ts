@@ -14,7 +14,7 @@ export async function getSettings(tenantId: string): Promise<TenantSettings> {
 }
 
 /** Sozlama bo'limlari — audit `settings.<bo'lim>`, kartochkadagi «Oxirgi o'zgarish» shu bo'yicha. */
-export type SettingsSection = 'attendance' | 'face' | 'tasks' | 'reminders' | 'notifications' | 'tenant' | 'payroll';
+export type SettingsSection = 'attendance' | 'face' | 'tasks' | 'reminders' | 'notifications' | 'tenant' | 'payroll' | 'inspection';
 
 /**
  * Bo'lim o'zgarishi: `patch` normallashtirilgan to'liq sozlamaga qo'shiladi, keyin yana normallashtiriladi

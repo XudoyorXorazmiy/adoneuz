@@ -12,11 +12,12 @@ const NAV: NavItem[] = [
   { href: '/tg/tarix', label: 'Tarix', icon: 'history' },
   { href: '/tg/profil', label: 'Profil', icon: 'person' },
 ];
-export type ManagerShell = { panelUrl: string; pending: number; reports: boolean };
-/** Rahbar (egasi, admin, bo'lim boshlig'i): Bugun · Vazifalar · Qarorlar · Hisobot (faqat `reports`) · Panel (tashqi havola). */
-export const managerNav = ({ panelUrl, pending, reports }: ManagerShell): NavItem[] => [
+export type ManagerShell = { panelUrl: string; pending: number; reports: boolean; inspections?: boolean };
+/** Rahbar (egasi, admin, bo'lim boshlig'i): Bugun · Vazifalar · Nazorat (faqat `inspections` — egasi, admin) · Qarorlar · Hisobot (faqat `reports`) · Panel (tashqi havola). */
+export const managerNav = ({ panelUrl, pending, reports, inspections }: ManagerShell): NavItem[] => [
   { href: '/tg', label: 'Bugun', icon: 'how_to_reg' },
   { href: '/tg/vazifalar', label: 'Vazifalar', icon: 'task_alt' },
+  ...(inspections ? [{ href: '/tg/nazorat', label: 'Nazorat', icon: 'checklist' }] : []),
   { href: '/tg/qarorlar', label: 'Qarorlar', icon: 'fact_check', count: pending },
   ...(reports ? [{ href: '/tg/hisobot', label: 'Hisobot', icon: 'bar_chart' }] : []),
   { href: panelUrl, label: 'Panel', icon: 'open_in_new', external: true },

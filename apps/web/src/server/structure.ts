@@ -19,7 +19,7 @@ export async function listDepartments(tenantId: string) {
   return withTenant(tenantId, (tx) =>
     tx
       .select({
-        id: departments.id, name: departments.name, managerUserId: departments.managerUserId, managerName: users.name,
+        id: departments.id, name: departments.name, managerUserId: departments.managerUserId, managerName: users.name, responsibleEmployeeId: departments.responsibleEmployeeId,
         employees: sql<number>`(select count(*)::int from employees e where e.department_id = ${departments.id} and e.status <> 'disabled')`,
       })
       .from(departments)

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import QRCode from 'qrcode';
 import {
-  NOT_ACCEPTED_OPTIONS, NOTIFY_EVENTS, NOTIFY_EVENT_META, NOTIFY_ROLES, normalizePhone, phoneFromForm, tenantSettings, isValidTime,
+  NOT_ACCEPTED_OPTIONS, NOTIFY_EVENTS, NOTIFY_EVENT_META, NOTIFY_ROLES, normalizeCriteria, normalizePhone, phoneFromForm, tenantSettings, isValidTime,
   type NotifyEvent, type NotifyRole, type TenantSettings,
 } from '@adone/core';
 import { withTenant } from '@adone/db';
@@ -140,6 +140,26 @@ export async function saveTaskSettingsAction(_p: FormState, f: FormData): Promis
     const count = on(f, 'countSelfTasks');
     if (rules.task.countSelfTasks !== count) await savePayRules(tx, user.tenantId, user.id, { ...rules, task: { ...rules.task, countSelfTasks: count } });
   });
+  return done();
+}
+
+// ---------- Nazorat ----------
+
+/** Mezonlar: `label_<n>`, `id_<n>`, `dep_<n>` (bir nechta; bo'sh — hamma bo'lim). Bo'sh yorliq — o'chirilgan. */
+export async function saveInspectionSettingsAction(_p: FormState, f: FormData): Promise<FormState> {
+  const user = await assertArea('settings');
+  const rows: Array<{ id: string; label: string; departments: string[] | null }> = [];
+  for (let i = 0; i < 40; i++) {
+    if (!f.has(`label_${i}`)) continue;
+    const label = str(f, `label_${i}`);
+    if (!label) continue;
+    const deps = f.getAll(`dep_${i}`).map(String).filter(Boolean);
+    rows.push({ id: str(f, `id_${i}`), label, departments: deps.length ? deps : null });
+  }
+  const criteria = normalizeCriteria(rows);
+  if (!criteria.length) return { error: 'Kamida bitta mezon kiriting' };
+  await withTenant(user.tenantId, (tx) => saveSettings(tx, { tenantId: user.tenantId, userId: user.id }, 'inspection', { inspection: { criteria } }));
+  revalidatePath('/nazorat');
   return done();
 }
 

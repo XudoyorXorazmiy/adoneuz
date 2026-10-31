@@ -94,7 +94,7 @@ export async function managerPendingCount(m: TgMember): Promise<number> {
 
 /** Pastki menyu uchun: panel manzili, kutilayotgan qarorlar soni, «Hisobot» tabi (faqat `reports` — egasi, admin). */
 export function managerShell(m: TgMember, pending: number) {
-  return { panelUrl: appOrigin(), pending, reports: can(m.role, 'reports') };
+  return { panelUrl: appOrigin(), pending, reports: can(m.role, 'reports'), inspections: can(m.role, 'inspections') };
 }
 
 // ---------- Vazifalar ----------

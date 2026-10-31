@@ -9,10 +9,12 @@ import { Avatar } from '@/components/ui/avatar';
 import type { MyAccount } from '@/server/account';
 import {
   archiveTenantAction, changePasswordAction, saveAttendanceAction, saveMyNameAction, saveNotificationsAction, savePaySettingsAction,
-  saveTaskSettingsAction, saveTenantAction, unlinkTelegramAction,
+  saveInspectionSettingsAction, saveTaskSettingsAction, saveTenantAction, unlinkTelegramAction,
 } from '@/lib/actions/settings';
 import { ChipCheck, Field, Row, SelectField, Segmented, SettingsCard, StatusChip, Toggle, Value } from './ui';
 import { ConfirmByName, LogoutOthersButton, PasswordRows, SettingsForm, Slider, TelegramConnect } from './client';
+import { CriteriaEditor } from './criteria-editor';
+import type { InspectionCriterion } from '@adone/core';
 
 type Audit = Record<string, { name: string; at: Date }>;
 const ROW = 'flex items-center gap-6 border-b border-line-soft py-3.5 max-md:flex-col max-md:items-stretch max-md:gap-3';
@@ -176,6 +178,21 @@ export function TasksTab({ s, countSelfTasks, audit, tz }: { s: TenantSettings; 
             <SelectField name="quietTo" defaultValue={HOURS[s.quietHours.to]} width={100}>{HOURS.map((h) => <option key={h}>{h}</option>)}</SelectField>
           </span>
         </Row>
+      </SettingsCard>
+    </SettingsForm>
+  );
+}
+
+// ---------- Nazorat ----------
+
+export function InspectionTab({ criteria, departments, audit, tz }: { criteria: InspectionCriterion[]; departments: Array<{ id: string; name: string }>; audit: Audit; tz: string }) {
+  return (
+    <SettingsForm action={saveInspectionSettingsAction}>
+      <SettingsCard icon="checklist" title="Nazorat mezonlari" desc="Admin bo'limni shu mezonlar bo'yicha tekshiradi (Mini App → Nazorat). ✗ — bo'lim javobgariga avtomatik vazifa" audit={audit['settings.inspection'] ?? null} tz={tz}>
+        <CriteriaEditor criteria={criteria} departments={departments} />
+      </SettingsCard>
+      <SettingsCard icon="person_pin" title="Javobgarlar" desc="Har bo'limning javobgari — Xodimlar → Bo'limlar → bo'lim formasi «Nazorat javobgari». Jarima — Ish haqi → Qoidalar → «Nazorat ✗»" audit={undefined}>
+        <p className="m-0 text-sm text-muted">Javobgar bo&apos;lmasa, bo&apos;lim boshlig&apos;i xodim bo&apos;lsa — u. Hisobot: <Link href="/nazorat" className="font-semibold text-primary">Nazorat</Link>.</p>
       </SettingsCard>
     </SettingsForm>
   );

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { can, canUsePanel, checkGeofence, distanceMeters, formatMinutes, formatPhone, formatSom, normalizePhone, phoneFromForm, slugify } from '../src/index';
+import { can, canUsePanel, checkGeofence, distanceMeters, formatMinutes, formatPhone, formatSom, normalizePhone, phoneFromForm, slugify, normalizeCriteria, criteriaFor, buildItems, inspectionStats, statsBy, rankInspections, DEFAULT_INSPECTION_CRITERIA } from '../src/index';
 
 test('telefon', () => {
   assert.equal(normalizePhone('90 123 45 67'), '998901234567');
@@ -116,4 +116,30 @@ test('ruxsat so‘rovlari', async () => {
   assert.equal(canDecideLeave('pending', 'approved', 'employee'), false, 'xodim o‘zi tasdiqlamaydi');
   assert.equal(canDecideLeave('approved', 'rejected', 'reviewer'), false, 'hal qilingani o‘zgarmaydi');
   assert.equal(canDecideLeave('pending', 'cancelled', 'employee'), true);
+});
+
+test('nazorat mezonlari va statistika (2026-10-31)', () => {
+  const D1 = '11111111-1111-4111-8111-111111111111', D2 = '22222222-2222-4222-8222-222222222222';
+  assert.equal(normalizeCriteria(undefined).length, DEFAULT_INSPECTION_CRITERIA.length);
+  const cs = normalizeCriteria([{ id: 'Tozalik!', label: '  Tozalik ', departments: [D1, 'x'] }, { label: 'Tartib' }, { label: '' }, { id: 'tozalik', label: 'Takror id' }]);
+  assert.deepEqual(cs.map((c) => [c.id, c.label, c.departments]), [['tozalik', 'Tozalik', [D1]], ['m2', 'Tartib', null], ['tozalik_', 'Takror id', null]]);
+  assert.deepEqual(criteriaFor(cs, D2).map((c) => c.id), ['m2', 'tozalik_']);
+  assert.deepEqual(criteriaFor(cs, D1).map((c) => c.id), ['tozalik', 'm2', 'tozalik_']);
+  const items = buildItems(criteriaFor(cs, D1), [{ criterion: 'tozalik', ok: false, note: ' chang ', mediaId: 'bad' }, { criterion: 'm2', ok: true, note: 'x' }, { criterion: 'yoq', ok: false }, { criterion: 'm2', ok: false }]);
+  assert.deepEqual(items, [{ criterion: 'tozalik', ok: false, note: 'chang', mediaId: null }, { criterion: 'm2', ok: true, note: null, mediaId: null }]);
+  assert.equal(buildItems(cs, []), null);
+  const at = new Date();
+  const list = [
+    { departmentId: D1, responsibleEmployeeId: 'e1', at, items: items! },
+    { departmentId: D2, responsibleEmployeeId: 'e2', at, items: [{ criterion: 'm2', ok: true, note: null, mediaId: null }] },
+    { departmentId: D1, responsibleEmployeeId: null, at, items: [{ criterion: 'm2', ok: true, note: null, mediaId: null }, { criterion: 'tozalik', ok: true, note: null, mediaId: null }] },
+  ];
+  assert.deepEqual(inspectionStats(list), { checks: 3, items: 5, ok: 4, fail: 1, pct: 80 });
+  assert.equal(inspectionStats([]).pct, null);
+  const byDep = statsBy(list, (i) => i.departmentId);
+  assert.equal(byDep.get(D1)!.pct, 75);
+  assert.equal(byDep.get(D2)!.pct, 100);
+  assert.equal(statsBy(list, (i) => i.responsibleEmployeeId).size, 2, 'javobgarsiz tekshiruv guruhga kirmaydi');
+  const ranked = rankInspections([{ id: 'a', stats: byDep.get(D1)! }, { id: 'b', stats: byDep.get(D2)! }, { id: 'c', stats: inspectionStats([]) }]);
+  assert.deepEqual(ranked.map((r) => r.id), ['b', 'a', 'c']);
 });

@@ -15,13 +15,14 @@ const som = (v: FormDataEntryValue | null) => {
 /** Ish haqi qoidalari (egasi, admin) — butun shakl bitta saqlashda; tekshiruv core normalizePayRules'da. */
 export async function savePayRulesAction(_p: FormState, f: FormData): Promise<FormState> {
   const user = await assertArea('payroll');
-  const nums = ['lateAmount', 'absentPenalty', 'earlyPerMinute', 'overtimePerHour', 'onTimeBonus', 'latePenalty', 'fiveStarBonus', 'maxPenaltyPercent'].map((k) => som(f.get(k)));
+  const nums = ['lateAmount', 'absentPenalty', 'earlyPerMinute', 'overtimePerHour', 'onTimeBonus', 'latePenalty', 'fiveStarBonus', 'maxPenaltyPercent', 'inspectionFailPenalty'].map((k) => som(f.get(k)));
   if (nums.some((n) => Number.isNaN(n) || n < 0)) return { error: "Summalar musbat butun son bo'lsin" };
-  const [lateAmount, absentPenalty, earlyPerMinute, overtimePerHour, onTimeBonus, latePenalty, fiveStarBonus, maxPenaltyPercent] = nums;
+  const [lateAmount, absentPenalty, earlyPerMinute, overtimePerHour, onTimeBonus, latePenalty, fiveStarBonus, maxPenaltyPercent, inspectionFailPenalty] = nums;
   await withTenant(user.tenantId, (tx) => savePayRules(tx, user.tenantId, user.id, {
     monthlyProration: f.get('monthlyProration') === 'on', paidLeave: f.get('paidLeave') === 'on', showToEmployee: f.get('showToEmployee') === 'on',
     late: { mode: String(f.get('lateMode')), amount: lateAmount }, absentPenalty, earlyPerMinute, overtimePerHour, maxPenaltyPercent,
     task: { onTimeBonus, latePenalty, fiveStarBonus, countSelfTasks: f.get('countSelfTasks') === 'on' },
+    inspectionFailPenalty,
   }));
   revalidatePath('/ish-haqi');
   return { ok: 'Qoidalar saqlandi' };

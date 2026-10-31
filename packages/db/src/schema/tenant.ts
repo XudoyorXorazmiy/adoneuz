@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, date, doublePrecision, index, integer, jsonb, pgTable, real, smallint, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, date, doublePrecision, index, integer, jsonb, pgTable, real, smallint, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { createdAt, id, updatedAt } from './columns';
 import { leaveKindEnum, leaveStatusEnum, attendanceEventKindEnum, attendanceSourceEnum, checkStatusEnum, dayStatusEnum, employeeStatusEnum, mediaKindEnum, payTypeEnum, scheduleKindEnum } from './enums';
 import { tenants, users } from './platform';
@@ -32,10 +32,40 @@ export const departments = pgTable(
     name: text().notNull(),
     /** Bo'lim boshlig'i (panel foydalanuvchisi). */
     managerUserId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    /**
+     * «Nazorat» javobgari — tekshiruvda ✗ chiqsa avtomatik vazifa shu xodimga (2026-10-31). Boshliqdan farqi: rahbar huquqi
+     * bermaydi (oddiy sotuvchi ham bo'lishi mumkin). Bo'sh bo'lsa — boshliq xodim bo'lsa, u (server/inspections.ts).
+     */
+    responsibleEmployeeId: uuid().references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),
     isActive: boolean().notNull().default(true),
     createdAt: createdAt(),
   },
   (t) => [index('departments_tenant_idx').on(t.tenantId)],
+);
+
+/**
+ * «Nazorat» tekshiruvi (2026-10-31): admin bo'limni mezonlar bo'yicha tekshirdi. Append-only (UPDATE/DELETE yo'q — RLS 0018);
+ * `items` — [{ criterion, ok, note, mediaId }] (core InspectionItem); `responsibleEmployeeId` — o'sha paytdagi javobgar (snapshot);
+ * `workDate` — ishxona vaqtidagi sana (kunlik jadval uchun); `failCount` — ✗ soni (hisobotlar tez).
+ */
+export const inspections = pgTable(
+  'inspections',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    departmentId: uuid().notNull().references(() => departments.id, { onDelete: 'cascade' }),
+    inspectorUserId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    responsibleEmployeeId: uuid().references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),
+    at: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    workDate: date().notNull(),
+    items: jsonb().$type<Array<{ criterion: string; ok: boolean; note: string | null; mediaId: string | null }>>().notNull().default([]),
+    okCount: integer().notNull().default(0),
+    failCount: integer().notNull().default(0),
+    /** ✗ bo'yicha ochilgan vazifalar (tasks.id) */
+    taskIds: uuid().array().notNull().default(sql`'{}'::uuid[]`),
+    createdAt: createdAt(),
+  },
+  (t) => [index('inspections_day_idx').on(t.tenantId, t.workDate), index('inspections_dep_idx').on(t.tenantId, t.departmentId, t.at)],
 );
 
 export const schedules = pgTable(

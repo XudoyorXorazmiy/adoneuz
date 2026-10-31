@@ -16,6 +16,7 @@ const NAV: Array<{ href: string; label: string; area: Area; icon: string; ready:
   { href: '/davomat', label: 'Davomat', area: 'attendance', icon: 'how_to_reg', ready: true },
   { href: '/vazifalar', label: 'Vazifalar', area: 'tasks', icon: 'task_alt', ready: true, count: 'review' },
   { href: '/sorovlar', label: "So'rovlar", area: 'requests', icon: 'inbox', ready: true, count: 'leaves' },
+  { href: '/nazorat', label: 'Nazorat', area: 'inspections', icon: 'checklist', ready: true },
   { href: '/xodimlar', label: 'Xodimlar', area: 'employees', icon: 'group', ready: true, count: 'pending' },
   { href: '/jadvallar', label: 'Jadvallar', area: 'schedules', icon: 'calendar_month', ready: true },
   { href: '/filiallar', label: 'Filiallar', area: 'branches', icon: 'location_on', ready: true },

@@ -41,3 +41,17 @@ test('qoidalar tekshiruvi', () => {
   assert.equal(r.absentPenalty, 2);
   assert.equal(r.maxPenaltyPercent, 100);
 });
+
+test('nazorat ✗ jarimasi (2026-10-31): 0 — o‘chiq, so‘m × marta, chegaraga kiradi', () => {
+  const days = Array(20).fill(day('present'));
+  const off = computePay({ payType: 'monthly', rate: 3_000_000, days, tasks: [], inspectionFails: 4 }, DEFAULT_PAY_RULES);
+  assert.equal(off.penaltyTotal, 0, 'standart 0 — jarima yo‘q');
+  const rules = normalizePayRules({ inspectionFailPenalty: 50_000, maxPenaltyPercent: 0 });
+  const r = computePay({ payType: 'monthly', rate: 3_000_000, days, tasks: [], inspectionFails: 4 }, rules);
+  assert.deepEqual(r.penalties.map((p) => [p.kind, p.count, p.amount]), [['inspection_fail', 4, 200_000]]);
+  assert.equal(r.total, 3_000_000 - 200_000);
+  // Chegara: 30% dan oshmaydi
+  const capped = computePay({ payType: 'monthly', rate: 1_000_000, days, tasks: [], inspectionFails: 10 }, normalizePayRules({ inspectionFailPenalty: 50_000 }));
+  assert.equal(capped.penaltyTotal, 300_000);
+  assert.equal(normalizePayRules({ inspectionFailPenalty: -5 }).inspectionFailPenalty, 0);
+});

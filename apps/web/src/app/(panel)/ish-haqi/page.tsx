@@ -222,6 +222,7 @@ function RulesDrawer({ rules, open }: { rules: PayRules; open?: boolean }) {
         {num('absentPenalty', rules.absentPenalty, "Sababsiz kelmagan kun, so'm", 'Maosh ulushidan tashqari.')}
         {num('earlyPerMinute', rules.earlyPerMinute, "Erta ketish, so'm/daq")}
         {num('latePenalty', rules.task.latePenalty, "Vazifa kechikdi, so'm")}
+        {num('inspectionFailPenalty', rules.inspectionFailPenalty, "Nazorat ✗, so'm", "Tekshiruvda topilgan har kamchilik uchun — bo'lim javobgariga. 0 — o'chiq.")}
       </div>
       {num('maxPenaltyPercent', rules.maxPenaltyPercent, 'Jarima chegarasi, % asosiydan', '0 — cheklovsiz. Standart 30%.')}
       <div className="text-xs font-bold text-muted uppercase">Bonuslar</div>

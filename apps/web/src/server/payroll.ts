@@ -13,6 +13,7 @@ import {
   addDays, computePay, localDate, monthDays, normalizePayRules, onTime, shiftFor, zonedTime,
   type PayDay, type PayResult, type PayRules, type PayType, type PayrollStatus,
 } from '@adone/core';
+import { inspectionFailsFor } from './inspections';
 
 export const isMonth = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
 
@@ -51,6 +52,9 @@ async function calculate(tx: Tx, month: string, tz: string, rules: PayRules, emp
     .from(tasks).innerJoin(taskBatches, eq(taskBatches.id, tasks.batchId))
     .where(and(eq(tasks.status, 'approved'), inArray(tasks.assigneeEmployeeId, ids), gte(tasks.approvedAt, zonedTime(from, '00:00', tz)), lt(tasks.approvedAt, zonedTime(next, '00:00', tz))));
 
+  // Nazorat ✗ (javobgar sifatida) — `pay_rules.inspectionFailPenalty` (0 — o'chiq)
+  const fails = rules.inspectionFailPenalty > 0 ? await inspectionFailsFor(tx, ids, from, dates.at(-1)!) : new Map<string, number>();
+
   return emps.map((e) => {
     const rule = e.s ? toRule(e.s) : null;
     const days: PayDay[] = [];
@@ -63,7 +67,7 @@ async function calculate(tx: Tx, month: string, tz: string, rules: PayRules, emp
         : { status: 'off', planned, workedMinutes: 0, lateMinutes: 0, earlyLeaveMinutes: 0, overtimeMinutes: 0 });
     }
     const mine = done.filter((t) => t.emp === e.id).map((t) => ({ onTime: onTime(t), rating: t.rating, self: t.source !== 'assigned' }));
-    return { employeeId: e.id, payType: e.payType, rate: e.rate, result: computePay({ payType: e.payType, rate: e.rate, days, tasks: mine }, rules) };
+    return { employeeId: e.id, payType: e.payType, rate: e.rate, result: computePay({ payType: e.payType, rate: e.rate, days, tasks: mine, inspectionFails: fails.get(e.id) ?? 0 }, rules) };
   });
 }
 
@@ -87,6 +91,7 @@ async function isStale(tx: Tx, p: typeof payrollPeriods.$inferSelect, month: str
       or exists (select 1 from employees where updated_at > ${at}::timestamptz)
       or exists (select 1 from schedules where updated_at > ${at}::timestamptz)
       or exists (select 1 from leave_requests where updated_at > ${at}::timestamptz)
+      or exists (select 1 from inspections where created_at > ${at}::timestamptz)
       or exists (select 1 from tenants where updated_at > ${at}::timestamptz) as stale`);
   return rows[0]?.stale !== false;
 }

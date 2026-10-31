@@ -113,6 +113,7 @@ pending_actions
 person
 person_add
 person_off
+person_pin
 person_remove
 phone
 phone_android
@@ -136,9 +137,11 @@ refresh
 remove
 repeat
 replay
+report
 resize
 rocket_launch
 rule
+save
 schedule
 schedule_send
 search

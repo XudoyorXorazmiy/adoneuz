@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { eq, sql } from 'drizzle-orm';
 import { db, pool } from './client';
 import { withAuth, withPlatform, withTenant } from './scoped';
-import { attendanceEvents, auditLog, botSessions, employees, faceTemplates, jobs, leads, leaveRequests, payRules, payrollLines, payrollPeriods, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
+import { attendanceEvents, auditLog, botSessions, departments, employees, faceTemplates, inspections, jobs, leads, leaveRequests, payRules, payrollLines, payrollPeriods, memberships, plans, taskBatches, taskEvents, taskReports, tasks, tenants, users } from './schema/index';
 
 async function main() {
   // Kontekstsiz — hech narsa ko'rinmaydi
@@ -104,6 +104,20 @@ async function main() {
     await assert.rejects(tx.transaction((sp) => sp.delete(leaveRequests)), 'so‘rov o‘chirilmaydi');
     throw Object.assign(new Error('rollback'), { rollback: true });
   }).catch((e) => { if (!e.rollback) throw e; });
+
+  // Nazorat (2026-10-31): tekshiruv append-only, begona tenant_id yo'q, boshqa ishxonada ko'rinmaydi
+  await withTenant(mudom.id, async (tx) => {
+    const dep = (await tx.select().from(departments).limit(1))[0]!;
+    const [i] = await tx.insert(inspections).values({ tenantId: mudom.id, departmentId: dep.id, workDate: '2026-10-31', items: [{ criterion: 'x', ok: false, note: null, mediaId: null }], failCount: 1 }).returning();
+    assert.ok(i);
+    await assert.rejects(tx.transaction((sp) => sp.update(inspections).set({ failCount: 0 })), 'inspections o‘zgarmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.delete(inspections)), 'inspections o‘chmaydi');
+    await assert.rejects(tx.transaction((sp) => sp.insert(inspections).values({ tenantId: other.id, departmentId: dep.id, workDate: '2026-10-31' })), 'begona tenant_id bilan tekshiruv yo‘q');
+    throw Object.assign(new Error('rollback'), { rollback: true });
+  }).catch((e) => { if (!e.rollback) throw e; });
+  await withTenant(other.id, async (tx) => {
+    assert.equal((await tx.select().from(inspections)).length, 0, 'begona tekshiruvlar ko‘rinmaydi');
+  });
 
   // Landing arizalari: anonim (auth) faqat yozadi, o'qiy olmaydi; tenant roli umuman kirmaydi; platforma o'qiydi (hammasi rollback)
   await db.transaction(async (tx) => {

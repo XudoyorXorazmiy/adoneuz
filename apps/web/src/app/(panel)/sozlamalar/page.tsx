@@ -10,7 +10,7 @@ import { billingInfo, getSettings, lastChanges, lastClosedPeriod, TIMEZONES } fr
 import { listTeam } from '@/server/team';
 import { listBranches, listDepartments } from '@/server/structure';
 import { loadPayRules } from '@/server/payroll';
-import { AttendanceTab, BillingTab, NotificationsTab, PayTab, ProfileTab, TasksTab, TenantTab, whenLabel } from '@/components/settings/tabs';
+import { AttendanceTab, InspectionTab, BillingTab, NotificationsTab, PayTab, ProfileTab, TasksTab, TenantTab, whenLabel } from '@/components/settings/tabs';
 import { TeamTab, type TeamRow } from '@/components/settings/team';
 
 export const metadata: Metadata = { title: 'Sozlamalar' };
@@ -21,6 +21,7 @@ const TABS = [
   { id: 'jamoa', label: 'Jamoa', icon: 'group' },
   { id: 'davomat', label: 'Davomat', icon: 'how_to_reg' },
   { id: 'vazifalar', label: 'Vazifalar', icon: 'task_alt' },
+  { id: 'nazorat', label: 'Nazorat', icon: 'checklist' },
   { id: 'ish-haqi', label: 'Ish haqi', icon: 'payments' },
   { id: 'bildirishnomalar', label: 'Bildirishnomalar', icon: 'notifications' },
   { id: 'tarif', label: 'Tarif', icon: 'workspace_premium' },
@@ -107,6 +108,10 @@ async function TabContent({ tab, user, tz }: { tab: TabId; user: Awaited<ReturnT
     case 'vazifalar': {
       const [s, rules, audit] = await Promise.all([getSettings(user.tenantId), withTenant(user.tenantId, loadPayRules), lastChanges(user.tenantId, ['settings.tasks', 'settings.reminders'])]);
       return <TasksTab s={s} countSelfTasks={rules.task.countSelfTasks} audit={audit} tz={tz} />;
+    }
+    case 'nazorat': {
+      const [s, deps, audit] = await Promise.all([getSettings(user.tenantId), listDepartments(user.tenantId), lastChanges(user.tenantId, ['settings.inspection'])]);
+      return <InspectionTab criteria={s.inspection.criteria} departments={deps.map((d) => ({ id: d.id, name: d.name }))} audit={audit} tz={tz} />;
     }
     case 'ish-haqi': {
       const [rules, closed, audit] = await Promise.all([withTenant(user.tenantId, loadPayRules), lastClosedPeriod(user.tenantId), lastChanges(user.tenantId, ['payroll.rules'])]);

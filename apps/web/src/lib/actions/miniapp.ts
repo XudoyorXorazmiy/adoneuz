@@ -20,6 +20,7 @@ import { createTaskFromForm } from '@/server/tasks-form';
 import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
 import { createLeave, decideLeave } from '@/server/leave';
+import { saveInspection, type SaveResult } from '@/server/inspections';
 
 /**
  * Mini App amallari. Kim — FAQAT Mini App sessiyasidan (initData bilan berilgan cookie), formadan emas.
@@ -335,4 +336,32 @@ export async function tgDecideDeadlineAction(id: string, to: 'approved' | 'rejec
   if ('error' in res) return { error: res.error };
   refreshManager();
   return {};
+}
+
+/**
+ * «Nazorat» (egasi, admin): bo'lim + har mezonga ✓/✗ (`ok_<mezon>` = 1|0), ✗ da `note_<mezon>` va `photo_<mezon>` (kamera).
+ * Rasm diskka tranzaksiyadan tashqarida, yozuv — saveInspection ichida (✗ → javobgarga vazifa).
+ */
+export async function tgInspectionAction(f: FormData): Promise<SaveResult> {
+  const m = await assertTgMember();
+  if (!can(m.role, 'inspections')) return { ok: false, error: "Ruxsat yo'q" };
+  const departmentId = String(f.get('departmentId') ?? '');
+  if (!isUuid(departmentId)) return { ok: false, error: "Bo'limni tanlang" };
+  const items: Parameters<typeof saveInspection>[1]['items'] = [];
+  for (const [k, v] of f.entries()) {
+    if (!k.startsWith('ok_') || typeof v !== 'string') continue;
+    const criterion = k.slice(3);
+    const ok = v === '1';
+    let photo = null;
+    if (!ok) {
+      const file = photos(f, `photo_${criterion}`)[0];
+      const img = file ? await readImage(file) : null;
+      if (img) photo = await writeMediaFile({ tenantId: m.tenantId, employeeId: null, kind: 'attachment', ...img });
+    }
+    items.push({ criterion, ok, note: ok ? null : String(f.get(`note_${criterion}`) ?? ''), photo });
+  }
+  if (!items.length) return { ok: false, error: 'Hech bir mezon belgilanmadi' };
+  const r = await saveInspection(memberAsTenantUser(m), { departmentId, items });
+  if (r.ok) { kick(); revalidatePath('/tg/nazorat'); }
+  return r;
 }

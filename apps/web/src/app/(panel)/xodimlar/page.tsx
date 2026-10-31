@@ -58,6 +58,20 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
       </Field>
     );
   };
+  // «Nazorat» javobgari (2026-10-31): ✗ chiqsa vazifa shu xodimga; rahbar huquqi bermaydi. Bo'sh — boshliq xodim bo'lsa, u.
+  const responsibleSelect = (d?: { id: string; responsibleEmployeeId: string | null }) => {
+    const own = d ? candidates.employees.filter((e) => e.departmentId === d.id) : [];
+    const rest = candidates.employees.filter((e) => !own.includes(e));
+    return (
+      <Field label="Nazorat javobgari" hint="Admin bo'limni tekshirganda ✗ chiqsa — vazifa shu xodimga (Telegram, muddat 1 soat, rasm bilan hisobot). Rahbar huquqi bermaydi. Bo'sh bo'lsa — boshliq xodim bo'lsa, u.">
+        <select name="responsible" defaultValue={d?.responsibleEmployeeId ?? ''} className="input">
+          <option value="">— boshliq (yoki yo&apos;q) —</option>
+          {own.length > 0 && <optgroup label="Shu bo'lim xodimlari">{own.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}</optgroup>}
+          {rest.length > 0 && <optgroup label={own.length ? 'Boshqa xodimlar' : 'Xodimlar'}>{rest.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}</optgroup>}
+        </select>
+      </Field>
+    );
+  };
   const headBadge = (e: Row) => {
     const of = e.userId ? heads.get(e.userId) : undefined;
     return of?.length ? <span className="flex shrink-0 text-primary" title={`Bo'lim boshlig'i: ${of.map((d) => d.name).join(', ')}`} aria-label="Bo'lim boshlig'i"><Icon name="workspace_premium" size={16} fill /></span> : null;
@@ -189,6 +203,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
               <FormDrawer trigger={<><Icon name="add" size={16} />Qo&apos;shish</>} triggerClass="btn-ghost btn-sm h-8 px-3 text-primary" title="Yangi bo'lim" action={saveDepartmentAction}>
                 <Field label="Nomi"><input name="name" placeholder="Sotuv zali" className="input" required /></Field>
                 {headSelect()}
+                {responsibleSelect()}
               </FormDrawer>
             )}
           </div>
@@ -204,6 +219,7 @@ export default async function EmployeesPage({ searchParams }: PageProps<'/xodiml
                   <input type="hidden" name="id" value={d.id} />
                   <Field label="Nomi"><input name="name" defaultValue={d.name} className="input" required /></Field>
                   {headSelect(d)}
+                  {responsibleSelect(d)}
                 </FormDrawer>
               )}
             </div>

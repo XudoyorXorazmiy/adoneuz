@@ -18,6 +18,8 @@ export interface PayRules {
   /** Qo'shimcha ishlangan har soat uchun. */
   overtimePerHour: number;
   task: { onTimeBonus: number; latePenalty: number; fiveStarBonus: number; countSelfTasks: boolean };
+  /** «Nazorat» tekshiruvida har ✗ uchun jarima (javobgar xodimga), so'm; 0 — o'chiq. */
+  inspectionFailPenalty: number;
   /** Jarimalar yig'indisi asosiy maoshning shu foizidan oshmaydi (0 — cheklovsiz). */
   maxPenaltyPercent: number;
   /** Xodim o'z ish haqini Mini App'da ko'radimi. */
@@ -32,6 +34,7 @@ export const DEFAULT_PAY_RULES: PayRules = {
   earlyPerMinute: 0,
   overtimePerHour: 0,
   task: { onTimeBonus: 0, latePenalty: 0, fiveStarBonus: 0, countSelfTasks: false },
+  inspectionFailPenalty: 0,
   maxPenaltyPercent: 30,
   showToEmployee: false,
 };
@@ -55,6 +58,7 @@ export function normalizePayRules(raw: unknown): PayRules {
       onTimeBonus: int(r.task?.onTimeBonus, 100_000_000), latePenalty: int(r.task?.latePenalty, 100_000_000),
       fiveStarBonus: int(r.task?.fiveStarBonus, 100_000_000), countSelfTasks: bool(r.task?.countSelfTasks, d.task.countSelfTasks),
     },
+    inspectionFailPenalty: int(r.inspectionFailPenalty, 100_000_000),
     maxPenaltyPercent: Math.min(100, int(r.maxPenaltyPercent ?? d.maxPenaltyPercent, 100)),
     showToEmployee: bool(r.showToEmployee, d.showToEmployee),
   };
@@ -76,7 +80,7 @@ export interface PayResult {
   stats: { plannedDays: number; workedDays: number; leaveDays: number; absentDays: number; lateDays: number; lateMinutes: number; workedMinutes: number; overtimeMinutes: number; tasksOnTime: number; tasksLate: number };
 }
 
-export function computePay(input: { payType: PayType; rate: number; days: PayDay[]; tasks: PayTask[] }, rules: PayRules): PayResult {
+export function computePay(input: { payType: PayType; rate: number; days: PayDay[]; tasks: PayTask[]; /** Nazoratdagi ✗ soni (javobgar sifatida) */ inspectionFails?: number }, rules: PayRules): PayResult {
   const rate = int(input.rate);
   const s = { plannedDays: 0, workedDays: 0, leaveDays: 0, absentDays: 0, lateDays: 0, lateMinutes: 0, workedMinutes: 0, overtimeMinutes: 0, tasksOnTime: 0, tasksLate: 0, earlyMinutes: 0 };
   for (const d of input.days) {
@@ -112,6 +116,8 @@ export function computePay(input: { payType: PayType; rate: number; days: PayDay
   add(bonuses, 'task_on_time', "Vazifa o'z vaqtida", s.tasksOnTime, s.tasksOnTime * rules.task.onTimeBonus);
   add(bonuses, 'task_five', 'Vazifa 5 baho', five, five * rules.task.fiveStarBonus);
   add(penalties, 'task_late', 'Vazifa kechikdi', s.tasksLate, s.tasksLate * rules.task.latePenalty);
+  const fails = Math.max(0, Math.round(input.inspectionFails ?? 0));
+  add(penalties, 'inspection_fail', 'Nazorat ✗ (marta)', fails, fails * rules.inspectionFailPenalty);
 
   const rawPenalty = penalties.reduce((a, p) => a + p.amount, 0);
   const cap = rules.maxPenaltyPercent > 0 ? Math.floor((base * rules.maxPenaltyPercent) / 100) : Infinity;

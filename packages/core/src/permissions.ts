@@ -6,6 +6,8 @@ import type { MemberRole } from './enums';
  */
 export const AREAS = [
   'dashboard', 'attendance', 'tasks', 'requests', 'employees', 'schedules', 'branches', 'reports', 'payroll', 'settings', 'billing',
+  /** «Nazorat» — admin bo'limlarni tekshiradi (egasi, admin; bo'lim boshlig'iga ko'rinmaydi) */
+  'inspections',
 ] as const;
 export type Area = (typeof AREAS)[number];
 

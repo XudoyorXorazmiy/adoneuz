@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { MONTHS, periodLabel, REPORT_PRESET_LABELS, REPORT_PRESETS, reportPeriod, shortRange, isUuid } from '@adone/core';
+import { can, MONTHS, periodLabel, REPORT_PRESET_LABELS, REPORT_PRESETS, reportPeriod, shortRange, isUuid } from '@adone/core';
 import { requireArea } from '@/lib/auth/guard';
 import type { TenantUser } from '@/lib/auth/session';
 import { today as todayOf } from '@/server/attendance';
 import { buildReport, loadJournal, parseReportParams, reportOptions } from '@/server/reports';
+import { inspectionOverview, type Overview } from '@/server/inspections';
 import { PageHeader } from '@/components/ui/page-header';
 import { Icon } from '@/components/ui/icon';
 import { ExcelButton, JournalFilters, MoreMenu, ReportFilters } from '@/components/reports/controls';
@@ -101,5 +102,36 @@ async function TabBody({ tab, user, f, query, today, label, employees, prevHref,
       toggle={{ xodimlar: reportUrl('/hisobotlar', query, { tur: undefined }), bolimlar: reportUrl('/hisobotlar', query, { tur: 'bolimlar' }) }} />;
   }
   const tabelHref = `/davomat/tabel?oy=${f.period.to.slice(0, 7)}${f.departmentId ? `&bolim=${f.departmentId}` : ''}`;
-  return <AttendanceTab r={r} compare={f.compare} tabelHref={tabelHref} prevLabel={prevLabel} />;
+  const insp = can(user.role, 'inspections') ? await inspectionOverview(user, { from: f.period.from, to: f.period.to, departmentId: f.departmentId }) : null;
+  return (
+    <>
+      <AttendanceTab r={r} compare={f.compare} tabelHref={tabelHref} prevLabel={prevLabel} />
+      {insp && insp.stats.checks > 0 && <InspectionBlock o={insp} month={f.period.to.slice(0, 7)} />}
+    </>
+  );
+}
+
+/** «Nazorat» qisqa bloki (davomat tabida): davrdagi tekshiruvlar, ✓ ulushi, eng past bo'limlar; to'liq hisobot — /nazorat. */
+function InspectionBlock({ o, month }: { o: Overview; month: string }) {
+  const tone = (n: number | null) => (n == null ? 'text-muted' : n >= 90 ? 'text-success' : n >= 70 ? 'text-warning' : 'text-danger');
+  const low = [...o.departments].filter((d) => d.stats.checks > 0).sort((a, b) => (a.stats.pct ?? 101) - (b.stats.pct ?? 101)).slice(0, 3);
+  return (
+    <section className="rounded-[20px] bg-card p-5 shadow-[var(--shadow-card)]">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="m-0 flex items-center gap-2 text-base font-bold"><Icon name="checklist" size={20} className="text-primary" />Nazorat</h2>
+        <Link href={`/nazorat?oy=${month}`} className="flex items-center gap-1 text-sm font-semibold text-primary">To&apos;liq hisobot<Icon name="chevron_right" size={18} /></Link>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl bg-page px-4 py-3"><div className="text-xs text-muted">Tekshiruvlar</div><div className="tnum text-xl font-bold">{o.stats.checks}</div></div>
+        <div className="rounded-2xl bg-page px-4 py-3"><div className="text-xs text-muted">Joyida</div><div className={`tnum text-xl font-bold ${tone(o.stats.pct)}`}>{o.stats.pct == null ? '—' : `${o.stats.pct}%`}</div></div>
+        <div className="rounded-2xl bg-page px-4 py-3"><div className="text-xs text-muted">Kamchilik · ochiq vazifa</div><div className="tnum text-xl font-bold">{o.stats.fail} <span className="text-sm font-semibold text-muted">· {o.openTasks}</span></div></div>
+      </div>
+      {low.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2 text-[13px]">
+          <span className="text-muted">E&apos;tibor:</span>
+          {low.map((d) => <span key={d.id} className="rounded-full bg-subtle px-2.5 py-1 font-semibold">{d.name} <span className={`tnum ${tone(d.stats.pct)}`}>{d.stats.pct}%</span></span>)}
+        </div>
+      )}
+    </section>
+  );
 }

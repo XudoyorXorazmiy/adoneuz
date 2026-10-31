@@ -13,3 +13,4 @@ export * from './leave';
 export * from './payroll';
 export * from './settings';
 export * from './reports';
+export * from './inspection';
