@@ -5,7 +5,7 @@ import 'server-only';
  * davomat — append-only jurnal (§1.2). Telegram'ga so'rovlar tranzaksiyadan TASHQARIDA.
  */
 import { and, eq, gt, isNull } from 'drizzle-orm';
-import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, workdayOf, dayEvents, employeeRule } from '@adone/db';
+import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, currentWorkday, dayEvents, employeeRule } from '@adone/db';
 import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor, UUID_SRC, workdayFor } from '@adone/core';
 import { appOrigin } from '@/lib/host';
 import { issueTelegramLogin } from '@/server/team';
@@ -311,12 +311,10 @@ async function beginAction(uid: number, chat: number, link: EmployeeLink, action
     if (!e || e.status === 'disabled') return T.disabled;
     if (e.status !== 'active') return T.notActive;
     if (!e.branchId) return T.noBranch;
-    const wd = await workdayOf(tx, e.id, new Date(), t!.tz);
-    const evs = await dayEvents(tx, e.id, wd.date);
-    // Kecha tungi smenadan chiqmagan bo'lsa ham ketishga ruxsat (ish kuni workdayOf'dan)
-    const next = nextAction(evs);
-    if (action === 'check_in' && next === 'check_out') return T.alreadyIn;
-    if (action === 'check_out' && next === 'check_in') return T.notIn;
+    // Kecha «Keldim» bosib yarim tundan keyin ketayotgan bo'lsa ham ruxsat — ish kuni kechagi (currentWorkday)
+    const wd = await currentWorkday(tx, e.id, new Date(), t!.tz);
+    if (action === 'check_in' && wd.open) return T.alreadyIn;
+    if (action === 'check_out' && !wd.open) return T.notIn;
     return null;
   });
   if (err) {
@@ -366,7 +364,7 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
     const g = checkGeofence({ branch: { lat: b.lat, lng: b.lng, radiusM: b.radiusM }, point: { lat: loc.latitude, lng: loc.longitude }, accuracyM: accuracy });
     // Vaqt — xabar serverga kelgan payt (Telegram sekinlashib ish qayta urinilsa ham to'g'ri)
     const at = new Date(arrivedAt());
-    const wd = await workdayOf(tx, e.id, at, t!.tz);
+    const wd = await currentWorkday(tx, e.id, at, t!.tz);
     const base = {
       tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, branchId: b.id, lat: loc.latitude, lng: loc.longitude,
       accuracyM: accuracy, distanceM: g.distanceM, isLiveLocation: true, source: 'bot' as const, serverAt: at,
@@ -379,7 +377,7 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
     }
     if (state.action === 'check_out') {
       // Ikki marta «Ketdim» (qayta yuborilgan lokatsiya / Mini App bilan bir vaqtda) — xodim qatori qulflangan, holat qayta tekshiriladi
-      if (nextAction(await dayEvents(tx, e.id, wd.date)) !== 'check_out') return { kind: 'error' as const, text: 'Siz allaqachon «Ketdim» qilgansiz.' };
+      if (!wd.open) return { kind: 'error' as const, text: 'Siz allaqachon «Ketdim» qilgansiz.' };
       await tx.insert(attendanceEvents).values({ ...base, kind: 'check_out', checkStatus: 'ok' });
       const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
       return { kind: 'out' as const, time: formatTime(at, t!.tz), worked: formatMinutes(r.workedMinutes) };
@@ -422,8 +420,8 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).for('update').limit(1); // Mini App bilan bir vaqtda — ketma-ket
     if (!e || e.status !== 'active') return null;
     const at = new Date(arrivedAt());
-    const wd = await workdayOf(tx, e.id, at, t!.tz);
-    if (nextAction(await dayEvents(tx, e.id, wd.date)) === 'check_out') return { already: true as const };
+    const wd = await currentWorkday(tx, e.id, at, t!.tz);
+    if (wd.open) return { already: true as const };
     const mediaId = await insertMedia(tx, stored);
     await tx.insert(attendanceEvents).values({
       tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, kind: 'check_in', branchId: state.loc.branchId,

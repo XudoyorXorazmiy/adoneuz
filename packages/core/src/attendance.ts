@@ -153,6 +153,24 @@ export function nextAction(events: DayEvent[]): 'check_in' | 'check_out' {
   return inside ? 'check_out' : 'check_in';
 }
 
+/** Yopilmagan «Keldim» shu qadar eski bo'lsa ham o'sha kunga «Ketdim» yoziladi (avto-yopish bundan oldin ishlaydi). */
+export const OPEN_WORKDAY_MS = 24 * 3600_000;
+
+/**
+ * Yarim tundan keyin «Ketdim» (2026-10-31): xodim kecha «Keldim» bosgan, 00:00 dan keyin ketmoqda — hodisa kechagi ish kuniga
+ * tegishli (§1.8), yangi kun emas. Berilgan kunlar ichida (joriy kundan oldingilari) yopilmagan kirishi bor va oxirgi kirishdan
+ * `maxOpenMs` o'tmagan birinchisini qaytaradi; bo'lmasa null.
+ */
+export function openWorkday(at: Date, days: Array<{ date: string; events: DayEvent[] }>, maxOpenMs = OPEN_WORKDAY_MS): string | null {
+  for (const d of days) {
+    const evs = effectiveEvents(d.events);
+    if (nextAction(evs) !== 'check_out') continue;
+    const lastIn = [...evs].reverse().find((e) => e.kind === 'check_in');
+    if (lastIn && at.getTime() - lastIn.at.getTime() <= maxOpenMs) return d.date;
+  }
+  return null;
+}
+
 /**
  * «Keldi / Ketdi vaqtini belgilash» (panel): birinchi kirish va oxirgi chiqishni yangi vaqtga almashtirish uchun
  * kerakli tuzatishlar — eski hodisa bekor qilinadi (void), yangisi qo'shiladi (add_in/add_out). Vaqt o'zgarmasa — hech narsa.

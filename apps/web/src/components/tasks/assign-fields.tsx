@@ -130,7 +130,7 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
             <input name="dueDate" type="date" value={dueDate} min={today} onChange={(e) => setDueDate(e.target.value)} className="input tnum" />
           </Field>
           <Field label="Vaqt">
-            <input name="dueTime" value={dueTime} onChange={(e) => setDueTime(e.target.value)} placeholder="18:00" inputMode="numeric" maxLength={5} pattern="[0-2][0-9]:[0-5][0-9]" className="input tnum" />
+            <input name="dueTime" type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} required className="input tnum" />
           </Field>
         </div>
       )}
@@ -202,7 +202,7 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
             )}
             {kind === 'monthly' && <Field label="Oyning kuni"><input name="monthDay" type="number" min={1} max={31} defaultValue={1} className="input w-28" /></Field>}
             <Field label="Har nusxaning muddati (o'sha kuni)">
-              <input name="dueTime" value={dueTime} onChange={(e) => setDueTime(e.target.value)} placeholder="18:00" inputMode="numeric" maxLength={5} pattern="[0-2][0-9]:[0-5][0-9]" className="input tnum w-32" />
+              <input name="dueTime" type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} required className="input tnum w-32" />
             </Field>
           </>
         )}

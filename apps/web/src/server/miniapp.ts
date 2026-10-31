@@ -2,7 +2,7 @@ import 'server-only';
 import { latestDeadlineFor } from './deadline';
 /** Mini App ko'rinishlari (xodim). Faqat o'z ma'lumoti: hamma so'rov employeeId bilan, tenant — Mini App sessiyasidan. */
 import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
-import { attendanceDays, dayEvents, onLeave, employeeRule, taskBatches, taskEvents, taskReports, tasks, users, withTenant, workdayOf } from '@adone/db';
+import { attendanceDays, dayEvents, onLeave, employeeRule, taskBatches, taskEvents, taskReports, tasks, users, withTenant, currentWorkday } from '@adone/db';
 import { computeDay, isOverdue, localDate, monthDays, onTime, shiftFor, type TaskStatus } from '@adone/core';
 import type { TgUser } from '@/lib/tg/session';
 import { isOnBreak } from './checkin';
@@ -10,10 +10,11 @@ import { isOnBreak } from './checkin';
 export async function homeData(u: TgUser) {
   return withTenant(u.tenantId, async (tx) => {
     const now = new Date();
-    const wd = await workdayOf(tx, u.employeeId, now, u.tz);
+    // Yarim tundan keyin ham kechagi ochiq kun ko'rsatiladi («Ketdim» shu kunga yoziladi)
+    const wd = await currentWorkday(tx, u.employeeId, now, u.tz);
     const rule = await employeeRule(tx, u.employeeId);
-    const shift = rule ? shiftFor(rule, wd.date, u.tz) : null;
-    const evs = await dayEvents(tx, u.employeeId, wd.date);
+    const shift = wd.shift;
+    const evs = wd.events;
     const leave = await onLeave(tx, u.employeeId, wd.date);
     const day = computeDay({ events: evs, shift, now, onLeave: leave });
     const today = localDate(now, u.tz);

@@ -7,7 +7,7 @@ import 'server-only';
 import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { auditLog, employees, memberships, taskTemplates, withTenant } from '@adone/db';
-import { assignableMemberRoles, isValidDate, isValidTime, TASK_PRIORITIES, TASK_PROOFS, zonedTime, type Recurrence, type TaskPriority, type TaskProof } from '@adone/core';
+import { assignableMemberRoles, isValidDate, normalizeTime, TASK_PRIORITIES, TASK_PROOFS, zonedTime, type Recurrence, type TaskPriority, type TaskProof } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { createTasks, runTaskTemplates } from './tasks';
 import { departmentScope } from './scope';
@@ -30,8 +30,9 @@ export async function createTaskFromForm(user: TenantUser, f: FormData): Promise
   const priority = (TASK_PRIORITIES as readonly string[]).includes(str(f, 'priority')) ? (str(f, 'priority') as TaskPriority) : 'medium';
   const proofs = [...new Set(f.getAll('proof').map(String).filter((p): p is TaskProof => (TASK_PROOFS as readonly string[]).includes(p)))];
   const checklist = f.getAll('step').map((s) => String(s).trim().slice(0, 200)).filter(Boolean).slice(0, 20);
-  const dueTime = str(f, 'dueTime') || '18:00';
-  if (!isValidTime(dueTime)) return { error: "Vaqtni 17:00 ko'rinishida kiriting" };
+  // Vaqt: type="time" dan "HH:MM"; eski klient/qo'lda yozilgan "18.30", "1830" ham qabul qilinadi
+  const dueTime = normalizeTime(str(f, 'dueTime') || '18:00');
+  if (!dueTime) return { error: "Vaqtni 17:00 ko'rinishida kiriting" };
   const repeat = f.get('repeat') === '1';
   let recurrence: Recurrence | null = null;
   if (repeat) {

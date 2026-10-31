@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeDay, retimePlan, describeSchedule, isWorkday, localDate, monthDays, nextAction, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
+import { computeDay, retimePlan, describeSchedule, isWorkday, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
 
 const TZ = 'Asia/Tashkent';
 const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', breakMinutes: 60, graceMinutes: 10 };
@@ -122,4 +122,39 @@ test('ruxsatda: kelmagan kun «Ruxsatda», kelgan bo‘lsa — Ishda', () => {
   assert.equal(computeDay({ events: [], shift, now: at(d, '15:00'), onLeave: true }).status, 'leave');
   assert.equal(computeDay({ events: [], shift, now: at(d, '15:00') }).status, 'absent');
   assert.equal(computeDay({ events: [ev('check_in', at(d, '09:00'))], shift, now: at(d, '15:00'), onLeave: true }).status, 'present');
+});
+
+
+test('yarim tundan keyin «Ketdim» — kechagi kun (2026-10-31)', () => {
+  const d = '2026-10-20';
+  const evs = [ev('check_in', at(d, '09:00'))];
+  // 00:40 da ochiq kun kecha — joriy kun (21.10) bo'sh
+  const now = at('2026-10-21', '00:40');
+  assert.equal(openWorkday(now, [{ date: '2026-10-21', events: [] }, { date: d, events: evs }]), d);
+  // Ketdim shu kunga yozilsa — bitta kun, 15:40 (jadvalsiz)
+  const r = computeDay({ events: [...evs, ev('check_out', now)], shift: null, now });
+  assert.equal(r.workedMinutes, 15 * 60 + 40);
+  assert.equal(r.status, 'present');
+  assert.equal(r.open, false);
+  // Jadval bilan: 09:00–21:00, tanaffus 60 — qo'shimcha soat hisoblanadi, erta ketish yo'q
+  const shift = shiftFor(base, d, TZ)!;
+  const rs = computeDay({ events: [...evs, ev('check_out', now)], shift, now });
+  assert.equal(rs.workedMinutes, 15 * 60 + 40 - 60);
+  assert.equal(rs.earlyLeaveMinutes, 0);
+  assert.equal(rs.overtimeMinutes, 15 * 60 + 40 - 60 - (12 * 60 - 60));
+  // Yopilgan kun — ochiq emas
+  assert.equal(openWorkday(now, [{ date: d, events: [...evs, ev('check_out', at(d, '20:00'))] }]), null);
+  // Avto-yopilgan kun — ochiq emas
+  assert.equal(openWorkday(now, [{ date: d, events: [...evs, ev('auto_close', at(d, '23:00'))] }]), null);
+  // 24 soatdan eski kirish — e'tiborsiz
+  assert.equal(openWorkday(at('2026-10-21', '09:30'), [{ date: d, events: evs }]), null);
+});
+
+test('vaqt normallashtirish (forma)', () => {
+  assert.equal(normalizeTime('18:30'), '18:30');
+  assert.equal(normalizeTime('18.30'), '18:30');
+  assert.equal(normalizeTime('1830'), '18:30');
+  assert.equal(normalizeTime('9:05'), '09:05');
+  assert.equal(normalizeTime('24:00'), null);
+  assert.equal(normalizeTime('abc'), null);
 });

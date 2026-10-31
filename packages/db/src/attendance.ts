@@ -1,5 +1,5 @@
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
-import { computeDay, shiftFor, workdayFor, type DayEvent, type DayResult, type ScheduleRule } from '@adone/core';
+import { addDays, computeDay, nextAction, openWorkday, shiftFor, workdayFor, type DayEvent, type DayResult, type ScheduleRule, type Shift } from '@adone/core';
 import type { Tx } from './client';
 import { attendanceDays, attendanceEvents, employees, leaveRequests, schedules } from './schema/index';
 
@@ -35,6 +35,22 @@ export async function employeeRule(tx: Tx, employeeId: string): Promise<Schedule
 /** Hodisa qaysi ish kuniga yoziladi (tungi smena — kechagi sana). */
 export async function workdayOf(tx: Tx, employeeId: string, at: Date, tz: string) {
   return workdayFor(await employeeRule(tx, employeeId), at, tz);
+}
+
+/**
+ * «Keldim/Ketdim/Tanaffus» uchun joriy holat: ish kuni (`workdayFor`) va uning hodisalari. Joriy kunda ochiq kirish bo'lmasa,
+ * oldingi kun yopilmagan bo'lsa (yarim tundan keyin «Ketdim», 2026-10-31) — o'sha kun qaytadi: hodisa unga yoziladi, kun qayta
+ * hisoblanadi. `open` — hozir ishda (keyingi amal «Ketdim»).
+ */
+export async function currentWorkday(tx: Tx, employeeId: string, at: Date, tz: string): Promise<{ date: string; shift: Shift | null; events: DayEvent[]; open: boolean }> {
+  const rule = await employeeRule(tx, employeeId);
+  const wd = workdayFor(rule, at, tz);
+  const events = await dayEvents(tx, employeeId, wd.date);
+  if (nextAction(events) === 'check_out') return { ...wd, events, open: true };
+  const prevDate = addDays(wd.date, -1);
+  const prevEvents = await dayEvents(tx, employeeId, prevDate);
+  if (openWorkday(at, [{ date: prevDate, events: prevEvents }])) return { date: prevDate, shift: rule ? shiftFor(rule, prevDate, tz) : null, events: prevEvents, open: true };
+  return { ...wd, events, open: false };
 }
 
 export async function dayEvents(tx: Tx, employeeId: string, workDate: string): Promise<DayEvent[]> {

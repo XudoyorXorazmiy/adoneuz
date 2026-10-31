@@ -59,6 +59,14 @@ export function isValidTime(t: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 }
 
+/** Formadan kelgan vaqt: "18:30", "18.30", "1830", "18 30", "9:5" → "18:30" / "09:05"; noto'g'ri bo'lsa null. */
+export function normalizeTime(input: string): string | null {
+  const m = /^\s*(\d{1,2})\s*[:.\s-]?\s*(\d{2})\s*$/.exec(input);
+  if (!m) return null;
+  const t = `${m[1]!.padStart(2, '0')}:${m[2]}`;
+  return isValidTime(t) ? t : null;
+}
+
 export function isValidDate(d: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) && new Date(`${d}T00:00:00Z`).toISOString().startsWith(d);
 }

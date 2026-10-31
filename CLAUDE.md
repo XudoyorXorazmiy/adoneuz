@@ -116,7 +116,8 @@ Tenant (`tenant_id` + RLS):
 3. **Jonli isbot:** Mini App — kamera (galereya yo'q), bot — **dumaloq video (video_note)**; oddiy rasm/fayl rad etiladi.
 4. **Yuz:** kadr(lar) → `services/face /verify` → o'xshashlik ≥ chegara (standart 0.45 kosinus, tenant sozlamasi) → ok; chegara atrofida yoki liveness past → `suspicious` (admin navbatiga, xodimga «qabul qilindi, tekshiriladi»).
 5. Hodisa `attendance_events` ga, `attendance_days` qayta hisoblanadi, kechikish bo'lsa menejerga xabar (jobs).
-6. «Ketdim» unutilsa — smena tugashidan N soat keyin `auto_close` + xodim va menejerga xabar.
+6. «Ketdim» unutilsa — smena tugashidan N soat keyin `auto_close` + xodim va menejerga xabar (`autoCloseHours`, Sozlamalar → Davomat; Mudom — 6 soat).
+7. **Yarim tundan keyin «Ketdim» (2026-10-31):** keldi/ketdi/tanaffus uchun ish kuni `db currentWorkday` dan — joriy kunda ochiq kirish bo'lmasa, kechagi kun yopilmagan bo'lsa (core `openWorkday`, 24 soat ichida) hodisa KECHAGI kunga yoziladi, yangi kun ochilmaydi (`workdayOf` faqat tungi smena uchun sana beradi). Bot, Mini App va `recordCheck` bir xil.
 
 ## 7. Vazifalar oqimi
 
@@ -128,6 +129,7 @@ har qanday ochiq → cancelled (izoh majburiy) · muddat o'tsa → overdue belgi
 ```
 
 - Berish: botda (`/vazifa` dialogi) va web panelda. Kimga: bitta / bir nechta / bo'lim / filial → `task_batches` + har ijrochiga `tasks`.
+  «Vaqt» maydoni — `type="time"` (telefonda raqamli klaviaturada «:» yo'q edi — kiritib bo'lmasdi, 2026-10-31); server `normalizeTime` («18.30», «1830» ham).
 - Xodimga bot xabari (sarlavha, kimdan, muddat, muhimlik, tavsif) + `✅ Qabul qildim` / `❓ Savol`. Hisobot: `✅ Bajardim` → talab qilingan isbot (rasm/video jonli, lokatsiya) + izoh → `submitted`.
 - Rahbar: `✅ Qabul qilish` (baho 1–5) / `🔁 Qaytarish` (sabab majburiy). Muddatni uzaytirish so'rovi — tasdiq bilan.
 - Takrorlanuvchi (ixtiyoriy): `task_templates` → scheduler har kuni yangi batch yaratadi (`dedupe_key = tpl:<id>:<sana>`).

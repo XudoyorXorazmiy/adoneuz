@@ -5,8 +5,8 @@ import 'server-only';
  * Bot o'z oqimida (server/bot) xuddi shu qoidalarni ishlatadi.
  */
 import { eq } from 'drizzle-orm';
-import { attendanceEvents, branches, dayEvents, employees, rebuildDay, tenants, workdayOf, type Tx } from '@adone/db';
-import { checkGeofence, effectiveEvents, facePercent, formatTime, nextAction, type FaceDecision } from '@adone/core';
+import { attendanceEvents, branches, currentWorkday, employees, rebuildDay, tenants, type Tx } from '@adone/db';
+import { checkGeofence, effectiveEvents, facePercent, formatTime, type FaceDecision } from '@adone/core';
 import { escHtml as esc } from '@/lib/task-text';
 import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { readSettings } from '@/server/settings';
@@ -43,8 +43,9 @@ export async function recordCheck(tx: Tx, input: {
   if (!e.branchId) return { ok: false, reason: 'no_branch', message: 'Sizga filial biriktirilmagan. Rahbaringizga murojaat qiling.' };
   const [b] = await tx.select().from(branches).where(eq(branches.id, e.branchId)).limit(1);
   if (!b) return { ok: false, reason: 'no_branch', message: 'Filial topilmadi.' };
-  const wd = await workdayOf(tx, e.id, new Date(), tz);
-  const next = nextAction(await dayEvents(tx, e.id, wd.date));
+  // Yarim tundan keyin «Ketdim» — kechagi ochiq kunga (currentWorkday)
+  const wd = await currentWorkday(tx, e.id, new Date(), tz);
+  const next = wd.open ? 'check_out' : 'check_in';
   if (input.action !== next) return { ok: false, reason: 'state', message: input.action === 'check_in' ? 'Siz allaqachon ishdasiz.' : 'Siz hali «Keldim» qilmagansiz.' };
   if (input.action === 'check_in' && !input.mediaId) return { ok: false, reason: 'no_photo', message: 'Selfi kerak.' };
   const g = checkGeofence({ branch: { lat: b.lat, lng: b.lng, radiusM: b.radiusM }, point: { lat: input.lat, lng: input.lng }, accuracyM: input.accuracyM });
@@ -83,9 +84,9 @@ export async function recordCheck(tx: Tx, input: {
 export async function toggleBreak(tx: Tx, tenantId: string, employeeId: string): Promise<{ ok: boolean; onBreak?: boolean; message?: string }> {
   const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
   await tx.select({ id: employees.id }).from(employees).where(eq(employees.id, employeeId)).for('update'); // ikki bosish — ketma-ket
-  const wd = await workdayOf(tx, employeeId, new Date(), t!.tz);
-  const evs = await dayEvents(tx, employeeId, wd.date);
-  if (nextAction(evs) !== 'check_out') return { ok: false, message: 'Avval «Keldim» qiling.' };
+  const wd = await currentWorkday(tx, employeeId, new Date(), t!.tz);
+  const evs = wd.events;
+  if (!wd.open) return { ok: false, message: 'Avval «Keldim» qiling.' };
   const onBreak = isOnBreak(evs);
   await tx.insert(attendanceEvents).values({ tenantId, employeeId, workDate: wd.date, kind: onBreak ? 'break_end' : 'break_start', source: 'miniapp', checkStatus: 'ok' });
   await rebuildDay(tx, { tenantId, employeeId, workDate: wd.date, tz: t!.tz });
