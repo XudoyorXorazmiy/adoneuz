@@ -5,7 +5,7 @@ import 'server-only';
  */
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { auditLog, branches, departments, employees, schedules, withTenant, type Tx } from '@adone/db';
+import { auditLog, branches, departments, employees, rebuildOpenDays, schedules, withTenant, type Tx } from '@adone/db';
 import { can, normalizePhone, PAY_TYPES } from '@adone/core';
 import type { TenantUser } from '@/lib/auth/session';
 import { canTouch, createInvite } from './employees';
@@ -42,8 +42,11 @@ export async function saveEmployeeFromForm(user: TenantUser, f: FormData): Promi
     if (!(await owns(tx, departments, values.departmentId)) || !(await owns(tx, branches, values.branchId)) || !(await owns(tx, schedules, values.scheduleId))) return 'Tanlov topilmadi';
     if (!(await canTouch(tx, user, id, values.departmentId))) return "Faqat o'z bo'limingiz xodimlari";
     if (id) {
+      const [prev] = await tx.select({ scheduleId: employees.scheduleId }).from(employees).where(eq(employees.id, id));
       const [r] = await tx.update(employees).set(values).where(eq(employees.id, id)).returning({ id: employees.id });
       if (!r) return 'Xodim topilmadi';
+      // Jadvali almashsa — tabeldagi yopilmagan oylar yangi jadval bilan qayta hisoblanadi
+      if (prev && prev.scheduleId !== values.scheduleId) await rebuildOpenDays(tx, { tenantId: user.tenantId, tz: user.tenantTimezone, employeeIds: [id] });
       await tx.insert(auditLog).values({ tenantId: user.tenantId, userId: user.id, action: 'employee.update', entity: 'employee', entityId: id, meta: values });
       return { id, invite: null };
     }

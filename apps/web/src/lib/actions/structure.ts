@@ -3,7 +3,7 @@ import { flashError } from '@/lib/flash';
 import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { auditLog, branches, departments, employees, schedules, withTenant, type Tx } from '@adone/db';
+import { auditLog, branches, departments, employees, rebuildOpenDays, schedules, withTenant, type Tx } from '@adone/db';
 import { isValidDate, isValidTime, parseCoordinates } from '@adone/core';
 import { assertArea } from '@/lib/auth/guard';
 import type { FormState } from '@/components/ui/form-drawer';
@@ -160,12 +160,16 @@ export async function saveScheduleAction(_p: FormState, f: FormData): Promise<Fo
       const [r] = await tx.update(schedules).set(values).where(eq(schedules.id, id)).returning({ id: schedules.id });
       if (!r) throw new Error('Jadval topilmadi');
       await audit(tx, user.tenantId, user.id, 'schedule.update', id, values);
+      // Tabel: shu jadvaldagi xodimlarning yopilmagan oylardagi kunlari yangi vaqt bilan qayta hisoblanadi
+      const staff = await tx.select({ id: employees.id }).from(employees).where(eq(employees.scheduleId, id));
+      await rebuildOpenDays(tx, { tenantId: user.tenantId, tz: user.tenantTimezone, employeeIds: staff.map((e) => e.id) });
     } else {
       const [r] = await tx.insert(schedules).values({ tenantId: user.tenantId, ...values }).returning({ id: schedules.id });
       await audit(tx, user.tenantId, user.id, 'schedule.create', r!.id, values);
     }
   });
   revalidatePath('/jadvallar');
+  revalidatePath('/davomat');
   return { ok: 'Saqlandi' };
 }
 

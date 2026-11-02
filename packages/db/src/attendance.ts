@@ -1,7 +1,7 @@
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
-import { addDays, computeDay, nextAction, openWorkday, shiftFor, toRuleLike, workdayFor, type DayEvent, type DayResult, type ScheduleRule, type Shift } from '@adone/core';
+import { addDays, computeDay, localDate, nextAction, openWorkday, shiftFor, toRuleLike, workdayFor, type DayEvent, type DayResult, type ScheduleRule, type Shift } from '@adone/core';
 import type { Tx } from './client';
-import { attendanceDays, attendanceEvents, employees, leaveRequests, schedules } from './schema/index';
+import { attendanceDays, attendanceEvents, employees, leaveRequests, payrollPeriods, schedules } from './schema/index';
 
 /**
  * Kunlik yig'ma — FAQAT shu yerdan yoziladi (CLAUDE.md §1.2): jurnal → core computeDay() → attendance_days.
@@ -167,4 +167,30 @@ export async function rebuildDays(tx: Tx, input: {
       },
     });
   return results;
+}
+
+/**
+ * Jadval o'zgarganda tabelni yangilash: tick faqat kecha/bugunni quradi, shuning uchun eski kunlar eski vaqt bilan
+ * qolib ketardi. Bu yerda — shu xodimlarning allaqachon bor kunlari (bugungacha, ko'pi bilan 62 kun orqaga),
+ * yopilgan ish haqi oylari bundan mustasno (o'zgarmas nusxa). Qaytaradi: qayta qurilgan kunlar soni.
+ */
+export async function rebuildOpenDays(tx: Tx, input: { tenantId: string; tz: string; employeeIds: string[]; now?: Date }): Promise<number> {
+  const ids = [...new Set(input.employeeIds)];
+  if (!ids.length) return 0;
+  const now = input.now ?? new Date();
+  const today = localDate(now, input.tz);
+  const from = addDays(today, -62);
+  const closed = new Set(
+    (await tx.select({ month: payrollPeriods.month }).from(payrollPeriods)
+      .where(and(eq(payrollPeriods.tenantId, input.tenantId), eq(payrollPeriods.status, 'closed')))).map((r) => r.month),
+  );
+  const rows = await tx
+    .select({ employeeId: attendanceDays.employeeId, workDate: attendanceDays.workDate })
+    .from(attendanceDays)
+    .where(and(eq(attendanceDays.tenantId, input.tenantId), inArray(attendanceDays.employeeId, ids), gte(attendanceDays.workDate, from), lte(attendanceDays.workDate, today)));
+  const items = rows.filter((r) => !closed.has(r.workDate.slice(0, 7)));
+  for (let i = 0; i < items.length; i += 500) {
+    await rebuildDays(tx, { tenantId: input.tenantId, tz: input.tz, now, items: items.slice(i, i + 500) });
+  }
+  return items.length;
 }
