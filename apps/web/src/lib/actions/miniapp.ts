@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq, gte, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { auditLog, employees, jobs, media, tasks, taskBatches, withTenant } from '@adone/db';
-import { can, faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
+import { extractLinks, can, faceDecision, isValidDate, isValidTime, LEAVE_KINDS, zonedTime, type FaceDecision, isUuid } from '@adone/core';
 import { cookies } from 'next/headers';
 import { assertTgMember, assertTgUser, currentTgAssignee, currentTgMember, currentTgUser, memberAsTenantUser, TG_MODE_COOKIE, tgCookieOptions } from '@/lib/tg/session';
 import type { FormState } from '@/components/ui/form-drawer';
@@ -107,6 +107,8 @@ export async function tgTaskAction(f: FormData): Promise<{ ok?: boolean; error?:
   }
   const c = coords(f);
   const text = String(f.get('text') ?? '').trim().slice(0, 1000) || null;
+  // Havola: alohida maydon + izohdagi manzillar (isbot `link`)
+  const links = extractLinks([String(f.get('link') ?? ''), text ?? ''].join('\n'));
   // Oldindan yuklangan video (/api/tg/upload): shu ishxonaning (RLS), hisobot fayli, shu ijrochi yuklagan, oxirgi 6 soatda
   const uploaded = [...new Set(f.getAll('media').map(String).filter(isUuid))].slice(0, 5);
   const stored = await Promise.all(files.map((img) => writeMediaFile({ tenantId: a.tenantId, employeeId: a.employeeId, kind: 'task_report', ...img })));
@@ -119,10 +121,10 @@ export async function tgTaskAction(f: FormData): Promise<{ ok?: boolean; error?:
       mediaIds.push(...uploaded);
     }
     for (const f of stored) mediaIds.push(await insertMedia(tx, f));
-    const got = await proofFlags(tx, mediaIds, !!c);
+    const got = await proofFlags(tx, mediaIds, !!c, links);
     return transitionTask(tx, {
       tenantId: a.tenantId, taskId, to: to.data, actor: a.actor, comment: to.data === 'submitted' ? text : null,
-      report: to.data === 'submitted' ? { text, mediaIds, lat: c?.lat ?? null, lng: c?.lng ?? null, source: 'miniapp', got } : undefined,
+      report: to.data === 'submitted' ? { text, mediaIds, links, lat: c?.lat ?? null, lng: c?.lng ?? null, source: 'miniapp', got } : undefined,
     });
   });
   if ('error' in res) return { error: res.error };

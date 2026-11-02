@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { outsideQuietHours, zonedTime, canTransition, initialStatus, isOverdue, kanbanColumn, missingProofs, nextStatuses, occursOn, onTime } from '../src/index';
+import { outsideQuietHours, zonedTime, canTransition, extractLinks, initialStatus, isOverdue, kanbanColumn, missingProofs, nextStatuses, occursOn, onTime } from '../src/index';
 
 test('vazifa o‘tishlari: kim nima qila oladi', () => {
   assert.equal(canTransition('new', 'accepted', 'assignee'), true);
@@ -27,8 +27,12 @@ test('boshlang‘ich holat (§7a), muddat, kanban, isbot', () => {
   assert.equal(onTime({ dueAt: null, submittedAt: now }), true);
   assert.equal(kanbanColumn('revision'), 'progress');
   assert.equal(kanbanColumn('cancelled'), null);
-  assert.deepEqual(missingProofs(['photo', 'location'], { photo: true, video: false, location: false }), ['location']);
-  assert.deepEqual(missingProofs(['button'], { photo: false, video: false, location: false }), []);
+  assert.deepEqual(missingProofs(['photo', 'location'], { photo: true, video: false, location: false, link: false }), ['location']);
+  assert.deepEqual(missingProofs(['button'], { photo: false, video: false, location: false, link: false }), []);
+  assert.deepEqual(missingProofs(['link'], { photo: false, video: false, location: false, link: false }), ['link']);
+  assert.deepEqual(missingProofs(['link'], { photo: false, video: false, location: false, link: true }), []);
+  assert.deepEqual(extractLinks('Post: https://www.instagram.com/reel/Cx1_2/?igsh=abc. va https://youtu.be/xyz, yana https://www.instagram.com/reel/Cx1_2/?igsh=abc'), ['https://www.instagram.com/reel/Cx1_2/?igsh=abc', 'https://youtu.be/xyz']);
+  assert.deepEqual(extractLinks('havola yoq'), []);
 });
 
 test('takrorlanish', () => {

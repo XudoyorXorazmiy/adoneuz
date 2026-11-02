@@ -9,7 +9,7 @@ import { dueLabel, taskCardText } from '@/lib/task-text';
 /** `id` — xodim uuid yoki panel a'zosi `u:<userId>`; `role` — rahbar yorlig'i («Administrator», «Bo'lim boshlig'i»). */
 export type AssignOption = { id: string; name: string; departmentId: string | null; department: string | null; branchId: string | null; branch: string | null; linked: boolean; role?: string | null };
 
-const PROOF_ICON: Record<TaskProof, string> = { button: 'touch_app', photo: 'photo_camera', video: 'videocam', location: 'location_on' };
+const PROOF_ICON: Record<TaskProof, string> = { button: 'touch_app', photo: 'photo_camera', video: 'videocam', location: 'location_on', link: 'link' };
 const PRIORITY_DOT: Record<TaskPriority, string> = { low: 'bg-placeholder', medium: 'bg-warning', high: 'bg-danger' };
 const WD = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 
@@ -151,7 +151,7 @@ export function AssignFields({ options, from, today, defaultDue = today, presele
         <span className="text-[13px] font-semibold">Hisobot talabi</span>
         {proofs.map((p) => <input key={p} type="hidden" name="proof" value={p} />)}
         <div className="flex flex-wrap gap-2">
-          {(['button', 'photo', 'video', 'location'] as TaskProof[]).map((p) => {
+          {(['button', 'photo', 'video', 'location', 'link'] as TaskProof[]).map((p) => {
             const on = proofs.includes(p);
             return (
               <button key={p} type="button" onClick={() => toggleProof(p)} className={`flex h-10 items-center gap-1.5 rounded-full border px-4 text-[13px] font-semibold ${on ? 'border-primary bg-primary-tint text-primary' : 'border-line hover:bg-page'}`}>

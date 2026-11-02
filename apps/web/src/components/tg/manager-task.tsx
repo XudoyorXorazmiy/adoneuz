@@ -97,6 +97,11 @@ export async function ManagerTask({ m, id }: { m: TgMember; id: string }) {
                   {r.spentMinutes ? <span>· {minutesText(r.spentMinutes)}</span> : null}
                 </div>
                 {r.text && <p className="m-0 text-sm whitespace-pre-line">{r.text}</p>}
+                {r.links.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {r.links.map((l) => <a key={l} href={l} target="_blank" rel="noreferrer" className="flex max-w-full items-center gap-1.5 rounded-full bg-primary-tint px-3 py-1.5 text-xs font-semibold text-primary"><Icon name="link" size={15} /><span className="truncate">{l.replace(/^https?:\/\/(www\.)?/, '')}</span></a>)}
+                  </div>
+                )}
                 {(r.mediaIds.length > 0 || r.lat != null) && (
                   <div className="grid grid-cols-3 gap-2">
                     {r.mediaIds.map((mid) => (

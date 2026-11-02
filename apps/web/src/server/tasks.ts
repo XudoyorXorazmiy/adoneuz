@@ -9,7 +9,7 @@ import { and, eq, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
 import { departments, employees, jobs, media, memberships, taskBatches, taskEvents, taskReports, taskTemplates, tasks, tenants, type Tx } from '@adone/db';
 import {
   canReviewMemberTask, canTransition, initialStatus, localDate, missingProofs, needsComment, occursOn, outsideQuietHours, TASK_PROOF_LABELS, zonedTime,
-  type MemberRole, type TaskActor, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus,
+  type MemberRole, type ProofFlags, type TaskActor, type TaskPriority, type TaskProof, type TaskSource, type TaskStatus,
 } from '@adone/core';
 import { enqueue } from '@/server/jobs/enqueue';
 import { readSettings } from '@/server/settings';
@@ -20,6 +20,8 @@ export type ActorRef = { userId: string; role: MemberRole; employeeId?: string |
 export interface ReportInput {
   text?: string | null;
   mediaIds?: string[];
+  /** Havolalar (isbot `link`) — matndan extractLinks bilan, Mini App'da alohida maydondan ham */
+  links?: string[];
   lat?: number | null;
   lng?: number | null;
   spentMinutes?: number | null;
@@ -94,9 +96,9 @@ export async function createTasks(tx: Tx, input: CreateInput): Promise<{ batchId
 }
 
 async function insertReport(tx: Tx, tenantId: string, taskId: string, r: ReportInput) {
-  if (!r.text?.trim() && !r.mediaIds?.length && r.lat == null) return;
+  if (!r.text?.trim() && !r.mediaIds?.length && r.lat == null && !r.links?.length) return;
   await tx.insert(taskReports).values({
-    tenantId, taskId, text: r.text?.trim() || null, mediaIds: r.mediaIds ?? [], lat: r.lat ?? null, lng: r.lng ?? null,
+    tenantId, taskId, text: r.text?.trim() || null, mediaIds: r.mediaIds ?? [], links: r.links ?? [], lat: r.lat ?? null, lng: r.lng ?? null,
     spentMinutes: r.spentMinutes ?? null, source: r.source,
   });
 }
@@ -187,7 +189,7 @@ export type TransitionResult = { ok: true; status: TaskStatus } | { error: strin
  */
 export async function transitionTask(tx: Tx, input: {
   tenantId: string; taskId: string; to: TaskStatus; actor: ActorRef; comment?: string | null; rating?: number | null;
-  report?: ReportInput & { got?: { photo: boolean; video: boolean; location: boolean } };
+  report?: ReportInput & { got?: ProofFlags };
 }): Promise<TransitionResult> {
   const row = await loadTask(tx, input.taskId);
   if (!row) return { error: 'Vazifa topilmadi' };
@@ -254,9 +256,9 @@ export async function commentTask(tx: Tx, input: { tenantId: string; taskId: str
 }
 
 /** Rasm/video media turi bo'yicha isbot bayroqlari (bot hisoboti). */
-export async function proofFlags(tx: Tx, mediaIds: string[], hasLocation: boolean) {
+export async function proofFlags(tx: Tx, mediaIds: string[], hasLocation: boolean, links: string[] = []): Promise<ProofFlags> {
   const rows = mediaIds.length ? await tx.select({ mime: media.mime }).from(media).where(inArray(media.id, mediaIds)) : [];
-  return { photo: rows.some((r) => r.mime.startsWith('image/')), video: rows.some((r) => r.mime.startsWith('video/')), location: hasLocation };
+  return { photo: rows.some((r) => r.mime.startsWith('image/')), video: rows.some((r) => r.mime.startsWith('video/')), location: hasLocation, link: links.length > 0 };
 }
 
 /**

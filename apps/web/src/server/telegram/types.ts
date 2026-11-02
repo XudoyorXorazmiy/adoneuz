@@ -12,6 +12,8 @@ export interface TgMessage {
   venue?: unknown;
   video_note?: { file_id: string; file_unique_id: string; duration: number; length: number; file_size?: number };
   video?: { file_id: string; duration?: number; mime_type?: string; file_size?: number };
+  /** «Fayl sifatida» yuborilgan video/rasm (siqilmagan) */
+  document?: { file_id: string; mime_type?: string; file_size?: number; file_name?: string };
   photo?: Array<{ file_id: string; width: number; height: number; file_size?: number }>;
   caption?: string;
   forward_origin?: unknown;

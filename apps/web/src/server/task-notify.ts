@@ -60,12 +60,14 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
     const [last] = await tx.select({ comment: taskEvents.comment }).from(taskEvents).where(and(eq(taskEvents.taskId, taskId), eq(taskEvents.toStatus, r.t.status))).orderBy(desc(taskEvents.createdAt)).limit(1);
     let files: Array<{ path: string; mime: string }> = [];
     let reportText: string | null = null;
+    let reportLinks: string[] = [];
     if (kind === 'submitted') {
       const [rep] = await tx.select().from(taskReports).where(eq(taskReports.taskId, taskId)).orderBy(desc(taskReports.createdAt)).limit(1);
       reportText = rep?.text ?? null;
+      reportLinks = rep?.links ?? [];
       if (rep?.mediaIds.length) files = await tx.select({ path: media.path, mime: media.mime }).from(media).where(inArray(media.id, rep.mediaIds.slice(0, 3)));
     }
-    return { ...r, from, lastComment: last?.comment ?? null, files, reportText };
+    return { ...r, from, lastComment: last?.comment ?? null, files, reportText, reportLinks };
   });
   if (!data) return { skip: 'vazifa yo‘q' };
   const { t, b, tz } = data;
@@ -110,7 +112,7 @@ export async function taskNotify(tenantId: string, taskId: string, kind: TaskNot
     case 'submitted':
       if (t.status !== 'submitted') return { skip: `holat ${t.status}` };
       return toMembers(
-        [`📥 <b>Hisobot keldi</b>${b.source === 'self_done' ? ' · o‘zi qo‘shgan ish' : ''}`, title, `👤 ${esc(who)}`, data.reportText ? `💬 ${esc(data.reportText)}` : '', t.spentMinutes ? `⏱ ${t.spentMinutes} daqiqa` : '', data.files.length ? `📎 ${data.files.length} ta fayl quyida` : ''].filter(Boolean).join('\n'),
+        [`📥 <b>Hisobot keldi</b>${b.source === 'self_done' ? ' · o‘zi qo‘shgan ish' : ''}`, title, `👤 ${esc(who)}`, data.reportText ? `💬 ${esc(data.reportText)}` : '', ...data.reportLinks.map((l) => `🔗 ${esc(l)}`), t.spentMinutes ? `⏱ ${t.spentMinutes} daqiqa` : '', data.files.length ? `📎 ${data.files.length} ta fayl quyida` : ''].filter(Boolean).join('\n'),
         taskButtons.review(t.id),
         'task_submitted',
       );

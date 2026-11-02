@@ -15,7 +15,7 @@ export type BotState =
     }
   /** Vazifa hisoboti (yoki yangi «Ish qo'shish» — taskId null, title bor): fayllar, lokatsiya, izoh yig'iladi. */
   /** `userId` — ijrochi panel a'zosi (xodim yozuvi yo'q, `employeeId` null); «Ish qo'shish» — faqat xodim. */
-  | { step: 'task_report'; tenantId: string; employeeId: string | null; userId?: string; taskId: string | null; title?: string; mediaIds: string[]; lat?: number; lng?: number; text?: string }
+  | { step: 'task_report'; tenantId: string; employeeId: string | null; userId?: string; taskId: string | null; title?: string; mediaIds: string[]; lat?: number; lng?: number; text?: string; links?: string[] }
   | { step: 'task_ask'; tenantId: string; employeeId: string | null; userId?: string; taskId: string }
   | { step: 'task_revise'; tenantId: string; userId: string; taskId: string }
   /** Muddatni uzaytirish so'rovi: `due` (ISO) tanlangach sabab kutiladi */

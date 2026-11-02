@@ -30,9 +30,24 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = { low: 'Oddiy', medium: "O'rta", high: 'Shoshilinch' };
 
 /** Hisobot talabi: button — faqat tugma; qolganlari isbot sifatida talab qilinadi (to'plam). */
-export const TASK_PROOFS = ['button', 'photo', 'video', 'location'] as const;
+export const TASK_PROOFS = ['button', 'photo', 'video', 'location', 'link'] as const;
 export type TaskProof = (typeof TASK_PROOFS)[number];
-export const TASK_PROOF_LABELS: Record<TaskProof, string> = { button: 'Faqat tugma', photo: 'Rasm', video: 'Video', location: 'Lokatsiya' };
+/** `link` — havola bilan (SMM: Instagram/YouTube posti). Hisobot matnidagi http(s) manzillar isbot hisoblanadi (extractLinks). */
+export const TASK_PROOF_LABELS: Record<TaskProof, string> = { button: 'Faqat tugma', photo: 'Rasm', video: 'Video', location: 'Lokatsiya', link: 'Havola' };
+
+export interface ProofFlags { photo: boolean; video: boolean; location: boolean; link: boolean }
+
+/** Matndagi havolalar (http/https), takrorsiz, ko'pi bilan 5 ta, har biri ≤ 500 belgi. Oxiridagi tinish belgilari olib tashlanadi. */
+export function extractLinks(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const out: string[] = [];
+  for (const m of text.matchAll(/https?:\/\/[^\s<>"'»«]+/gi)) {
+    const url = m[0].replace(/[.,;:!?)\]]+$/, '');
+    if (url.length <= 500 && !out.includes(url)) out.push(url);
+    if (out.length >= 5) break;
+  }
+  return out;
+}
 
 /** assignee — ijrochi (o'z vazifasi); reviewer — tasdiqlovchi rahbar (egasi, admin, bo'lim boshlig'i). */
 export type TaskActor = 'assignee' | 'reviewer';
@@ -94,7 +109,7 @@ export function initialStatus(source: TaskSource, needsApproval: boolean): TaskS
 }
 
 /** Topshirishda yetishmayotgan isbotlar. */
-export function missingProofs(required: readonly TaskProof[], got: { photo: boolean; video: boolean; location: boolean }): TaskProof[] {
+export function missingProofs(required: readonly TaskProof[], got: ProofFlags): TaskProof[] {
   return required.filter((p) => p !== 'button' && !got[p]);
 }
 

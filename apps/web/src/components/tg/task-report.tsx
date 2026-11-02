@@ -22,6 +22,7 @@ export function TaskReport({ taskId, status, checklist, checklistDone, proofs, d
   const [shots, setShots] = useState<Array<{ blob: Blob; url: string }>>([]);
   const [loc, setLoc] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
   const [text, setText] = useState('');
+  const [link, setLink] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [clips, setClips] = useState<Clip[]>([]);
@@ -30,6 +31,8 @@ export function TaskReport({ taskId, status, checklist, checklistDone, proofs, d
   const needPhoto = proofs.includes('photo');
   const needVideo = proofs.includes('video');
   const needLoc = proofs.includes('location');
+  const needLink = proofs.includes('link');
+  const linkOk = /^https?:\/\/\S+$/i.test(link.trim());
   const uploading = clips.some((c) => !c.id && !c.error);
   useEffect(() => () => clips.forEach((c) => c.abort?.()), []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -53,6 +56,7 @@ export function TaskReport({ taskId, status, checklist, checklistDone, proofs, d
       clips.forEach((c) => c.id && fd.append('media', c.id));
       if (loc) { fd.set('lat', String(loc.lat)); fd.set('lng', String(loc.lng)); if (loc.accuracy != null) fd.set('accuracy', String(loc.accuracy)); }
       fd.set('text', text);
+      if (link.trim()) fd.set('link', link.trim());
     }
     const r = await tgTaskAction(fd).catch((e: unknown) => ({ error: actionError(e) }));
     setBusy(false);
@@ -83,7 +87,7 @@ export function TaskReport({ taskId, status, checklist, checklistDone, proofs, d
         <section className="flex flex-col gap-3 rounded-[20px] bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="flex items-center justify-between">
             <h2 className="m-0 text-base font-bold">Hisobot</h2>
-            {(needPhoto || needVideo || needLoc) && <span className="flex items-center gap-1 rounded-full bg-primary-tint px-2.5 py-1 text-xs font-bold text-primary"><Icon name={needVideo ? 'videocam' : needPhoto ? 'photo_camera' : 'location_on'} size={15} />{[needPhoto && 'Rasm', needVideo && 'Video', needLoc && 'Lokatsiya'].filter(Boolean).join(' + ')} · majburiy</span>}
+            {(needPhoto || needVideo || needLoc || needLink) && <span className="flex items-center gap-1 rounded-full bg-primary-tint px-2.5 py-1 text-xs font-bold text-primary"><Icon name={needVideo ? 'videocam' : needPhoto ? 'photo_camera' : needLoc ? 'location_on' : 'link'} size={15} />{[needPhoto && 'Rasm', needVideo && 'Video', needLoc && 'Lokatsiya', needLink && 'Havola'].filter(Boolean).join(' + ')} · majburiy</span>}
           </div>
           <div className="grid grid-cols-3 gap-2">
             {shots.map((s, i) => (
@@ -109,13 +113,15 @@ export function TaskReport({ taskId, status, checklist, checklistDone, proofs, d
             )}
             {clips.length < 3 && (needVideo || clips.length > 0 || !needPhoto) && (
               <button onClick={() => videoInput.current?.click()} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl border-[1.5px] border-dashed border-line-strong text-xs font-semibold text-primary">
-                <Icon name="videocam" size={26} />Video yozish
+                <Icon name="videocam" size={26} />Video
               </button>
             )}
           </div>
-          {clips.some((c) => c.error) && <p className="m-0 text-xs font-semibold text-danger">{clips.find((c) => c.error)!.error} — videoni o&apos;chirib, qayta yozing.</p>}
+          {clips.some((c) => c.error) && <p className="m-0 text-xs font-semibold text-danger">{clips.find((c) => c.error)!.error} — videoni o&apos;chirib, qayta yuklang.</p>}
           {uploading && <p className="m-0 text-xs text-muted">Video yuklanmoqda — tugashini kuting (oynani yopmang).</p>}
-          <input ref={videoInput} type="file" accept="video/*" capture="environment" className="hidden"
+          {needVideo && clips.length === 0 && <p className="m-0 text-xs text-muted">«Video» — galereyadan tayyor videoni tanlash yoki kamerada yozish (100 MB gacha).</p>}
+          {/* capture yo'q: tayyor video (montaj qilingan reels) galereyadan tanlanadi; kamera ham tanlov oynasida bor */}
+          <input ref={videoInput} type="file" accept="video/*" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) addVideo(f); }} />
           <input ref={input} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; const b = await shrinkImage(f); setShots((x) => [...x, { blob: b, url: URL.createObjectURL(b) }]); }} />
@@ -124,6 +130,17 @@ export function TaskReport({ taskId, status, checklist, checklistDone, proofs, d
               className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-bold ${loc ? 'bg-success-tint text-success' : 'bg-subtle'}`}>
               <Icon name={loc ? 'check_circle' : 'my_location'} size={20} />{loc ? `Lokatsiya qo'shildi (±${loc.accuracy ?? '?'} m)` : "Lokatsiyani qo'shish"}
             </button>
+          )}
+          {(needLink || link) && (
+            <div className="flex flex-col gap-1.5">
+              <div className={`flex h-12 items-center gap-2 rounded-2xl border px-3 ${link && !linkOk ? 'border-danger' : linkOk ? 'border-success' : 'border-line'}`}>
+                <Icon name="link" size={20} className={linkOk ? 'text-success' : 'text-muted'} />
+                <input value={link} onChange={(e) => setLink(e.target.value)} type="url" inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://instagram.com/reel/…" className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none" />
+                {link && <button type="button" onClick={() => setLink('')} className="text-muted"><Icon name="close" size={18} /></button>}
+              </div>
+              {link && !linkOk && <p className="m-0 text-xs text-danger">Havola https:// bilan boshlanishi kerak.</p>}
+              {!link && needLink && <p className="m-0 text-xs text-muted">Qilingan ish havolasi (Instagram, YouTube, Telegram posti…). Izohdagi havola ham hisoblanadi.</p>}
+            </div>
           )}
           <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} rows={3} placeholder="Izoh yozing…" className="input h-auto min-h-[88px] py-3 text-[15px] leading-normal" />
         </section>

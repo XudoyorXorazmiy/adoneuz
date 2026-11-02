@@ -83,6 +83,7 @@ language
 laptop_mac
 left_panel_close
 light
+link
 link_off
 list
 location_disabled

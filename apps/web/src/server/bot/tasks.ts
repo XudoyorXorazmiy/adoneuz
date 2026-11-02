@@ -6,8 +6,8 @@ import 'server-only';
  */
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { memberships, taskBatches, tasks, tenants, withTenant, type Tx } from '@adone/db';
-import { formatTime, localDate, TASK_PROOF_LABELS, TASK_STATUS_LABELS, type TaskProof, type TaskStatus, UUID_SRC } from '@adone/core';
-import { answerCallback, downloadFile, editMarkup, send, type Keyboard } from '@/server/telegram/api';
+import { extractLinks, formatTime, localDate, TASK_PROOF_LABELS, TASK_STATUS_LABELS, type TaskProof, type TaskStatus, UUID_SRC } from '@adone/core';
+import { TelegramError, answerCallback, downloadFile, editMarkup, send, type Keyboard } from '@/server/telegram/api';
 import type { TgCallback, TgMessage } from '@/server/telegram/types';
 import { insertMedia, writeMediaFile } from '@/server/media';
 import { kick } from '@/server/jobs/enqueue';
@@ -228,7 +228,7 @@ export async function onTaskCallback(cb: TgCallback): Promise<JobOutcome> {
     const need = (f.b.proofs as TaskProof[]).filter((p) => p !== 'button');
     await send(chat, [
       `✅ <b>Hisobot</b>: ${esc(f.b.title)}`,
-      need.length ? `Talab: <b>${need.map((p) => TASK_PROOF_LABELS[p].toLowerCase()).join(' + ')}</b>.${need.includes('location') ? '\n📍 Lokatsiya: 📎 → Joylashuv.' : ''}` : 'Rasm yoki izoh ixtiyoriy.',
+      need.length ? `Talab: <b>${need.map((p) => TASK_PROOF_LABELS[p].toLowerCase()).join(' + ')}</b>.${need.includes('location') ? '\n📍 Lokatsiya: 📎 → Joylashuv.' : ''}${need.includes('link') ? '\n🔗 Havola: post manzilini matn qilib yuboring.' : ''}${need.includes('video') ? '\n🎬 Video 20 MB gacha; kattasi — Mini App («Ochish») orqali.' : ''}` : 'Rasm yoki izoh ixtiyoriy.',
       '\nYuboring, keyin izoh yozing yoki «✅ Yuborish»ni bosing.',
     ].join('\n'), sendKb(taskId));
     return {};
@@ -295,10 +295,27 @@ export async function onTaskMessage(msg: TgMessage, state: BotState): Promise<Jo
   }
   const file = msg.photo?.length ? { id: msg.photo[msg.photo.length - 1]!.file_id, mime: 'image/jpeg', ext: 'jpg' }
     : msg.video ? { id: msg.video.file_id, mime: msg.video.mime_type ?? 'video/mp4', ext: 'mp4' }
-      : msg.video_note ? { id: msg.video_note.file_id, mime: 'video/mp4', ext: 'mp4' } : null;
+      : msg.video_note ? { id: msg.video_note.file_id, mime: 'video/mp4', ext: 'mp4' }
+        : msg.document?.mime_type?.startsWith('video/') ? { id: msg.document.file_id, mime: msg.document.mime_type, ext: msg.document.mime_type === 'video/quicktime' ? 'mov' : 'mp4' }
+          : msg.document?.mime_type?.startsWith('image/') ? { id: msg.document.file_id, mime: msg.document.mime_type, ext: msg.document.mime_type === 'image/png' ? 'png' : 'jpg' } : null;
   if (file) {
     if (state.mediaIds.length >= MAX_FILES) { await send(chat, `Ko‘pi bilan ${MAX_FILES} ta fayl.`); return { skip: 'ko‘p fayl' }; }
-    const dl = await downloadFile(file.id);
+    // Bot API 20 MB dan katta faylni bermaydi — xodim jim qolmasin
+    const declared = msg.video?.file_size ?? msg.document?.file_size ?? 0;
+    if (declared > 20 * 1024 * 1024) {
+      await send(chat, '⚠️ Video 20 MB dan katta — bot qabul qila olmaydi. Vazifani Mini App («Ochish» tugmasi) orqali oching va videoni o‘sha yerda yuklang (100 MB gacha), yoki qisqaroq video yuboring.', sendKb(state.taskId));
+      return { skip: 'fayl katta' };
+    }
+    let dl;
+    try {
+      dl = await downloadFile(file.id);
+    } catch (e) {
+      if (e instanceof TelegramError && /too big/i.test(e.description)) {
+        await send(chat, '⚠️ Fayl juda katta — Telegram bot 20 MB gacha qabul qiladi. Mini App («Ochish») orqali yuklang.', sendKb(state.taskId));
+        return { skip: 'fayl katta' };
+      }
+      throw e;
+    }
     const stored = await writeMediaFile({ tenantId: state.tenantId, employeeId: state.employeeId, kind: 'task_report', data: dl.data, mime: file.mime, ext: file.ext });
     const id = await withTenant(state.tenantId, (tx) => insertMedia(tx, stored));
     const next = { ...state, mediaIds: [...state.mediaIds, id], text: text || state.text };
@@ -312,7 +329,9 @@ export async function onTaskMessage(msg: TgMessage, state: BotState): Promise<Jo
     return {};
   }
   if (text) {
-    await setState(uid, { ...state, text: text.slice(0, 1000) });
+    // Havola — isbot `link` (matndan ajratiladi); havolasiz matn — izoh
+    const links = [...new Set([...(state.links ?? []), ...extractLinks(text)])].slice(0, 5);
+    await setState(uid, { ...state, text: text.slice(0, 1000), links });
     return finishReport(uid, chat);
   }
   await send(chat, 'Rasm, video, lokatsiya yoki izoh yuboring.', sendKb(state.taskId));
@@ -327,8 +346,9 @@ async function finishReport(uid: number, chat: number): Promise<JobOutcome> {
     return { skip: 'sessiya yo‘q' };
   }
   const res = await withTenant(state.tenantId, async (tx) => {
-    const got = await proofFlags(tx, state.mediaIds, state.lat != null);
-    const report = { text: state.text ?? null, mediaIds: state.mediaIds, lat: state.lat ?? null, lng: state.lng ?? null, source: 'bot' as const, got };
+    const links = state.links ?? [];
+    const got = await proofFlags(tx, state.mediaIds, state.lat != null, links);
+    const report = { text: state.text ?? null, mediaIds: state.mediaIds, links, lat: state.lat ?? null, lng: state.lng ?? null, source: 'bot' as const, got };
     if (!state.taskId) {
       if (!state.employeeId) return { error: 'Ish qo‘shish — xodimlar uchun' };
       const needs = await selfTasksNeedApproval(tx);

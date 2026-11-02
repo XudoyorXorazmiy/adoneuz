@@ -112,6 +112,8 @@ export const taskReports = pgTable(
     taskId: uuid().notNull().references(() => tasks.id, { onDelete: 'cascade' }),
     text: text(),
     mediaIds: uuid().array().notNull().default(sql`'{}'::uuid[]`),
+    /** Hisobotdagi havolalar (isbot turi `link`; matndan ajratiladi — core extractLinks) */
+    links: text().array().notNull().default(sql`'{}'::text[]`),
     lat: doublePrecision(),
     lng: doublePrecision(),
     spentMinutes: integer(),
