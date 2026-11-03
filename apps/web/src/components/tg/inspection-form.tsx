@@ -4,9 +4,9 @@ import Link from 'next/link';
 import type { InspectionCriterion } from '@adone/core';
 import { tgInspectionAction, tgSetResponsibleAction } from '@/lib/actions/miniapp';
 import { Icon } from '@/components/ui/icon';
-import { haptic } from './webapp';
+import { haptic, shrinkImage, actionError } from './webapp';
 
-type Mark = { ok: boolean | null; note: string; photo: File | null; preview: string | null };
+type Mark = { ok: boolean | null; note: string; photo: Blob | null; preview: string | null };
 
 export type Subject =
   | { kind: 'department'; id: string; name: string; responsible: { id: string; name: string } | null }
@@ -51,7 +51,7 @@ export function InspectionForm({ subject, criteria, candidates }: { subject: Sub
       fd.append(`ok_${c.id}`, m.ok ? '1' : '0');
       if (!m.ok) {
         if (m.note.trim()) fd.append(`note_${c.id}`, m.note.trim());
-        if (m.photo) fd.append(`photo_${c.id}`, m.photo);
+        if (m.photo) fd.append(`photo_${c.id}`, m.photo, `${c.id}.jpg`);
       }
     }
     setError(null);
@@ -61,9 +61,9 @@ export function InspectionForm({ subject, criteria, candidates }: { subject: Sub
         if (!r.ok) { haptic('error'); setError(r.error); return; }
         haptic('success');
         setDone({ fail: r.fail, tasks: r.tasks, responsible: r.responsible });
-      } catch {
+      } catch (e) {
         haptic('error');
-        setError("Saqlanmadi — internetni tekshirib qayta urining");
+        setError(`Saqlanmadi — ${actionError(e)}`);
       }
     });
   };
@@ -95,7 +95,13 @@ export function InspectionForm({ subject, criteria, candidates }: { subject: Sub
               <div className="flex flex-col gap-2">
                 <textarea value={m.note} onChange={(e) => set(c.id, { note: e.target.value })} maxLength={500} rows={2} placeholder="Nima noto'g'ri — qisqacha (ixtiyoriy)" className="input h-auto min-h-16 py-2.5 text-sm leading-normal" />
                 <input ref={(el) => { inputs.current[c.id] = el; }} type="file" accept="image/*" capture="environment" className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0] ?? null; set(c.id, { photo: f, preview: f ? URL.createObjectURL(f) : null }); }} />
+                  onChange={async (e) => {
+                    // Kamera rasmi 3–5 MB: bir nechta mezonda server 10 MB chegarasidan oshib saqlanmasdi — telefonda siqiladi (~300 KB)
+                    const f = e.target.files?.[0] ?? null; e.target.value = '';
+                    if (!f) return;
+                    const b = await shrinkImage(f).catch(() => f);
+                    set(c.id, { photo: b, preview: URL.createObjectURL(b) });
+                  }} />
                 {m.preview ? (
                   <div className="relative overflow-hidden rounded-2xl">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
