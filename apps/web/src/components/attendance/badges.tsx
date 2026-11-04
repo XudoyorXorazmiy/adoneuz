@@ -35,6 +35,8 @@ export function CheckBadge({ status }: { status: CheckStatus | null }) {
 
 /** Rad/shubha sabablari — o'zbekcha. */
 export const REASON_LABELS: Record<string, string> = {
+  overtime: "Qo'shimcha ish (xodim tasdiqladi)",
+  no_overtime: "Qo'shimcha ish yo'q — smena oxirida yopildi",
   outside: 'Zonadan tashqarida',
   low_accuracy: 'GPS aniqligi past',
   no_live_location: 'Jonli lokatsiya emas',

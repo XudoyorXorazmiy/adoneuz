@@ -48,6 +48,9 @@ export const T = {
   expired: "Vaqt o'tib ketdi. «✅ Keldim» tugmasini qaytadan bosing.",
   checkedIn: (time: string, late: number) => `✅ Qabul qilindi · <b>${time}</b>${late > 0 ? `\n⚠️ Kechikdingiz: ${late} daqiqa` : ''}\n\nYaxshi ish kuni!`,
   checkedOut: (time: string, worked: string) => `🏁 Ketish qayd etildi · <b>${time}</b>\nBugun ishladingiz: <b>${worked}</b>. Rahmat!`,
+  checkedOutOvertime: (time: string, worked: string, overtime: number) => `🏁 Ketish qayd etildi · <b>${time}</b>\nBugun ishladingiz: <b>${worked}</b>, shundan qo'shimcha <b>${overtime} daqiqa</b>. Rahbaringizga xabar berildi.`,
+  overtimeAsk: (end: string, extra: number, autoClosed: boolean) =>
+    `⏱ Smenangiz <b>${end}</b> da tugagan${autoClosed ? ' va tizim kunni avtomatik yopgan' : ''}. Siz <b>${extra} daqiqa</b> ortiq qoldingiz.\n\nQo'shimcha ishladingizmi?`,
   pickCompany: 'Qaysi ishxona uchun?',
   help:
     `<b>Qanday ishlaydi</b>\n\n${BTN.checkIn} — ishga kelganda: jonli joylashuv + dumaloq video.\n${BTN.checkOut} — ketayotganda: jonli joylashuv.\n${BTN.tasks} — sizga berilgan vazifalar: qabul qilish, «Bajardim» va hisobot.\n${BTN.addWork} — o'zingiz qilgan yoki rejalashtirgan ish.\n${BTN.leave} — ruxsat so'rash (kasal, ta'til, shaxsiy).\n${BTN.today} — bugungi holatingiz.\n\nMuammo bo'lsa rahbaringizga yozing.`,

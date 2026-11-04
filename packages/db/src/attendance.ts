@@ -1,5 +1,5 @@
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
-import { addDays, computeDay, localDate, nextAction, openWorkday, shiftFor, toRuleLike, workdayFor, type DayEvent, type DayResult, type ScheduleRule, type Shift } from '@adone/core';
+import { addDays, computeDay, lateCheckout, localDate, nextAction, openWorkday, shiftFor, toRuleLike, workdayFor, type DayEvent, type DayResult, type LateCheckout, type ScheduleRule, type Shift } from '@adone/core';
 import type { Tx } from './client';
 import { attendanceDays, attendanceEvents, employees, leaveRequests, payrollPeriods, schedules } from './schema/index';
 
@@ -41,6 +41,24 @@ export async function currentWorkday(tx: Tx, employeeId: string, at: Date, tz: s
   const prevEvents = await dayEvents(tx, employeeId, prevDate);
   if (openWorkday(at, [{ date: prevDate, events: prevEvents }])) return { date: prevDate, shift: rule ? shiftFor(rule, prevDate, tz) : null, events: prevEvents, open: true };
   return { ...wd, events, open: false };
+}
+
+/**
+ * Avto-yopilgan kun (bugun yoki kecha), xodim kechroq «Ketdim» bosmoqda — qo'shimcha vaqt so'rash uchun (core lateCheckout).
+ * Faqat «Ketdim» oqimida ishlatiladi: «Keldim» uchun emas (kechagi kunga kirish yozilib qolmasin).
+ */
+export async function autoClosedWorkday(tx: Tx, employeeId: string, at: Date, tz: string): Promise<{ date: string; shift: Shift | null; events: DayEvent[]; late: Extract<LateCheckout, { kind: 'auto_closed' }> } | null> {
+  const rule = await employeeRule(tx, employeeId);
+  if (!rule) return null;
+  const today = localDate(at, tz);
+  for (const date of [today, addDays(today, -1)]) {
+    const shift = shiftFor(rule, date, tz);
+    if (!shift) continue;
+    const events = await dayEvents(tx, employeeId, date);
+    const late = lateCheckout(events, shift, at);
+    if (late.kind === 'auto_closed') return { date, shift, events, late };
+  }
+  return null;
 }
 
 export async function dayEvents(tx: Tx, employeeId: string, workDate: string): Promise<DayEvent[]> {

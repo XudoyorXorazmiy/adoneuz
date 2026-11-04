@@ -2,7 +2,8 @@ import 'server-only';
 /**
  * Rejali ishlar (cron → har 10 daqiqada har ishxonaga bitta `attendance_tick`):
  *   - bugungi va kechagi kunlik yig'ma qayta quriladi (kelmaganlar tabelga «Kelmadi» bo'lib tushadi);
- *   - «Ketdim» unutilgan kun avto-yopiladi (smena tugagandan `settings.autoCloseHours` keyin, Sozlamalar → Davomat) + xodim va rahbarga xabar;
+ *   - «Ketdim» unutilgan kun avto-yopiladi (smena tugagandan `settings.autoCloseHours` keyin, 0 — smena tugashi bilan, Sozlamalar → Davomat)
+ *     + xodimga xabar (rahbarga — faqat soat > 0 bo'lsa; 0 da bu odatiy holat, xodim keyin «Ketdim» bilan qo'shimcha vaqtni tasdiqlaydi);
  *   - kunlik «Kelmaganlar» ro'yxati rahbarlarga (standart 10:00, `tenants.settings.absentDigestAt`).
  */
 import { and, eq, inArray } from 'drizzle-orm';
@@ -60,8 +61,12 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
           .returning({ id: attendanceEvents.id });
         // Yig'ma xotiradagi ro'yxatdan quriladi — yangi hodisa ham unda bo'lsin
         events.set(`${e.id}|${date}`, [...evs, { id: ev!.id, kind: 'auto_close' as const, at, checkStatus: 'ok' as const, meta: null }].sort((a, b) => a.at.getTime() - b.at.getTime()));
-        await queueNotifyEmployee(tx, tenantId, e.id, `ℹ️ ${date.split('-').reverse().join('.')} kuni «Ketdim» bosilmadi — tizim ${formatTime(at, tz)} da avtomatik yopdi. Xato bo'lsa rahbaringizga ayting.`);
-        await queueNotifyMembers(tx, tenantId, `ℹ️ <b>${esc(e.fullName)}</b> «Ketdim» bosmagan — ${formatTime(at, tz)} da avto-yopildi.`, e.departmentId, undefined, '/tg');
+        if (shift && settings.autoCloseHours === 0) {
+          await queueNotifyEmployee(tx, tenantId, e.id, `ℹ️ Smena tugadi — kun ${formatTime(at, tz)} da avtomatik yopildi. Qo'shimcha ishlayotgan bo'lsangiz, ketayotganda «Ketdim» bosing va vaqtni tasdiqlang.`);
+        } else {
+          await queueNotifyEmployee(tx, tenantId, e.id, `ℹ️ ${date.split('-').reverse().join('.')} kuni «Ketdim» bosilmadi — tizim ${formatTime(at, tz)} da avtomatik yopdi. Xato bo'lsa rahbaringizga ayting.`);
+          await queueNotifyMembers(tx, tenantId, `ℹ️ <b>${esc(e.fullName)}</b> «Ketdim» bosmagan — ${formatTime(at, tz)} da avto-yopildi.`, e.departmentId, undefined, '/tg');
+        }
         closed++;
       }
     }

@@ -2,7 +2,7 @@ import 'server-only';
 import { latestDeadlineFor } from './deadline';
 /** Mini App ko'rinishlari (xodim). Faqat o'z ma'lumoti: hamma so'rov employeeId bilan, tenant — Mini App sessiyasidan. */
 import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
-import { attendanceDays, dayEvents, onLeave, employeeRule, taskBatches, taskEvents, taskReports, tasks, users, withTenant, currentWorkday } from '@adone/db';
+import { attendanceDays, autoClosedWorkday, dayEvents, onLeave, employeeRule, taskBatches, taskEvents, taskReports, tasks, users, withTenant, currentWorkday } from '@adone/db';
 import { computeDay, isOverdue, localDate, monthDays, onTime, shiftFor, type TaskStatus } from '@adone/core';
 import type { TgUser } from '@/lib/tg/session';
 import { isOnBreak } from './checkin';
@@ -17,6 +17,8 @@ export async function homeData(u: TgUser) {
     const evs = wd.events;
     const leave = await onLeave(tx, u.employeeId, wd.date);
     const day = computeDay({ events: evs, shift, now, onLeave: leave });
+    // Avto-yopilgan kun (bugun/kecha), xodim hali ketmagan bo'lishi mumkin — «Ketdim» bilan qo'shimcha vaqtni belgilaydi
+    const lateOut = !day.open && !!(await autoClosedWorkday(tx, u.employeeId, now, u.tz));
     const today = localDate(now, u.tz);
     const open = await tx
       .select({ id: tasks.id, status: tasks.status, dueAt: tasks.dueAt, title: taskBatches.title, priority: taskBatches.priority, proofs: taskBatches.proofs })
@@ -25,7 +27,7 @@ export async function homeData(u: TgUser) {
       .orderBy(asc(tasks.dueAt)).limit(30);
     // Bugungi: muddati bugun, o'tgan yoki muddatsiz
     const todays = open.filter((t) => !t.dueAt || localDate(t.dueAt, u.tz) <= today);
-    return { date: wd.date, onLeave: leave, shift, hasSchedule: !!rule && rule.kind !== 'free', day, onBreak: isOnBreak(evs), tasks: todays.map((t) => ({ ...t, overdue: isOverdue({ status: t.status, dueAt: t.dueAt }, now) })), more: open.length - todays.length };
+    return { date: wd.date, onLeave: leave, shift, hasSchedule: !!rule && rule.kind !== 'free', day, lateOut, onBreak: isOnBreak(evs), tasks: todays.map((t) => ({ ...t, overdue: isOverdue({ status: t.status, dueAt: t.dueAt }, now) })), more: open.length - todays.length };
   });
 }
 

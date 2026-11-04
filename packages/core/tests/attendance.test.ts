@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeDay, retimePlan, describeSchedule, isAltWeek, isWorkday, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
+import { computeDay, retimePlan, describeSchedule, isAltWeek, isWorkday, lateCheckout, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
 
 const TZ = 'Asia/Tashkent';
 const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', dayTimes: [], alt: null, breakMinutes: 60, graceMinutes: 10 };
@@ -175,4 +175,22 @@ test('kunlar bo\'yicha vaqt va haftalik almashinuv', () => {
   assert.deepEqual(timesFor(a, '2026-11-03'), { startTime: '08:00', endTime: '20:00' });
   assert.equal(describeSchedule(a), '7/0 · 11:00–23:00 ⇄ 08:00–20:00');
   assert.equal(describeSchedule(r), '7/0 · 11:00–23:00 (Du,Ch,Ju 08:00–20:00)');
+});
+
+test('kechikkan Ketdim: smena tugagandan keyin va avto-yopilgandan keyin', () => {
+  const shift = shiftFor({ ...base, weekdays: [1, 2, 3, 4, 5, 6, 7], startTime: '08:00', endTime: '20:00' }, '2026-11-05', TZ)!;
+  const inEv = ev('check_in', at('2026-11-05', '08:02'));
+  assert.equal(lateCheckout([inEv], shift, at('2026-11-05', '19:50')).kind, 'none'); // hali smena ichida
+  assert.deepEqual(lateCheckout([inEv], shift, at('2026-11-05', '20:40')), { kind: 'open_after_end', extraMinutes: 40 });
+  const auto = ev('auto_close', at('2026-11-05', '20:00'));
+  const lc = lateCheckout([inEv, auto], shift, at('2026-11-05', '21:15'));
+  assert.deepEqual(lc, { kind: 'auto_closed', autoCloseId: auto.id, extraMinutes: 75 });
+  assert.equal(lateCheckout([inEv, auto], shift, at('2026-11-06', '09:00')).kind, 'none'); // 12 soatdan keyin so'ralmaydi
+  assert.equal(lateCheckout([inEv, ev('check_out', at('2026-11-05', '20:30'))], shift, at('2026-11-05', '21:00')).kind, 'none'); // o'zi chiqqan
+  // «ha»: avto-yopish bekor + add_out — ishlagan vaqt va qo'shimcha hisoblanadi
+  const fixed = [inEv, auto, ev('correction', at('2026-11-05', '21:15'), { meta: { action: 'void', target: auto.id } }), ev('correction', at('2026-11-05', '21:15'), { meta: { action: 'add_out', at: at('2026-11-05', '21:15').toISOString() } })];
+  const r = computeDay({ events: fixed, shift, now: at('2026-11-05', '22:00') });
+  assert.equal(r.open, false);
+  assert.equal(r.lastOut!.toISOString(), at('2026-11-05', '21:15').toISOString());
+  assert.equal(r.overtimeMinutes, 73 + 60 - 60); // 08:02–21:15 = 793 daq − 60 tanaffus = 733; reja 12 soat − 60 = 660 → 73
 });

@@ -14,6 +14,8 @@ const dur = (m: number) => `${Math.floor(m / 60)} soat ${m % 60} daqiqa`;
  */
 export function PresenceCard(p: {
   state: 'out' | 'in' | 'done'; since: string | null; worked: number; renderedAt: number; shiftStart: number | null; shiftEnd: number | null; onBreak: boolean; restDay: boolean; leaveToday?: boolean; doneText?: string;
+  /** Kun avto-yopilgan, xodim hali «Ketdim» bosmagan — qo'shimcha vaqtni belgilash imkoni */
+  lateOut?: boolean;
 }) {
   const [now, setNow] = useState(p.renderedAt);
   const [pending, start] = useTransition();
@@ -38,6 +40,9 @@ export function PresenceCard(p: {
           </span>
         </Link>
         <span className="text-xs text-placeholder">Lokatsiya va selfi orqali tasdiqlanadi</span>
+        {p.lateOut && (
+          <Link href="/tg/keldim?ketdi=1" className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-warning-tint text-sm font-bold text-warning-text"><Icon name="more_time" size={20} />Smena tugagan edi — hozir ketyapman (qo&apos;shimcha vaqt)</Link>
+        )}
       </div>
     );
   }
@@ -52,7 +57,7 @@ export function PresenceCard(p: {
         {p.since && <span className="text-muted">{p.since} dan beri</span>}
       </div>
       <div className="tnum text-[34px] leading-10 font-extrabold tracking-[-0.03em]">{dur(live)}</div>
-      {left != null && <div className="-mt-2 text-[13px] text-muted">{left > 0 ? `Smena tugashiga ${dur(left)}` : 'Smena vaqti tugadi — ketayotganda «Ketdim» bosing'}</div>}
+      {left != null && <div className="-mt-2 text-[13px] text-muted">{left > 0 ? `Smena tugashiga ${dur(left)}` : "Smena vaqti tugadi — «Ketdim» bosing, qo'shimcha ishlagan bo'lsangiz tasdiqlaysiz"}</div>}
       {pct != null && <div className="h-1.5 overflow-hidden rounded-full bg-primary-tint"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>}
       <div className="mt-1 grid grid-cols-2 gap-2.5">
         <button disabled={pending} onClick={() => start(async () => { const r = await tgBreakAction(); if (!r.ok) setErr(r.message ?? 'Xato'); else { haptic('success'); router.refresh(); } })}

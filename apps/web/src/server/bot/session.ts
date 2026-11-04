@@ -9,6 +9,8 @@ export type BotState =
   | { step: 'reg_consent'; tenantId: string; employeeId: string; code: string }
   | { step: 'reg_face'; tenantId: string; employeeId: string; code: string }
   | { step: 'ci_location'; tenantId: string; employeeId: string; action: 'check_in' | 'check_out'; startedAt: number }
+  /** Kechikkan «Ketdim»: lokatsiya qabul qilindi, «qo'shimcha ishladim / yo'q» javobi kutilmoqda (core lateCheckout) */
+  | { step: 'ci_overtime'; tenantId: string; employeeId: string; startedAt: number; lat: number; lng: number; accuracyM: number | null }
   | {
       step: 'ci_video'; tenantId: string; employeeId: string; action: 'check_in'; startedAt: number;
       loc: { lat: number; lng: number; accuracyM: number | null; distanceM: number; branchId: string; live: boolean; at: number };

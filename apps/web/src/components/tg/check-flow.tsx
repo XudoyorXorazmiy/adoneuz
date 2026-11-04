@@ -46,11 +46,12 @@ export function CheckFlow({ action, branchName, radiusM }: { action: 'check_in' 
   }, []);
   useEffect(() => { void locate(); }, [locate]);
 
-  const submit = async (photos?: Blob[]) => {
+  const submit = async (photos?: Blob[], overtime?: 'yes' | 'no') => {
     if (!coords) return;
     setBusy(true);
     const fd = new FormData();
     fd.set('action', action); fd.set('lat', String(coords.lat)); fd.set('lng', String(coords.lng));
+    if (overtime) fd.set('overtime', overtime);
     if (coords.accuracy != null) fd.set('accuracy', String(coords.accuracy));
     photos?.forEach((p, i) => fd.append('photo', new File([p], `selfie${i}.jpg`, { type: 'image/jpeg' })));
     const dev = deviceInfo();
@@ -102,7 +103,9 @@ export function CheckFlow({ action, branchName, radiusM }: { action: 'check_in' 
 
       {step === 'selfie' && <Selfie busy={busy} onShot={submit} onCancel={() => setStep('locate')} />}
 
-      {step === 'result' && result && <Result r={result} action={action} onRetry={() => { setResult(null); setStep('locate'); void locate(); }} />}
+      {step === 'result' && result && (!result.ok && result.reason === 'overtime_choice'
+        ? <OvertimeChoice r={result} busy={busy} onPick={(c) => void submit(undefined, c)} />
+        : <Result r={result} action={action} onRetry={() => { setResult(null); setStep('locate'); void locate(); }} />)}
     </div>
   );
 }
@@ -231,6 +234,22 @@ function Selfie({ busy, onShot, onCancel }: { busy: boolean; onShot: (b: Blob[])
   );
 }
 
+/** Kechikkan «Ketdim»: smena tugagan — qo'shimcha ishladimi yoki yo'q (serverda lateCheckout). */
+function OvertimeChoice({ r, busy, onPick }: { r: Extract<CheckResult, { reason: 'overtime_choice' }>; busy: boolean; onPick: (c: 'yes' | 'no') => void }) {
+  return (
+    <div className="flex flex-1 flex-col items-center gap-4 px-4 pt-10 pb-5 text-center">
+      <span className="flex size-[104px] items-center justify-center rounded-full bg-warning-tint"><span className="flex size-20 items-center justify-center rounded-full bg-warning text-white"><Icon name="more_time" size={44} /></span></span>
+      <h1 className="m-0 text-2xl font-bold">Smena {r.shiftEndTime} da tugagan</h1>
+      <p className="m-0 max-w-xs text-sm text-ink-2">{r.autoClosed ? 'Tizim kunni avtomatik yopgan. ' : ''}Siz <b>{r.extraMinutes} daqiqa</b> ortiq qoldingiz. Qo&apos;shimcha ishladingizmi?</p>
+      <div className="mt-auto flex w-full flex-col gap-2.5">
+        <button disabled={busy} onClick={() => onPick('yes')} className="btn-primary h-[52px] w-full text-base"><Icon name="more_time" size={20} />{busy ? 'Yuborilmoqda…' : `Ha, qo'shimcha ishladim (+${r.extraMinutes} daq)`}</button>
+        <button disabled={busy} onClick={() => onPick('no')} className="btn-secondary h-[52px] w-full text-base">Yo&apos;q, {r.shiftEndTime} da tugadi</button>
+      </div>
+      <p className="m-0 text-xs text-muted">«Ha» — rahbaringizga xabar boradi va qo&apos;shimcha vaqt tabelga yoziladi.</p>
+    </div>
+  );
+}
+
 function Result({ r, action, onRetry }: { r: CheckResult; action: 'check_in' | 'check_out'; onRetry: () => void }) {
   if (!r.ok) {
     return (
@@ -263,6 +282,7 @@ function Result({ r, action, onRetry }: { r: CheckResult; action: 'check_in' | '
           ['Masofa', `${r.distanceM} m`, 'text-success'],
           ['Filial', r.branchName, ''],
           ...(action === 'check_out' ? [['Bugun ishladingiz', `${Math.floor(r.workedMinutes / 60)} soat ${r.workedMinutes % 60} daq`, '']] : []),
+          ...(action === 'check_out' && r.overtimeMinutes > 0 ? [["Qo'shimcha", `${r.overtimeMinutes} daq`, 'text-primary']] : []),
           ['Manba', 'Mini App', ''],
         ].map(([k, v, c]) => <div key={k} className="flex items-center justify-between px-4 py-3"><span className="text-muted">{k}</span><b className={c}>{v}</b></div>)}
       </div>

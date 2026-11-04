@@ -5,8 +5,8 @@ import 'server-only';
  * Bot o'z oqimida (server/bot) xuddi shu qoidalarni ishlatadi.
  */
 import { eq } from 'drizzle-orm';
-import { attendanceEvents, branches, currentWorkday, employees, rebuildDay, tenants, type Tx } from '@adone/db';
-import { checkGeofence, effectiveEvents, facePercent, formatTime, type FaceDecision } from '@adone/core';
+import { attendanceEvents, autoClosedWorkday, branches, currentWorkday, employees, rebuildDay, tenants, type Tx } from '@adone/db';
+import { checkGeofence, effectiveEvents, facePercent, formatTime, lateCheckout, type FaceDecision, type LateCheckout } from '@adone/core';
 import { escHtml as esc } from '@/lib/task-text';
 import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { readSettings } from '@/server/settings';
@@ -14,7 +14,9 @@ import { readSettings } from '@/server/settings';
 export type CheckAction = 'check_in' | 'check_out';
 
 export type CheckResult =
-  | { ok: true; time: string; lateMinutes: number; workedMinutes: number; distanceM: number; branchName: string; status: 'ok' | 'suspicious'; reasons: string[]; facePercent: number | null }
+  | { ok: true; time: string; lateMinutes: number; workedMinutes: number; overtimeMinutes: number; distanceM: number; branchName: string; status: 'ok' | 'suspicious'; reasons: string[]; facePercent: number | null }
+  /** Smena tugagan, xodim kechroq ketmoqda — «qo'shimcha ishladim» yoki «qo'shimcha ish bo'lmadi» tanlovi (overtime bilan qayta yuboriladi) */
+  | { ok: false; reason: 'overtime_choice'; message: string; extraMinutes: number; shiftEndTime: string; autoClosed: boolean }
   | { ok: false; reason: 'outside' | 'low_accuracy' | 'state' | 'no_branch' | 'inactive' | 'no_photo'; message: string; distanceM?: number; branchName?: string };
 
 /** Lokatsiya oldindan tekshiruvi (1-qadam ekrani): faqat masofa, hech narsa yozilmaydi. */
@@ -33,6 +35,10 @@ export async function recordCheck(tx: Tx, input: {
   face?: FaceDecision;
   /** Mini App qurilmasi: birinchi marta bog'lanadi, boshqasidan — «shubhali». */
   device?: { id: string; label: string } | null;
+  /** Bot: jonli lokatsiya (null — Mini App) */
+  live?: boolean | null;
+  /** Kechikkan «Ketdim» javobi (core lateCheckout): 'yes' — qo'shimcha ishladim, 'no' — qo'shimcha ish bo'lmadi */
+  overtime?: 'yes' | 'no';
 }): Promise<CheckResult> {
   const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
   const tz = t!.tz;
@@ -44,20 +50,52 @@ export async function recordCheck(tx: Tx, input: {
   const [b] = await tx.select().from(branches).where(eq(branches.id, e.branchId)).limit(1);
   if (!b) return { ok: false, reason: 'no_branch', message: 'Filial topilmadi.' };
   // Yarim tundan keyin «Ketdim» — kechagi ochiq kunga (currentWorkday)
-  const wd = await currentWorkday(tx, e.id, new Date(), tz);
-  const next = wd.open ? 'check_out' : 'check_in';
+  const now = new Date();
+  const cur = await currentWorkday(tx, e.id, now, tz);
+  let wd: { date: string; shift: typeof cur.shift; events: typeof cur.events; open: boolean } = cur;
+  let late: LateCheckout = wd.open ? lateCheckout(wd.events, wd.shift, now) : { kind: 'none' };
+  // Avto-yopilgan kun, xodim kechroq ketmoqda — «Ketdim» qo'shimcha vaqt savoli bilan (core lateCheckout)
+  if (input.action === 'check_out' && !wd.open) {
+    const ac = await autoClosedWorkday(tx, e.id, now, tz);
+    if (ac) { wd = { ...ac, open: false }; late = ac.late; }
+  }
+  const next = wd.open || late.kind === 'auto_closed' ? 'check_out' : 'check_in';
   if (input.action !== next) return { ok: false, reason: 'state', message: input.action === 'check_in' ? 'Siz allaqachon ishdasiz.' : 'Siz hali «Keldim» qilmagansiz.' };
   if (input.action === 'check_in' && !input.mediaId) return { ok: false, reason: 'no_photo', message: 'Selfi kerak.' };
   const g = checkGeofence({ branch: { lat: b.lat, lng: b.lng, radiusM: b.radiusM }, point: { lat: input.lat, lng: input.lng }, accuracyM: input.accuracyM });
   const base = {
     tenantId: input.tenantId, employeeId: e.id, workDate: wd.date, branchId: b.id, lat: input.lat, lng: input.lng,
-    accuracyM: input.accuracyM, distanceM: g.distanceM, isLiveLocation: null, source: input.source, mediaId: input.mediaId,
+    accuracyM: input.accuracyM, distanceM: g.distanceM, isLiveLocation: input.live ?? null, source: input.source, mediaId: input.mediaId,
   };
   if (g.status === 'low_accuracy') return { ok: false, reason: 'low_accuracy', message: `GPS aniqligi past (±${input.accuracyM} m). Ochiq joyga chiqib qaytadan urinib ko'ring.`, distanceM: g.distanceM, branchName: b.name };
   if (g.status === 'outside') {
     // Rad etilgan urinish ham jurnalga (rahbar ko'radi), hisobga kirmaydi
     await tx.insert(attendanceEvents).values({ ...base, kind: input.action, checkStatus: 'rejected', reasons: ['outside'] });
     return { ok: false, reason: 'outside', message: `Zonadan tashqaridasiz: ${g.distanceM} m. Filialga yaqinroq boring.`, distanceM: g.distanceM, branchName: b.name };
+  }
+  // Kechikkan «Ketdim»: tanlov so'raladi, keyin tanlovga qarab yoziladi
+  if (input.action === 'check_out' && late.kind !== 'none') {
+    const endTime = formatTime(wd.shift!.end, tz);
+    if (!input.overtime) {
+      return {
+        ok: false, reason: 'overtime_choice', extraMinutes: late.extraMinutes, shiftEndTime: endTime, autoClosed: late.kind === 'auto_closed',
+        message: `Smenangiz ${endTime} da tugagan${late.kind === 'auto_closed' ? ' va kun avtomatik yopilgan' : ''}. Qo'shimcha ${late.extraMinutes} daqiqa ishladingizmi?`,
+      };
+    }
+    if (late.kind === 'open_after_end') {
+      // «ha» — hozir; «yo'q» — smena oxiri vaqti bilan (serverAt), kun o'sha paytda yopiladi
+      await tx.insert(attendanceEvents).values({ ...base, kind: 'check_out', checkStatus: 'ok', reasons: [input.overtime === 'yes' ? 'overtime' : 'no_overtime'], serverAt: input.overtime === 'yes' ? now : wd.shift!.end });
+    } else if (input.overtime === 'yes') {
+      // Avto-yopish bekor, chiqish hozirgi vaqt bilan (tuzatish hodisalari — core effectiveEvents)
+      await tx.insert(attendanceEvents).values({ ...base, kind: 'correction', checkStatus: 'ok', reasons: ['overtime'], meta: { action: 'void', target: late.autoCloseId, reason: 'overtime' } });
+      await tx.insert(attendanceEvents).values({ ...base, kind: 'correction', checkStatus: 'ok', reasons: ['overtime'], meta: { action: 'add_out', at: now.toISOString(), reason: 'overtime' } });
+    }
+    const r = await rebuildDay(tx, { tenantId: input.tenantId, employeeId: e.id, workDate: wd.date, tz });
+    if (input.overtime === 'yes') await queueNotifyMembers(tx, input.tenantId, `⏱ <b>${esc(e.fullName)}</b> qo'shimcha ishladi: ${late.extraMinutes} daqiqa (smena ${endTime}, ketdi ${formatTime(now, tz)}).`, e.departmentId, undefined, '/tg');
+    return {
+      ok: true, time: input.overtime === 'yes' ? formatTime(now, tz) : endTime, lateMinutes: 0, workedMinutes: r.workedMinutes, overtimeMinutes: r.overtimeMinutes, distanceM: g.distanceM, branchName: b.name,
+      status: 'ok', reasons: [], facePercent: null,
+    };
   }
   const reasons = [...(input.face?.reasons ?? [])];
   // Qurilma bog'lash (Sozlamalar → Davomat): o'chiq bo'lsa boshqa telefon shubhali emas
@@ -75,7 +113,7 @@ export async function recordCheck(tx: Tx, input: {
     await queueSuspicious(tx, input.tenantId, `🔎 <b>${esc(e.fullName)}</b> — ${input.action === 'check_in' ? 'kelish' : 'ketish'} shubhali (${reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId);
   }
   return {
-    ok: true, time: formatTime(new Date(), tz), lateMinutes: input.action === 'check_in' ? r.lateMinutes : 0, workedMinutes: r.workedMinutes, distanceM: g.distanceM, branchName: b.name,
+    ok: true, time: formatTime(new Date(), tz), lateMinutes: input.action === 'check_in' ? r.lateMinutes : 0, workedMinutes: r.workedMinutes, overtimeMinutes: r.overtimeMinutes, distanceM: g.distanceM, branchName: b.name,
     status: checkStatus, reasons, facePercent: facePercent(input.face?.score),
   };
 }

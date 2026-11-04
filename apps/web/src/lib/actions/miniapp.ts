@@ -68,6 +68,8 @@ export async function tgCheckAction(f: FormData): Promise<CheckResult> {
   if (action === 'check_in' && frames.length === 0) return { ok: false, reason: 'no_photo', message: 'Selfi olinmadi — kamerani qayta yoqing' };
   const deviceId = String(f.get('deviceId') ?? '');
   const device = isUuid(deviceId) ? { id: deviceId, label: String(f.get('deviceLabel') ?? '').slice(0, 60) || 'Telefon' } : null;
+  const ot = f.get('overtime');
+  const overtime = ot === 'yes' || ot === 'no' ? ot : undefined;
   let face: FaceDecision | undefined;
   // Zonadan tashqarida yoki GPS aniqligi past bo'lsa — yuz servisini (25 s gacha) bekor kutmaymiz: recordCheck baribir rad etadi
   const geo = action === 'check_in' ? await withTenant(u.tenantId, (tx) => previewGeofence(tx, u.employeeId, c)) : null;
@@ -79,7 +81,7 @@ export async function tgCheckAction(f: FormData): Promise<CheckResult> {
   const stored = frames[0] ? await writeMediaFile({ tenantId: u.tenantId, employeeId: u.employeeId, kind: 'checkin_photo', ...frames[0] }) : null;
   const res = await withTenant(u.tenantId, async (tx) => {
     const mediaId = stored ? await insertMedia(tx, stored) : null;
-    return recordCheck(tx, { tenantId: u.tenantId, employeeId: u.employeeId, action, ...c, mediaId, source: 'miniapp', face, device });
+    return recordCheck(tx, { tenantId: u.tenantId, employeeId: u.employeeId, action, ...c, mediaId, source: 'miniapp', face, device, overtime });
   });
   revalidatePath('/tg');
   kick();

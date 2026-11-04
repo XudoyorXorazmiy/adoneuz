@@ -157,6 +157,34 @@ export function nextAction(events: DayEvent[]): 'check_in' | 'check_out' {
 export const OPEN_WORKDAY_MS = 24 * 3600_000;
 
 /**
+ * Kechikkan «Ketdim» (2026-11-05): smena tugagandan keyin ketayotgan xodim qo'shimcha ishlaganini tasdiqlaydi yoki
+ * «qo'shimcha ish bo'lmadi» deydi (kun smena oxirida yopiladi).
+ *   open_after_end — hali ochiq, smena tugagan: «ha» → hozir check_out (overtime), «yo'q» → check_out smena oxiri vaqtida;
+ *   auto_closed    — tizim smena oxirida avto-yopgan (autoCloseHours = 0), xodim keyin «Ketdim» bosdi: «ha» → avto-yopish
+ *                    bekor (void) + add_out hozir; «yo'q» → hech narsa (kun allaqachon smena oxirida yopilgan).
+ * Avto-yopishdan 12 soat o'tgach so'ralmaydi (ertangi kun).
+ */
+export type LateCheckout =
+  | { kind: 'none' }
+  | { kind: 'open_after_end'; extraMinutes: number }
+  | { kind: 'auto_closed'; autoCloseId: string; extraMinutes: number };
+export const LATE_CHECKOUT_MAX_MS = 12 * 3600_000;
+
+export function lateCheckout(events: DayEvent[], shift: Shift | null, now: Date): LateCheckout {
+  if (!shift) return { kind: 'none' };
+  const evs = effectiveEvents(events);
+  if (nextAction(evs) === 'check_out') {
+    const extra = mins(now.getTime() - shift.end.getTime());
+    return extra >= 1 ? { kind: 'open_after_end', extraMinutes: extra } : { kind: 'none' };
+  }
+  const last = [...evs].reverse().find((e) => e.kind === 'check_out' || e.kind === 'auto_close');
+  if (last?.kind === 'auto_close' && now.getTime() > last.at.getTime() && now.getTime() - last.at.getTime() <= LATE_CHECKOUT_MAX_MS) {
+    return { kind: 'auto_closed', autoCloseId: last.id, extraMinutes: mins(now.getTime() - last.at.getTime()) };
+  }
+  return { kind: 'none' };
+}
+
+/**
  * Yarim tundan keyin «Ketdim» (2026-10-31): xodim kecha «Keldim» bosgan, 00:00 dan keyin ketmoqda — hodisa kechagi ish kuniga
  * tegishli (§1.8), yangi kun emas. Berilgan kunlar ichida (joriy kundan oldingilari) yopilmagan kirishi bor va oxirgi kirishdan
  * `maxOpenMs` o'tmagan birinchisini qaytaradi; bo'lmasa null.

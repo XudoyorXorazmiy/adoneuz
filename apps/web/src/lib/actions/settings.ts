@@ -95,7 +95,7 @@ export async function saveAttendanceAction(_p: FormState, f: FormData): Promise<
   if (!isValidTime(digestAt)) return { error: "Xabar vaqtini 10:00 ko'rinishida kiriting" };
   const autoClose = num(f, 'autoCloseHours');
   const freeClose = num(f, 'freeAutoCloseHours');
-  if (!(Number.isInteger(autoClose) && autoClose >= 1 && autoClose <= 12)) return { error: 'Avtomatik yopish: 1–12 soat' };
+  if (!(Number.isInteger(autoClose) && autoClose >= 0 && autoClose <= 12)) return { error: 'Avtomatik yopish: 0–12 soat (0 — smena tugashi bilan)' };
   if (!(Number.isInteger(freeClose) && freeClose >= 4 && freeClose <= 24)) return { error: 'Erkin grafikda: 4–24 soat' };
   const threshold = num(f, 'faceThreshold');
   const yaw = num(f, 'faceYaw');

@@ -5,7 +5,7 @@ import 'server-only';
  * davomat — append-only jurnal (§1.2). Telegram'ga so'rovlar tranzaksiyadan TASHQARIDA.
  */
 import { and, eq, gt, isNull } from 'drizzle-orm';
-import { attendanceEvents, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, currentWorkday, dayEvents, employeeRule } from '@adone/db';
+import { attendanceEvents, autoClosedWorkday, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, currentWorkday, dayEvents, employeeRule } from '@adone/db';
 import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor, UUID_SRC, workdayFor } from '@adone/core';
 import { appOrigin } from '@/lib/host';
 import { issueTelegramLogin } from '@/server/team';
@@ -15,6 +15,7 @@ import { insertMedia, writeMediaFile } from '@/server/media';
 import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
+import { recordCheck } from '@/server/checkin';
 import type { JobOutcome } from '@/server/jobs/types';
 import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from './session';
 import { arrivedAt, firstAttempt } from './context';
@@ -160,6 +161,7 @@ async function onCallback(cb: TgCallback): Promise<JobOutcome> {
     await send(chat, T.faceAsk);
     return {};
   }
+  if (data === 'ot:yes' || data === 'ot:no') return onOvertimeChoice(cb, data === 'ot:yes' ? 'yes' : 'no');
   if (data.startsWith('tk:') || data.startsWith('wk:')) return onTaskCallback(cb);
   if (data.startsWith('lv:')) return onLeaveCallback(cb);
   if (data.startsWith('dl:')) return onDeadlineCallback(cb);
@@ -173,6 +175,26 @@ async function onCallback(cb: TgCallback): Promise<JobOutcome> {
   }
   await answerCallback(cb.id);
   return { skip: `noma'lum callback: ${data}` };
+}
+
+/** Kechikkan «Ketdim» javobi: «ha» — hozirgi vaqt bilan chiqish (qo'shimcha), «yo'q» — smena oxirida yopiladi. */
+async function onOvertimeChoice(cb: TgCallback, choice: 'yes' | 'no'): Promise<JobOutcome> {
+  const uid = cb.from.id;
+  const chat = cb.message!.chat.id;
+  const state = await getState(uid);
+  await answerCallback(cb.id);
+  if (state.step !== 'ci_overtime') {
+    await send(chat, `Bu savol eskirgan. Qaytadan «${BTN.checkOut}» bosing.`, menuKeyboard);
+    return { skip: 'holat yo‘q' };
+  }
+  const r = await withTenant(state.tenantId, (tx) => recordCheck(tx, { tenantId: state.tenantId, employeeId: state.employeeId, action: 'check_out', lat: state.lat, lng: state.lng, accuracyM: state.accuracyM, mediaId: null, source: 'bot', live: true, overtime: choice }));
+  await clearState(uid);
+  if (!r.ok) {
+    await send(chat, r.reason === 'state' ? 'Siz allaqachon «Ketdim» qilgansiz.' : esc(r.message), menuKeyboard);
+    return { skip: r.reason };
+  }
+  await send(chat, choice === 'yes' ? T.checkedOutOvertime(r.time, formatMinutes(r.workedMinutes), r.overtimeMinutes) : T.checkedOut(r.time, formatMinutes(r.workedMinutes)), menuKeyboard);
+  return {};
 }
 
 async function onVideoNote(msg: TgMessage): Promise<JobOutcome> {
@@ -314,7 +336,8 @@ async function beginAction(uid: number, chat: number, link: EmployeeLink, action
     // Kecha «Keldim» bosib yarim tundan keyin ketayotgan bo'lsa ham ruxsat — ish kuni kechagi (currentWorkday)
     const wd = await currentWorkday(tx, e.id, new Date(), t!.tz);
     if (action === 'check_in' && wd.open) return T.alreadyIn;
-    if (action === 'check_out' && !wd.open) return T.notIn;
+    // Avto-yopilgan kun — kechroq «Ketdim» ruxsat (qo'shimcha vaqt so'raladi)
+    if (action === 'check_out' && !wd.open && !(await autoClosedWorkday(tx, e.id, new Date(), t!.tz))) return T.notIn;
     return null;
   });
   if (err) {
@@ -376,11 +399,11 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
       return { kind: 'error' as const, text: T.outside(formatDistance(g.distanceM), esc(b.name)) };
     }
     if (state.action === 'check_out') {
-      // Ikki marta «Ketdim» (qayta yuborilgan lokatsiya / Mini App bilan bir vaqtda) — xodim qatori qulflangan, holat qayta tekshiriladi
-      if (!wd.open) return { kind: 'error' as const, text: 'Siz allaqachon «Ketdim» qilgansiz.' };
-      await tx.insert(attendanceEvents).values({ ...base, kind: 'check_out', checkStatus: 'ok' });
-      const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
-      return { kind: 'out' as const, time: formatTime(at, t!.tz), worked: formatMinutes(r.workedMinutes) };
+      // Mini App bilan bir xil qoida (recordCheck): ikki marta «Ketdim» — rad; smena tugagan bo'lsa — qo'shimcha vaqt savoli
+      const r = await recordCheck(tx, { tenantId: state.tenantId, employeeId: e.id, action: 'check_out', lat: loc.latitude, lng: loc.longitude, accuracyM: accuracy, mediaId: null, source: 'bot', live: true });
+      if (!r.ok && r.reason === 'overtime_choice') return { kind: 'ask' as const, extra: r.extraMinutes, end: r.shiftEndTime, autoClosed: r.autoClosed };
+      if (!r.ok) return { kind: 'error' as const, text: r.reason === 'state' ? 'Siz allaqachon «Ketdim» qilgansiz.' : esc(r.message) };
+      return { kind: 'out' as const, time: r.time, worked: formatMinutes(r.workedMinutes) };
     }
     return { kind: 'in' as const, loc: { lat: loc.latitude, lng: loc.longitude, accuracyM: accuracy, distanceM: g.distanceM, branchId: b.id, live: true, at: at.getTime() } };
   });
@@ -392,6 +415,11 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
   if (out.kind === 'out') {
     await clearState(uid);
     await send(chat, T.checkedOut(out.time, out.worked), menuKeyboard);
+    return {};
+  }
+  if (out.kind === 'ask') {
+    await setState(uid, { step: 'ci_overtime', tenantId: state.tenantId, employeeId: state.employeeId, startedAt: state.startedAt, lat: loc.latitude, lng: loc.longitude, accuracyM: accuracy });
+    await send(chat, T.overtimeAsk(out.end, out.extra, out.autoClosed), { inline_keyboard: [[{ text: `✅ Ha, qo'shimcha ishladim (+${out.extra} daq)`, callback_data: 'ot:yes' }], [{ text: `❌ Yo'q, ${out.end} da tugadi`, callback_data: 'ot:no' }]] });
     return {};
   }
   await setState(uid, { step: 'ci_video', tenantId: state.tenantId, employeeId: state.employeeId, action: 'check_in', startedAt: state.startedAt, loc: out.loc });

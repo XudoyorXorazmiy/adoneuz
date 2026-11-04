@@ -124,7 +124,7 @@ export function AttendanceTab({ s, audit, tz }: { s: TenantSettings; audit: Audi
         </Row>
       </SettingsCard>
       <SettingsCard icon="timer_off" title="Avtomatik yopish" desc="«Ketdim» unutilganda" audit={a} tz={tz}>
-        <Row label="«Ketdim» bosilmasa" hint="Smena tugaganidan keyin. Xodim va rahbarga xabar boradi."><Field type="number" name="autoCloseHours" defaultValue={s.autoCloseHours} min={1} max={12} width={80} suffix="soat" required /></Row>
+        <Row label="«Ketdim» bosilmasa" hint="Smena tugaganidan keyin. 0 — smena tugashi bilan yopiladi (10 daqiqa ichida); xodim kechroq «Ketdim» bossa, qo'shimcha ishlaganini tasdiqlaydi yoki «qo'shimcha ish bo'lmadi» deydi."><Field type="number" name="autoCloseHours" defaultValue={s.autoCloseHours} min={0} max={12} width={80} suffix="soat" required /></Row>
         <Row label="Erkin grafikda" hint="«Keldim»dan keyin"><Field type="number" name="freeAutoCloseHours" defaultValue={s.freeAutoCloseHours} min={4} max={24} width={80} suffix="soat" required /></Row>
       </SettingsCard>
       <SettingsCard icon="location_on" title="Joylashuv" desc="GPS tekshiruvi" audit={undefined}>

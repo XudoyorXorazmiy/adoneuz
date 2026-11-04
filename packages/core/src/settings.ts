@@ -99,7 +99,7 @@ export function tenantSettings(raw: unknown): TenantSettings {
   return {
     autoApprove: bool(s.autoApprove, d.autoApprove),
     absentDigestAt: typeof s.absentDigestAt === 'string' && isValidTime(s.absentDigestAt) ? s.absentDigestAt : d.absentDigestAt,
-    autoCloseHours: int(s.autoCloseHours, 1, 12, d.autoCloseHours),
+    autoCloseHours: int(s.autoCloseHours, 0, 12, d.autoCloseHours), // 0 — smena tugashi bilan (tick 10 daqiqada)
     freeAutoCloseHours: int(s.freeAutoCloseHours, 4, 24, d.freeAutoCloseHours),
     face: faceSettings(s.face),
     deviceBinding: bool(s.deviceBinding, d.deviceBinding),
