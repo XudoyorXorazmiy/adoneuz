@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeDay, retimePlan, describeSchedule, isAltWeek, isWorkday, lateCheckout, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
+import { checkInReminderDue, computeDay, retimePlan, describeSchedule, isAltWeek, isWorkday, lateCheckout, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
 
 const TZ = 'Asia/Tashkent';
 const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', dayTimes: [], alt: null, breakMinutes: 60, graceMinutes: 10 };
@@ -193,4 +193,24 @@ test('kechikkan Ketdim: smena tugagandan keyin va avto-yopilgandan keyin', () =>
   assert.equal(r.open, false);
   assert.equal(r.lastOut!.toISOString(), at('2026-11-05', '21:15').toISOString());
   assert.equal(r.overtimeMinutes, 73 + 60 - 60); // 08:02–21:15 = 793 daq − 60 tanaffus = 733; reja 12 soat − 60 = 660 → 73
+});
+
+test('«Keldim» eslatmasi: smena boshida, takror 15 daqiqadan keyin, kelganga yuborilmaydi', () => {
+  const shift = shiftFor({ ...base, weekdays: [1, 2, 3, 4, 5, 6, 7], startTime: '08:00', endTime: '20:00' }, '2026-11-18', TZ)!;
+  const st = { on: true, afterMin: 0, repeat: true };
+  const due = (time: string, events: DayEvent[] = [], extra: Partial<Parameters<typeof checkInReminderDue>[0]> = {}) => checkInReminderDue({ events, shift, now: at('2026-11-18', time), settings: st, ...extra });
+  assert.equal(due('07:50'), null); // smena hali boshlanmagan
+  assert.equal(due('08:00'), 1);
+  assert.equal(due('08:10'), 1); // tick kechiksa ham birinchisi (dedupe navbatda)
+  assert.equal(due('08:20'), 2);
+  assert.equal(due('08:40'), 2);
+  assert.equal(due('08:50'), null); // oyna yopildi
+  assert.equal(due('08:00', [ev('check_in', at('2026-11-18', '07:55'))]), null); // kelgan
+  assert.equal(due('08:00', [ev('check_in', at('2026-11-18', '07:55'), { checkStatus: 'rejected' })]), 1); // rad etilgan urinish — hali kelmagan
+  assert.equal(due('08:00', [], { onLeave: true }), null);
+  assert.equal(due('08:00', [], { shift: null }), null); // dam olish kuni / erkin grafik
+  assert.equal(due('08:00', [], { settings: { ...st, on: false } }), null);
+  assert.equal(due('08:20', [], { settings: { ...st, repeat: false } }), 1); // takrorsiz — faqat birinchisi (oyna ichida)
+  assert.equal(due('08:00', [], { settings: { ...st, afterMin: 10 } }), null);
+  assert.equal(due('08:10', [], { settings: { ...st, afterMin: 10 } }), 1);
 });

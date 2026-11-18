@@ -223,3 +223,26 @@ export function retimePlan(events: DayEvent[], want: { in?: Date; out?: Date }):
   }
   return out;
 }
+
+/** Ikkinchi «Keldim» eslatmasi birinchisidan shuncha daqiqa keyin. */
+export const CHECKIN_REMINDER_REPEAT_MIN = 15;
+/** Eslatma «oynasi»: tick kechiksa ham shu vaqt ichida yuboriladi; undan keyin — kech (smena ancha oldin boshlangan, masalan jadval kun o'rtasida o'zgargan). */
+export const CHECKIN_REMINDER_WINDOW_MIN = 30;
+
+/**
+ * «Keldim» eslatmasi hozir kerakmi (tick har 10 daqiqada so'raydi; bir marta yuborilishi — navbatdagi dedupeKey bilan).
+ * 1 — birinchi (smena boshi + afterMin), 2 — takror (+CHECKIN_REMINDER_REPEAT_MIN), null — kerak emas:
+ * smena yo'q (dam olish kuni, erkin grafik), ruxsatda, yoki haqiqiy «Keldim» allaqachon bor (rad etilgan urinish hisobga olinmaydi).
+ */
+export function checkInReminderDue(input: { events: DayEvent[]; shift: Shift | null; now: Date; onLeave?: boolean; settings: { on: boolean; afterMin: number; repeat: boolean } }): 1 | 2 | null {
+  const { shift, settings, now } = input;
+  if (!settings.on || !shift || input.onLeave) return null;
+  if (effectiveEvents(input.events).some((e) => e.kind === 'check_in')) return null;
+  const first = shift.start.getTime() + settings.afterMin * 60_000;
+  const second = first + CHECKIN_REMINDER_REPEAT_MIN * 60_000;
+  const win = CHECKIN_REMINDER_WINDOW_MIN * 60_000;
+  const t = now.getTime();
+  if (settings.repeat && t >= second && t < second + win) return 2;
+  if (t >= first && t < first + win && !(settings.repeat && t >= second)) return 1;
+  return null;
+}

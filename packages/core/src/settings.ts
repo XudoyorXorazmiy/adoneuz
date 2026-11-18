@@ -38,6 +38,7 @@ export interface NotifyRule {
 
 /** «Qabul qilinmasa» eslatmasi — daqiqa. */
 export const NOT_ACCEPTED_OPTIONS = [15, 30, 60, 120] as const;
+export const CHECKIN_REMINDER_OPTIONS = [0, 5, 10, 15, 30] as const;
 
 export interface TenantSettings {
   /** Botda ro'yxatdan o'tgan xodim darhol faol (tasdiqsiz). */
@@ -48,6 +49,11 @@ export interface TenantSettings {
   autoCloseHours: number;
   /** Erkin grafikda — «Keldim»dan keyin, soat. */
   freeAutoCloseHours: number;
+  /**
+   * «Keldim» eslatmasi (2026-11-18): smena boshlangan, xodim hali «Keldim» bosmagan — botdan eslatma (kelgan, lekin unutgan bo'lishi mumkin).
+   * `afterMin` — smena boshidan necha daqiqa keyin; `repeat` — CHECKIN_REMINDER_REPEAT_MIN dan keyin hali bosilmagan bo'lsa yana bir marta.
+   */
+  checkInReminder: { on: boolean; afterMin: number; repeat: boolean };
   face: FaceSettings;
   /** Boshqa telefondan «Keldim» — shubhali. */
   deviceBinding: boolean;
@@ -68,6 +74,7 @@ export const DEFAULT_SETTINGS: TenantSettings = {
   absentDigestAt: '10:00',
   autoCloseHours: 3,
   freeAutoCloseHours: 16,
+  checkInReminder: { on: true, afterMin: 0, repeat: true },
   face: faceSettings(undefined),
   deviceBinding: true,
   selfTasksNeedApproval: true,
@@ -101,6 +108,11 @@ export function tenantSettings(raw: unknown): TenantSettings {
     absentDigestAt: typeof s.absentDigestAt === 'string' && isValidTime(s.absentDigestAt) ? s.absentDigestAt : d.absentDigestAt,
     autoCloseHours: int(s.autoCloseHours, 0, 12, d.autoCloseHours), // 0 — smena tugashi bilan (tick 10 daqiqada)
     freeAutoCloseHours: int(s.freeAutoCloseHours, 4, 24, d.freeAutoCloseHours),
+    checkInReminder: {
+      on: bool(obj(s.checkInReminder).on, d.checkInReminder.on),
+      afterMin: int(obj(s.checkInReminder).afterMin, 0, 60, d.checkInReminder.afterMin),
+      repeat: bool(obj(s.checkInReminder).repeat, d.checkInReminder.repeat),
+    },
     face: faceSettings(s.face),
     deviceBinding: bool(s.deviceBinding, d.deviceBinding),
     selfTasksNeedApproval: bool(s.selfTasksNeedApproval, d.selfTasksNeedApproval),

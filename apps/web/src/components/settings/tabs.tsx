@@ -1,6 +1,7 @@
 /** Sozlamalar tablari (server): design/panel/Sozlamalar.dc.html 1:1. Ma'lumot sahifadan keladi. */
 import Link from 'next/link';
 import {
+  CHECKIN_REMINDER_OPTIONS, CHECKIN_REMINDER_REPEAT_MIN,
   formatDate, formatPhone, formatSom, NOT_ACCEPTED_OPTIONS, NOTIFY_EVENT_META, NOTIFY_EVENTS, NOTIFY_ROLE_LABELS,
   type PayRules, type TenantSettings,
 } from '@adone/core';
@@ -122,6 +123,13 @@ export function AttendanceTab({ s, audit, tz }: { s: TenantSettings; audit: Audi
             {NOTIFY_EVENT_META.absent.roles.map((r) => <ChipCheck key={r} name="absentTo" value={r} label={r === 'manager' ? "Bo'lim boshliqlari" : NOTIFY_ROLE_LABELS[r]} defaultChecked={s.notifications.absent.to.includes(r)} />)}
           </div>
         </Row>
+      </SettingsCard>
+      <SettingsCard icon="notifications_active" title="«Keldim» eslatmasi" desc="Xodim kelgan, lekin belgilashni unutgan bo'lsa" audit={a} tz={tz}>
+        <Row label="Botdan eslatma" hint="Smena boshlangan, «Keldim» hali bosilmagan xodimga Telegram'da xabar boradi. Ruxsatdagi va dam olish kunidagilarga yuborilmaydi.">
+          <SelectField name="checkInReminderAfter" defaultValue={String(s.checkInReminder.afterMin)} icon="schedule" width={220}>{CHECKIN_REMINDER_OPTIONS.map((m) => <option key={m} value={m}>{m === 0 ? 'Smena boshida' : `${m} daqiqadan keyin`}</option>)}</SelectField>
+          <Toggle name="checkInReminderOn" defaultChecked={s.checkInReminder.on} />
+        </Row>
+        <Row label="Takror eslatma" hint={`Birinchisidan ${CHECKIN_REMINDER_REPEAT_MIN} daqiqa o'tib ham bosilmasa — yana bir marta.`}><Toggle name="checkInReminderRepeat" defaultChecked={s.checkInReminder.repeat} /></Row>
       </SettingsCard>
       <SettingsCard icon="timer_off" title="Avtomatik yopish" desc="«Ketdim» unutilganda" audit={a} tz={tz}>
         <Row label="«Ketdim» bosilmasa" hint="Smena tugaganidan keyin. 0 — smena tugashi bilan yopiladi (10 daqiqa ichida); xodim kechroq «Ketdim» bossa, qo'shimcha ishlaganini tasdiqlaydi yoki «qo'shimcha ish bo'lmadi» deydi."><Field type="number" name="autoCloseHours" defaultValue={s.autoCloseHours} min={0} max={12} width={80} suffix="soat" required /></Row>

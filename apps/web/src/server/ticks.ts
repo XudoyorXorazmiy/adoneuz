@@ -4,11 +4,12 @@ import 'server-only';
  *   - bugungi va kechagi kunlik yig'ma qayta quriladi (kelmaganlar tabelga «Kelmadi» bo'lib tushadi);
  *   - «Ketdim» unutilgan kun avto-yopiladi (smena tugagandan `settings.autoCloseHours` keyin, 0 — smena tugashi bilan, Sozlamalar → Davomat)
  *     + xodimga xabar (rahbarga — faqat soat > 0 bo'lsa; 0 da bu odatiy holat, xodim keyin «Ketdim» bilan qo'shimcha vaqtni tasdiqlaydi);
+ *   - «Keldim» eslatmasi: smena boshlangan, xodim hali bosmagan — botdan eslatma (bir marta + bir takror; Sozlamalar → Davomat);
  *   - kunlik «Kelmaganlar» ro'yxati rahbarlarga (standart 10:00, `tenants.settings.absentDigestAt`).
  */
 import { and, eq, inArray } from 'drizzle-orm';
 import { attendanceEvents, employees, eventsFor, leavesFor, rebuildDays, rulesFor, tenants, withPlatform, withTenant } from '@adone/db';
-import { addDays, computeDay, formatTime, localDate, shiftFor, tenantSettings, zonedParts } from '@adone/core';
+import { addDays, checkInReminderDue, computeDay, formatTime, localDate, shiftFor, tenantSettings, zonedParts } from '@adone/core';
 import { esc } from '@/server/telegram/api';
 import { enqueue } from '@/server/jobs/enqueue';
 import { miniAppKeyboard, notifyMembers, queueNotifyEmployee, queueNotifyMembers } from '@/server/notify';
@@ -37,13 +38,14 @@ export async function scheduleTicks(now = new Date()): Promise<number> {
  */
 export async function attendanceTick(tenantId: string, now = new Date()): Promise<JobOutcome> {
   let closed = 0;
+  let reminded = 0;
   await withTenant(tenantId, async (tx) => {
     const [t] = await tx.select({ tz: tenants.timezone, settings: tenants.settings }).from(tenants).limit(1);
     const tz = t!.tz;
     const settings = tenantSettings(t!.settings);
     const today = localDate(now, tz);
     const dates = [addDays(today, -1), today];
-    const emps = await tx.select({ id: employees.id, fullName: employees.fullName, departmentId: employees.departmentId }).from(employees).where(eq(employees.status, 'active'));
+    const emps = await tx.select({ id: employees.id, fullName: employees.fullName, departmentId: employees.departmentId, tg: employees.telegramUserId }).from(employees).where(eq(employees.status, 'active'));
     const ids = emps.map((e) => e.id);
     const [rules, events, leaves] = [await rulesFor(tx, ids), await eventsFor(tx, ids, dates), await leavesFor(tx, ids, dates)];
     for (const e of emps) {
@@ -51,6 +53,16 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
       for (const date of dates) {
         const shift = rule ? shiftFor(rule, date, tz) : null;
         const evs = events.get(`${e.id}|${date}`) ?? [];
+        // «Keldim» eslatmasi — botga ulangan xodimga; bir kunda har biri bir marta (dedupeKey)
+        const due = e.tg ? checkInReminderDue({ events: evs, shift, now, onLeave: leaves.has(`${e.id}|${date}`), settings: settings.checkInReminder }) : null;
+        if (due && shift) {
+          const start = formatTime(shift.start, tz);
+          const text = due === 1
+            ? `⏰ Smenangiz <b>${start}</b> da boshlandi, lekin «Keldim» qayd etilmagan.\nIshda bo'lsangiz hozir «✅ Keldim»ni bosing. Kelolmasangiz — «📝 So'rov» yuboring.`
+            : `⏰ Eslatma: «Keldim» hali qayd etilmagan (smena ${start} da boshlangan).\nIshda bo'lsangiz hozir «✅ Keldim»ni bosing — aks holda kun «Kelmadi» bo'lib qoladi.`;
+          await enqueue(tx, tenantId, 'notify_employee', { employeeId: e.id, text, miniPath: '/tg/keldim', miniText: '✅ Keldim — Mini App' }, { maxAttempts: 2, dedupeKey: `ci-remind:${e.id}:${date}:${due}` });
+          reminded++;
+        }
         const r = computeDay({ events: evs, shift, now });
         if (!r.open) continue;
         const lastIn = [...evs].reverse().find((x) => x.kind === 'check_in' && x.checkStatus !== 'rejected');
@@ -78,7 +90,7 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
     const hhmm = `${String(p.h).padStart(2, '0')}:${String(p.min).padStart(2, '0')}`;
     if (settings.notifications.absent.on && hhmm >= settings.absentDigestAt) await enqueue(tx, tenantId, 'absent_digest', { date: today }, { dedupeKey: `absent:${tenantId}:${today}`, maxAttempts: 3 });
   });
-  return closed ? {} : { skip: 'yopiladigan kun yo‘q' };
+  return closed || reminded ? {} : { skip: 'yopiladigan kun yo‘q' };
 }
 
 export async function absentDigest(tenantId: string, date: string): Promise<JobOutcome> {

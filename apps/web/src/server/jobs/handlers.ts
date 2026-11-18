@@ -58,7 +58,7 @@ export const HANDLERS: Record<JobType, Handler> = {
     const text = str(job.payload.text);
     const employeeId = str(job.payload.employeeId);
     if (!text || !employeeId) throw new PermanentError('payload noto‘g‘ri');
-    const kb = miniAppKeyboard(str(job.payload.miniPath), '👔 Rahbar rejimini ochish');
+    const kb = miniAppKeyboard(str(job.payload.miniPath), str(job.payload.miniText) || '👔 Rahbar rejimini ochish');
     return tgSafe(() => (kb ? notifyEmployee(needTenant(job), employeeId, text, kb) : notifyEmployee(needTenant(job), employeeId, text)));
   },
   async attendance_tick(job) {
