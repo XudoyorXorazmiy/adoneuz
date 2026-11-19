@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkInReminderDue, computeDay, retimePlan, describeSchedule, isAltWeek, isWorkday, lateCheckout, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
+import { checkInReminderDue, computeDay, isFirstCheckIn, retimePlan, describeSchedule, isAltWeek, isWorkday, lateCheckout, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
 
 const TZ = 'Asia/Tashkent';
 const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', dayTimes: [], alt: null, breakMinutes: 60, graceMinutes: 10 };
@@ -213,4 +213,23 @@ test('«Keldim» eslatmasi: smena boshida, takror 15 daqiqadan keyin, kelganga y
   assert.equal(due('08:20', [], { settings: { ...st, repeat: false } }), 1); // takrorsiz — faqat birinchisi (oyna ichida)
   assert.equal(due('08:00', [], { settings: { ...st, afterMin: 10 } }), null);
   assert.equal(due('08:10', [], { settings: { ...st, afterMin: 10 } }), 1);
+});
+
+test('kechikish xabari: faqat kunning birinchi kirishida', () => {
+  const d = '2026-11-19';
+  // Bo'sh kun — birinchi kirish
+  assert.equal(isFirstCheckIn([]), true);
+  // Rad etilgan urinishlar (hududdan tashqari) kirish hisoblanmaydi
+  assert.equal(isFirstCheckIn([ev('check_in', at(d, '08:05'), { checkStatus: 'rejected' })]), true);
+  // Ertalab keldi, tushda ketdi — kechqurungi qaytish birinchi kirish EMAS (Dilshod: 08:11 → 12:13 → 18:09)
+  const morning = [ev('check_in', at(d, '08:11')), ev('check_out', at(d, '12:13'))];
+  assert.equal(isFirstCheckIn(morning), false);
+  assert.equal(isFirstCheckIn([...morning, ev('check_in', at(d, '18:08'), { checkStatus: 'rejected' })]), false);
+  // Shubhali kirish ham kirish
+  assert.equal(isFirstCheckIn([ev('check_in', at(d, '08:11'), { checkStatus: 'suspicious' })]), false);
+  // Rahbar bekor qilgan kirishdan keyingi kirish — yana birinchi
+  const first = ev('check_in', at(d, '08:11'));
+  assert.equal(isFirstCheckIn([first, ev('correction', at(d, '09:00'), { meta: { action: 'void', target: first.id, reason: 'xato' } })]), true);
+  // Rahbar qo'lda qo'shgan kirish (add_in) ham kirish
+  assert.equal(isFirstCheckIn([ev('correction', at(d, '09:00'), { meta: { action: 'add_in', at: at(d, '08:00').toISOString(), reason: 'unutgan' } })]), false);
 });

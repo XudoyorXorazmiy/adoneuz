@@ -6,7 +6,7 @@ import 'server-only';
  */
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { attendanceEvents, autoClosedWorkday, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, currentWorkday, dayEvents, employeeRule } from '@adone/db';
-import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, nextAction, normalizePhone, shiftFor, UUID_SRC, workdayFor } from '@adone/core';
+import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, isFirstCheckIn, nextAction, normalizePhone, shiftFor, UUID_SRC, workdayFor } from '@adone/core';
 import { appOrigin } from '@/lib/host';
 import { issueTelegramLogin } from '@/server/team';
 import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
@@ -457,7 +457,8 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
       mediaId, checkStatus: verdict.status, reasons: verdict.reasons, faceScore: verdict.score, livenessScore: verdict.liveness, source: 'bot', serverAt: at,
     });
     const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
-    if (r.lateMinutes > 0) {
+    // Faqat kunning birinchi kirishida (wd.events — shu kirishdan oldingi hodisalar)
+    if (r.lateMinutes > 0 && isFirstCheckIn(wd.events)) {
       await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId, 'late', '/tg');
     }
     if (verdict.status === 'suspicious') {

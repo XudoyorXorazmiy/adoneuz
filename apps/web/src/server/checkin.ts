@@ -6,7 +6,7 @@ import 'server-only';
  */
 import { eq } from 'drizzle-orm';
 import { attendanceEvents, autoClosedWorkday, branches, currentWorkday, employees, rebuildDay, tenants, type Tx } from '@adone/db';
-import { checkGeofence, effectiveEvents, facePercent, formatTime, lateCheckout, type FaceDecision, type LateCheckout } from '@adone/core';
+import { checkGeofence, effectiveEvents, facePercent, formatTime, isFirstCheckIn, lateCheckout, type FaceDecision, type LateCheckout } from '@adone/core';
 import { escHtml as esc } from '@/lib/task-text';
 import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { readSettings } from '@/server/settings';
@@ -106,7 +106,8 @@ export async function recordCheck(tx: Tx, input: {
   const checkStatus = reasons.length ? 'suspicious' : 'ok';
   await tx.insert(attendanceEvents).values({ ...base, kind: input.action, checkStatus, reasons, faceScore: input.face?.score ?? null, livenessScore: input.face?.liveness ?? null });
   const r = await rebuildDay(tx, { tenantId: input.tenantId, employeeId: e.id, workDate: wd.date, tz });
-  if (input.action === 'check_in' && r.lateMinutes > 0) {
+  // Faqat kunning birinchi kirishida: tushlikdan qaytganda ertalabki kechikish qayta xabar qilinmaydi
+  if (input.action === 'check_in' && r.lateMinutes > 0 && isFirstCheckIn(wd.events)) {
     await queueNotifyMembers(tx, input.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, tz)}, Mini App).`, e.departmentId, 'late', '/tg');
   }
   if (checkStatus === 'suspicious') {

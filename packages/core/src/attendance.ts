@@ -85,6 +85,14 @@ export function effectiveEvents(events: DayEvent[]): DayEvent[] {
   ].sort((a, b) => a.at.getTime() - b.at.getTime());
 }
 
+/**
+ * Kunning birinchi kirishimi (shu kirishdan OLDINGI hodisalar bo'yicha). Kechikish xabari faqat shunda ketadi:
+ * tushlikdan yoki bo'lingan smenaning ikkinchi qismiga qaytgan xodim uchun ertalabki «kechikdi» qayta yuborilmaydi.
+ */
+export function isFirstCheckIn(eventsBefore: DayEvent[]): boolean {
+  return !effectiveEvents(eventsBefore).some((e) => e.kind === 'check_in');
+}
+
 export function computeDay(input: { events: DayEvent[]; shift: Shift | null; now: Date; onLeave?: boolean; holiday?: boolean }): DayResult {
   const evs = effectiveEvents(input.events);
   const suspicious = evs.some((e) => e.checkStatus === 'suspicious');
