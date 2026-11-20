@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import { Fraunces } from 'next/font/google';
 import localFont from 'next/font/local';
 
-const fraunces = Fraunces({ variable: '--font-fraunces', subsets: ['latin', 'latin-ext'], axes: ['opsz'], display: 'swap' });
+// Fraunces ham lokal (2026-11-20, sabab pastdagidek): Google'ning latin to'plami, variable (wght 100–900 + opsz 9–144).
+// Landing matnida latin-ext belgilari yo'q (tekshirilgan) — bitta fayl yetadi.
+const fraunces = localFont({ variable: '--font-fraunces', src: './fonts/fraunces-latin.woff2', weight: '100 900', display: 'swap' });
 // Inter Tight — lokal: Google ba'zan `/l/font?kit=…&skey=…` havolasini beradi, Turbopack uni o'qiy olmay build yiqiladi.
 // Google'ning latin to'plami (variable, 400–600) — o'zbek lotini (ʻ U+02BB, ’ U+2019) shu ichida.
 const interTight = localFont({ variable: '--font-inter-tight', src: './fonts/inter-tight-latin.woff2', weight: '400 600', display: 'swap' });

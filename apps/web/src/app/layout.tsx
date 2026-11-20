@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
 
-const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] });
+// Plus Jakarta Sans — lokal (2026-11-20): Google Fonts javobi tasodifiy buzilib (`/l/font?kit=…`) build yiqilardi (2026-11-19 deploy).
+// Google'ning latin to'plami (variable, 200–800) — o'zbek lotini (ʻ U+02BB, ’ U+2019) shu ichida; kirill tizim shriftida.
+const jakarta = localFont({ variable: '--font-jakarta', src: './fonts/plus-jakarta-sans-latin.woff2', weight: '200 800', display: 'swap' });
 // Ikonkalar (Material Symbols Rounded): faqat ishlatilganlari, o'z serverimizdan — scripts/icons.mjs (dev/build oldidan)
 const icons = localFont({ src: './fonts/material-symbols.woff2', variable: '--font-icons', weight: '300 600', display: 'block', preload: false, adjustFontFallback: false, fallback: [] });
 
