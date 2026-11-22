@@ -4,7 +4,7 @@ import { departments, employees, jobs, memberships, tgLinks, withPlatform, withT
 import { notifyTargets, type NotifyEvent, type NotifyRole } from '@adone/core';
 import { readSettings } from '@/server/settings';
 import { publicApiOrigin } from '@/lib/host';
-import { isTransient, send, TelegramError, type Keyboard } from '@/server/telegram/api';
+import { esc, isTransient, send, TelegramError, type Keyboard } from '@/server/telegram/api';
 import { menuKeyboard } from '@/server/bot/texts';
 import { employeeChat } from '@/server/bot/links';
 import { enqueue } from '@/server/jobs/enqueue';
@@ -16,7 +16,7 @@ import type { JobOutcome } from '@/server/jobs/types';
  * Navbat orqali (tranzaksiya ichidan enqueue, yuborish — ishchida).
  */
 export async function queueNotifyMembers(tx: Tx, tenantId: string, text: string, departmentId?: string | null, event?: NotifyEvent, miniPath?: string) {
-  await enqueue(tx, tenantId, 'notify_members', { text, departmentId: departmentId ?? null, event: event ?? null, miniPath: miniPath ?? null }, { maxAttempts: 3 });
+  await enqueue(tx, tenantId, 'notify_members', { text, departmentId: departmentId ?? null, event: event ?? null, miniPath: miniPath ?? null }, { maxAttempts: 5 });
 }
 
 /** Rahbar Mini App'iga tugma qatori — Telegram faqat https qabul qiladi (dev'da bo'sh). */
@@ -32,7 +32,7 @@ export function miniAppKeyboard(path: string | null | undefined, text?: string):
 }
 
 export async function queueNotifyEmployee(tx: Tx, tenantId: string, employeeId: string, text: string) {
-  await enqueue(tx, tenantId, 'notify_employee', { employeeId, text }, { maxAttempts: 3 });
+  await enqueue(tx, tenantId, 'notify_employee', { employeeId, text }, { maxAttempts: 5 });
 }
 
 export async function notifyMembers(tenantId: string, text: string, departmentId: string | null, event?: NotifyEvent | null, keyboard?: Keyboard): Promise<JobOutcome> {
@@ -113,6 +113,22 @@ export async function userChatsFor(tenantId: string, userIds: string[]): Promise
     if (userId && !out.some((o) => o.chatId === c.chatId)) out.push({ chatId: c.chatId, userId });
   }
   return out;
+}
+
+/**
+ * Xodimga bot xabari yetmayapti (Telegram 403: botni bloklagan yoki akkaunti o'chirilgan). Oldin bu jim o'tardi — rahbar ham,
+ * egasi ham bilmasdi (2026-11-19..21: bitta xodimga 6 ta xabar yo'qolgan). Rahbarlarga bir marta aytiladi: dedupeKey ish
+ * jadvalda turguncha (tozalash — 14 kun) takrorlanmaydi.
+ */
+export async function reportUnreachableEmployee(tenantId: string, employeeId: string): Promise<void> {
+  await withTenant(tenantId, async (tx) => {
+    const [e] = await tx.select({ fullName: employees.fullName, departmentId: employees.departmentId }).from(employees).where(eq(employees.id, employeeId)).limit(1);
+    if (!e) return;
+    await enqueue(tx, tenantId, 'notify_members', {
+      text: `📵 <b>${esc(e.fullName)}</b>ga bot xabarlari yetmayapti: u botni bloklagan yoki Telegram akkaunti o'chirilgan. Eslatma va bildirishnomalar unga bormaydi — xodim botda qaytadan /start bosishi kerak.`,
+      departmentId: e.departmentId, event: null, miniPath: null,
+    }, { maxAttempts: 5, dedupeKey: `tg-unreachable:${employeeId}` });
+  });
 }
 
 export async function notifyEmployee(tenantId: string, employeeId: string, text: string, keyboard: Keyboard = menuKeyboard): Promise<JobOutcome> {

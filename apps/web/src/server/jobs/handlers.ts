@@ -11,7 +11,7 @@ import { withUpdateContext } from '@/server/bot/context';
 import { alertOwner } from '@/server/alerts';
 import { cleanup } from '@/server/cleanup';
 import { dailyReport } from '@/server/ops';
-import { miniAppKeyboard, notifyEmployee, notifyMembers } from '@/server/notify';
+import { miniAppKeyboard, notifyEmployee, notifyMembers, reportUnreachableEmployee } from '@/server/notify';
 import { deadlineNotify } from '@/server/deadline';
 import { absentDigest, attendanceTick } from '@/server/ticks';
 import { taskNotify, type TaskNotifyKind } from '@/server/task-notify';
@@ -59,7 +59,13 @@ export const HANDLERS: Record<JobType, Handler> = {
     const employeeId = str(job.payload.employeeId);
     if (!text || !employeeId) throw new PermanentError('payload noto‘g‘ri');
     const kb = miniAppKeyboard(str(job.payload.miniPath), str(job.payload.miniText) || '👔 Rahbar rejimini ochish');
-    return tgSafe(() => (kb ? notifyEmployee(needTenant(job), employeeId, text, kb) : notifyEmployee(needTenant(job), employeeId, text)));
+    try {
+      return await tgSafe(() => (kb ? notifyEmployee(needTenant(job), employeeId, text, kb) : notifyEmployee(needTenant(job), employeeId, text)));
+    } catch (e) {
+      // 403 — xodim botni bloklagan yoki akkaunti o'chirilgan: qayta urinish foydasiz, lekin rahbar bilishi kerak
+      if (e instanceof PermanentError && /: 403 /.test(e.message)) await reportUnreachableEmployee(needTenant(job), employeeId).catch((er: unknown) => console.error('[notify] reportUnreachable', (er as Error).message));
+      throw e;
+    }
   },
   async attendance_tick(job) {
     return attendanceTick(needTenant(job));

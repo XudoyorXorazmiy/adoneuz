@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkInReminderDue, computeDay, isFirstCheckIn, retimePlan, describeSchedule, isAltWeek, isWorkday, lateCheckout, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
+import { autoCloseDue, checkInReminderDue, computeDay, isFirstCheckIn, retimePlan, describeSchedule, isAltWeek, isWorkday, lateCheckout, timesFor, localDate, monthDays, nextAction, normalizeTime, openWorkday, shiftFor, workdayFor, zonedTime, type DayEvent, type ScheduleRule } from '../src/index';
 
 const TZ = 'Asia/Tashkent';
 const base: ScheduleRule = { kind: 'weekly', weekdays: [1, 2, 3, 4, 5, 6], cycleOn: 0, cycleOff: 0, cycleStart: null, startTime: '09:00', endTime: '21:00', dayTimes: [], alt: null, breakMinutes: 60, graceMinutes: 10 };
@@ -232,4 +232,28 @@ test('kechikish xabari: faqat kunning birinchi kirishida', () => {
   assert.equal(isFirstCheckIn([first, ev('correction', at(d, '09:00'), { meta: { action: 'void', target: first.id, reason: 'xato' } })]), true);
   // Rahbar qo'lda qo'shgan kirish (add_in) ham kirish
   assert.equal(isFirstCheckIn([ev('correction', at(d, '09:00'), { meta: { action: 'add_in', at: at(d, '08:00').toISOString(), reason: 'unutgan' } })]), false);
+});
+
+test('avto-yopish vaqti: tick va «Keldim» oldidan bitta qoida', () => {
+  const d = '2026-11-21';
+  const shift = shiftFor({ ...base, startTime: '08:00', endTime: '20:00' }, d, TZ)!;
+  const st = { autoCloseHours: 0, freeAutoCloseHours: 16 };
+  const open = [ev('check_in', at(d, '09:40'))];
+  // Smena tugamagan — yopilmaydi
+  assert.equal(autoCloseDue({ events: open, shift, now: at(d, '19:59'), settings: st }), null);
+  // Smena tugadi (autoCloseHours 0) — smena oxiri vaqti bilan yopiladi
+  assert.equal(autoCloseDue({ events: open, shift, now: at(d, '20:00'), settings: st })!.at.toISOString(), shift.end.toISOString());
+  // Ertasi kuni ertalab ham (tick ishlamagan: Atamurod K. 21.11 → 22.11 08:46) — baribir smena oxiri bilan
+  assert.equal(autoCloseDue({ events: open, shift, now: at('2026-11-22', '08:46'), settings: st })!.at.toISOString(), shift.end.toISOString());
+  // autoCloseHours 3 — 23:00 gacha kutadi
+  assert.equal(autoCloseDue({ events: open, shift, now: at(d, '22:59'), settings: { ...st, autoCloseHours: 3 } }), null);
+  assert.ok(autoCloseDue({ events: open, shift, now: at(d, '23:00'), settings: { ...st, autoCloseHours: 3 } }));
+  // Allaqachon yopilgan yoki umuman kirilmagan kun — null
+  assert.equal(autoCloseDue({ events: [...open, ev('check_out', at(d, '18:00'))], shift, now: at(d, '21:00'), settings: st }), null);
+  assert.equal(autoCloseDue({ events: [], shift, now: at(d, '21:00'), settings: st }), null);
+  // Smenasiz kun: oxirgi kirish + 16 soat, yopilish vaqti ham shu
+  assert.equal(autoCloseDue({ events: open, shift: null, now: at('2026-11-22', '01:39'), settings: st }), null);
+  assert.equal(autoCloseDue({ events: open, shift: null, now: at('2026-11-22', '01:40'), settings: st })!.at.toISOString(), at('2026-11-22', '01:40').toISOString());
+  // Rad etilgan kirish kunni ochmaydi
+  assert.equal(autoCloseDue({ events: [ev('check_in', at(d, '09:40'), { checkStatus: 'rejected' })], shift, now: at(d, '21:00'), settings: st }), null);
 });

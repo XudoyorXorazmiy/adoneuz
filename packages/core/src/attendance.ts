@@ -93,6 +93,19 @@ export function isFirstCheckIn(eventsBefore: DayEvent[]): boolean {
   return !effectiveEvents(eventsBefore).some((e) => e.kind === 'check_in');
 }
 
+/**
+ * Ochiq kun avtomatik yopilishi kerakmi (tick va «Keldim» oldidan — bitta qoida): smenali kun — smena oxiri + autoCloseHours;
+ * smenasiz — oxirgi kirish + freeAutoCloseHours. Yopilishi kerak bo'lsa `at` — jurnalga yoziladigan vaqt (smena oxiri).
+ */
+export function autoCloseDue(input: { events: DayEvent[]; shift: Shift | null; now: Date; settings: { autoCloseHours: number; freeAutoCloseHours: number } }): { at: Date } | null {
+  const { events, shift, now, settings } = input;
+  if (!computeDay({ events, shift, now }).open) return null;
+  const lastIn = [...events].reverse().find((x) => x.kind === 'check_in' && x.checkStatus !== 'rejected');
+  const closeAt = shift ? new Date(shift.end.getTime() + settings.autoCloseHours * 3600_000) : lastIn ? new Date(lastIn.at.getTime() + settings.freeAutoCloseHours * 3600_000) : null;
+  if (!closeAt || now < closeAt) return null;
+  return { at: shift ? shift.end : closeAt };
+}
+
 export function computeDay(input: { events: DayEvent[]; shift: Shift | null; now: Date; onLeave?: boolean; holiday?: boolean }): DayResult {
   const evs = effectiveEvents(input.events);
   const suspicious = evs.some((e) => e.checkStatus === 'suspicious');

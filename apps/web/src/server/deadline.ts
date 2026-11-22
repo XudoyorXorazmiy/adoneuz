@@ -39,7 +39,7 @@ export async function createDeadlineRequest(
     tenantId: input.tenantId, taskId: input.taskId, actorEmployeeId: input.employeeId, fromStatus: r.t.status, toStatus: r.t.status,
     comment: `⏰ Muddatni uzaytirish so'raldi: ${formatDateTime(input.requestedDueAt, tz)}${reason ? ` — ${reason}` : ''}`,
   });
-  await enqueue(tx, input.tenantId, 'deadline_notify', { id: ins!.id, kind: 'created' }, { maxAttempts: 3 });
+  await enqueue(tx, input.tenantId, 'deadline_notify', { id: ins!.id, kind: 'created' }, { maxAttempts: 5 });
   return { id: ins!.id };
 }
 
@@ -76,7 +76,7 @@ export async function decideDeadlineRequest(
     tenantId: input.tenantId, userId: input.actor.userId, action: `deadline.${input.to}`, entity: 'deadline_request', entityId: input.id,
     meta: { taskId: r.t.id, from: r.t.dueAt?.toISOString() ?? null, to: r.d.requestedDueAt.toISOString() },
   });
-  await enqueue(tx, input.tenantId, 'deadline_notify', { id: input.id, kind: input.to }, { maxAttempts: 3 });
+  await enqueue(tx, input.tenantId, 'deadline_notify', { id: input.id, kind: input.to }, { maxAttempts: 5 });
   return { ok: true };
 }
 

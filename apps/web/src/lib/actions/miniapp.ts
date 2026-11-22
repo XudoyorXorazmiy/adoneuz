@@ -78,10 +78,18 @@ export async function tgCheckAction(f: FormData): Promise<CheckResult> {
     const r = fc.templates.length ? await verifyFace(frames.map((x, i) => ({ data: x.data, mime: x.mime, name: `f${i}.${x.ext}` })), fc.templates) : null;
     face = faceDecision(r, { templates: fc.templates.length, challenge: frames.length > 1, settings: fc.settings });
   }
-  const stored = frames[0] ? await writeMediaFile({ tenantId: u.tenantId, employeeId: u.employeeId, kind: 'checkin_photo', ...frames[0] }) : null;
+  // Fayl saqlanmasa (disk to'la, volume uzilgan) kelish yo'qolmasin: selfi'siz, «shubhali» belgisi bilan yoziladi
+  let mediaLost = false;
+  const stored = frames[0]
+    ? await writeMediaFile({ tenantId: u.tenantId, employeeId: u.employeeId, kind: 'checkin_photo', ...frames[0] }).catch((e: unknown) => {
+      console.error('[media] selfi saqlanmadi', (e as Error).message);
+      mediaLost = true;
+      return null;
+    })
+    : null;
   const res = await withTenant(u.tenantId, async (tx) => {
     const mediaId = stored ? await insertMedia(tx, stored) : null;
-    return recordCheck(tx, { tenantId: u.tenantId, employeeId: u.employeeId, action, ...c, mediaId, source: 'miniapp', face, device, overtime });
+    return recordCheck(tx, { tenantId: u.tenantId, employeeId: u.employeeId, action, ...c, mediaId, source: 'miniapp', face, device, overtime, mediaLost });
   });
   revalidatePath('/tg');
   kick();

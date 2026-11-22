@@ -12,7 +12,7 @@ type Geo = { status: 'ok' | 'outside' | 'low_accuracy'; distanceM: number; branc
 const PROMPTS = ['Yuzingizni ramkaga joylang', 'Boshingizni chapga burang', "Endi o'ngga burang", 'Tayyor — yuboring'];
 const SUS_TEXT: Record<string, string> = {
   face_mismatch: 'Yuz namunaga mos kelmadi', no_face: 'Yuz aniqlanmadi', many_faces: 'Kadrda boshqa odam bor', liveness_low: "Bosh burilmadi",
-  face_unavailable: 'Yuz tekshiruvi vaqtincha ishlamadi', no_face_template: "Yuz namunasi yo'q", other_device: 'Boshqa telefondan',
+  face_unavailable: 'Yuz tekshiruvi vaqtincha ishlamadi', media_unavailable: 'Selfi serverda saqlanmadi', no_face_template: "Yuz namunasi yo'q", other_device: 'Boshqa telefondan',
 };
 
 /**

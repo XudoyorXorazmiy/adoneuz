@@ -36,6 +36,8 @@ export const T = {
   disabled: 'Hisobingiz faol emas. Rahbaringizga murojaat qiling.',
   noBranch: "Sizga filial biriktirilmagan. Rahbaringizga murojaat qiling.",
   alreadyIn: `Siz allaqachon ishdasiz. Ketayotganda «${BTN.checkOut}» tugmasini bosing.`,
+  alreadyInSince: (time: string) => `Siz ${time} dan beri ishdasiz. Ketayotganda «${BTN.checkOut}» tugmasini bosing.`,
+  alreadyInOlder: (date: string, time: string) => `${date} kuni ${time} da boshlangan ish kuningiz hali yopilmagan. Avval «${BTN.checkOut}» tugmasini bosing, keyin «${BTN.checkIn}».`,
   notIn: `Siz hali «Keldim» qilmagansiz.`,
   locAsk: (action: 'check_in' | 'check_out') =>
     `${action === 'check_in' ? '✅ Keldim' : '🏁 Ketdim'} — <b>jonli joylashuvni</b> yuboring:\n\n📎 (skrepka) → <b>Joylashuv</b> → <b>«Jonli joylashuvni ulashish»</b> → 15 daqiqa.\n\n<i>Xaritadan tanlangan oddiy nuqta qabul qilinmaydi.</i>`,

@@ -9,7 +9,7 @@ import 'server-only';
  */
 import { and, eq, inArray } from 'drizzle-orm';
 import { attendanceEvents, employees, eventsFor, leavesFor, rebuildDays, rulesFor, tenants, withPlatform, withTenant } from '@adone/db';
-import { addDays, checkInReminderDue, computeDay, formatTime, localDate, shiftFor, tenantSettings, zonedParts } from '@adone/core';
+import { addDays, autoCloseDue, checkInReminderDue, computeDay, formatTime, localDate, shiftFor, tenantSettings, zonedParts } from '@adone/core';
 import { esc } from '@/server/telegram/api';
 import { enqueue } from '@/server/jobs/enqueue';
 import { miniAppKeyboard, notifyMembers, queueNotifyEmployee, queueNotifyMembers } from '@/server/notify';
@@ -63,12 +63,9 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
           await enqueue(tx, tenantId, 'notify_employee', { employeeId: e.id, text, miniPath: '/tg/keldim', miniText: '✅ Keldim — Mini App' }, { maxAttempts: 2, dedupeKey: `ci-remind:${e.id}:${date}:${due}` });
           reminded++;
         }
-        const r = computeDay({ events: evs, shift, now });
-        if (!r.open) continue;
-        const lastIn = [...evs].reverse().find((x) => x.kind === 'check_in' && x.checkStatus !== 'rejected');
-        const closeAt = shift ? new Date(shift.end.getTime() + settings.autoCloseHours * 3600_000) : lastIn ? new Date(lastIn.at.getTime() + settings.freeAutoCloseHours * 3600_000) : null;
-        if (!closeAt || now < closeAt) continue;
-        const at = shift ? shift.end : closeAt;
+        const close = autoCloseDue({ events: evs, shift, now, settings });
+        if (!close) continue;
+        const at = close.at;
         const [ev] = await tx.insert(attendanceEvents).values({ tenantId, employeeId: e.id, workDate: date, kind: 'auto_close', serverAt: at, source: 'admin', checkStatus: 'ok', reasons: ['forgot_checkout'] })
           .returning({ id: attendanceEvents.id });
         // Yig'ma xotiradagi ro'yxatdan quriladi — yangi hodisa ham unda bo'lsin

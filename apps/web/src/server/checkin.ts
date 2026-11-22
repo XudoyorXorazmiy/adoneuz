@@ -6,7 +6,7 @@ import 'server-only';
  */
 import { eq } from 'drizzle-orm';
 import { attendanceEvents, autoClosedWorkday, branches, currentWorkday, employees, rebuildDay, tenants, type Tx } from '@adone/db';
-import { checkGeofence, effectiveEvents, facePercent, formatTime, isFirstCheckIn, lateCheckout, type FaceDecision, type LateCheckout } from '@adone/core';
+import { autoCloseDue, checkGeofence, effectiveEvents, facePercent, formatTime, isFirstCheckIn, lateCheckout, type DayEvent, type FaceDecision, type LateCheckout, type Shift } from '@adone/core';
 import { escHtml as esc } from '@/lib/task-text';
 import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { readSettings } from '@/server/settings';
@@ -29,6 +29,20 @@ export async function previewGeofence(tx: Tx, employeeId: string, p: { lat: numb
   return { ...g, branchName: b.name, radiusM: b.radiusM, branch: { lat: b.lat, lng: b.lng } };
 }
 
+/**
+ * «Keldim» oldidan: oldingi kun ochiq qolgan va avto-yopish vaqti o'tgan bo'lsa — shu yerda yopiladi (tick bilan bir xil qoida,
+ * core autoCloseDue). Tick ishlamay qolsa ham (2026-11-21: domen o'chib cron 18 soat to'xtadi) xodim «allaqachon ishdasiz»
+ * javobida qotib qolmaydi. Yopilsa true.
+ */
+export async function closeOverdueWorkday(tx: Tx, input: { tenantId: string; employeeId: string; workday: { date: string; shift: Shift | null; events: DayEvent[]; open: boolean }; now: Date; tz: string }): Promise<boolean> {
+  if (!input.workday.open) return false;
+  const due = autoCloseDue({ events: input.workday.events, shift: input.workday.shift, now: input.now, settings: await readSettings(tx) });
+  if (!due) return false;
+  await tx.insert(attendanceEvents).values({ tenantId: input.tenantId, employeeId: input.employeeId, workDate: input.workday.date, kind: 'auto_close', serverAt: due.at, source: 'admin', checkStatus: 'ok', reasons: ['forgot_checkout'] });
+  await rebuildDay(tx, { tenantId: input.tenantId, employeeId: input.employeeId, workDate: input.workday.date, tz: input.tz });
+  return true;
+}
+
 export async function recordCheck(tx: Tx, input: {
   tenantId: string; employeeId: string; action: CheckAction; lat: number; lng: number; accuracyM: number | null; mediaId: string | null; source: 'miniapp' | 'bot';
   /** Yuz qarori (faceDecision) — faqat Keldim'da; tranzaksiyadan oldin hisoblangan. */
@@ -37,6 +51,8 @@ export async function recordCheck(tx: Tx, input: {
   device?: { id: string; label: string } | null;
   /** Bot: jonli lokatsiya (null — Mini App) */
   live?: boolean | null;
+  /** Selfi olingan, lekin serverda saqlanmadi (disk to'la) — kelish baribir yoziladi, «shubhali» (media_unavailable) */
+  mediaLost?: boolean;
   /** Kechikkan «Ketdim» javobi (core lateCheckout): 'yes' — qo'shimcha ishladim, 'no' — qo'shimcha ish bo'lmadi */
   overtime?: 'yes' | 'no';
 }): Promise<CheckResult> {
@@ -51,7 +67,8 @@ export async function recordCheck(tx: Tx, input: {
   if (!b) return { ok: false, reason: 'no_branch', message: 'Filial topilmadi.' };
   // Yarim tundan keyin «Ketdim» — kechagi ochiq kunga (currentWorkday)
   const now = new Date();
-  const cur = await currentWorkday(tx, e.id, now, tz);
+  let cur = await currentWorkday(tx, e.id, now, tz);
+  if (input.action === 'check_in' && cur.open && (await closeOverdueWorkday(tx, { tenantId: input.tenantId, employeeId: e.id, workday: cur, now, tz }))) cur = await currentWorkday(tx, e.id, now, tz);
   let wd: { date: string; shift: typeof cur.shift; events: typeof cur.events; open: boolean } = cur;
   let late: LateCheckout = wd.open ? lateCheckout(wd.events, wd.shift, now) : { kind: 'none' };
   // Avto-yopilgan kun, xodim kechroq ketmoqda — «Ketdim» qo'shimcha vaqt savoli bilan (core lateCheckout)
@@ -61,7 +78,7 @@ export async function recordCheck(tx: Tx, input: {
   }
   const next = wd.open || late.kind === 'auto_closed' ? 'check_out' : 'check_in';
   if (input.action !== next) return { ok: false, reason: 'state', message: input.action === 'check_in' ? 'Siz allaqachon ishdasiz.' : 'Siz hali «Keldim» qilmagansiz.' };
-  if (input.action === 'check_in' && !input.mediaId) return { ok: false, reason: 'no_photo', message: 'Selfi kerak.' };
+  if (input.action === 'check_in' && !input.mediaId && !input.mediaLost) return { ok: false, reason: 'no_photo', message: 'Selfi kerak.' };
   const g = checkGeofence({ branch: { lat: b.lat, lng: b.lng, radiusM: b.radiusM }, point: { lat: input.lat, lng: input.lng }, accuracyM: input.accuracyM });
   const base = {
     tenantId: input.tenantId, employeeId: e.id, workDate: wd.date, branchId: b.id, lat: input.lat, lng: input.lng,
@@ -97,7 +114,7 @@ export async function recordCheck(tx: Tx, input: {
       status: 'ok', reasons: [], facePercent: null,
     };
   }
-  const reasons = [...(input.face?.reasons ?? [])];
+  const reasons = [...(input.face?.reasons ?? []), ...(input.mediaLost ? ['media_unavailable'] : [])];
   // Qurilma bog'lash (Sozlamalar → Davomat): o'chiq bo'lsa boshqa telefon shubhali emas
   if (input.device && (await readSettings(tx)).deviceBinding) {
     if (!e.deviceId) await tx.update(employees).set({ deviceId: input.device.id, deviceLabel: input.device.label, deviceBoundAt: new Date() }).where(eq(employees.id, e.id));

@@ -6,16 +6,16 @@ import 'server-only';
  */
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { attendanceEvents, autoClosedWorkday, branches, consents, employees, invites, onLeave, rebuildDay, tenants, users, withPlatform, withTenant, currentWorkday, dayEvents, employeeRule } from '@adone/db';
-import { checkGeofence, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, isFirstCheckIn, nextAction, normalizePhone, shiftFor, UUID_SRC, workdayFor } from '@adone/core';
+import { checkGeofence, effectiveEvents, faceDecision, computeDay, formatDistance, formatMinutes, formatPhone, formatTime, isFirstCheckIn, localDate, nextAction, normalizePhone, shiftFor, UUID_SRC, workdayFor } from '@adone/core';
 import { appOrigin } from '@/lib/host';
 import { issueTelegramLogin } from '@/server/team';
-import { answerCallback, downloadFile, esc, send } from '@/server/telegram/api';
+import { answerCallback, downloadFile, esc, send, type Keyboard } from '@/server/telegram/api';
 import type { TgCallback, TgMessage, TgUpdate } from '@/server/telegram/types';
 import { insertMedia, writeMediaFile } from '@/server/media';
-import { queueNotifyMembers, queueSuspicious } from '@/server/notify';
+import { queueNotifyEmployee, queueNotifyMembers, queueSuspicious } from '@/server/notify';
 import { enqueue, kick } from '@/server/jobs/enqueue';
 import { faceContext, verifyFace } from '@/server/face';
-import { recordCheck } from '@/server/checkin';
+import { closeOverdueWorkday, recordCheck } from '@/server/checkin';
 import type { JobOutcome } from '@/server/jobs/types';
 import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from './session';
 import { arrivedAt, firstAttempt } from './context';
@@ -27,6 +27,20 @@ import { BTN, CONSENT_VERSION, consentKeyboard, contactKeyboard, menuKeyboard, r
 
 /** Jonli joylashuv xabari shundan eski bo'lsa — eskirgan (forward/qayta yuborish). */
 const LOCATION_MAX_AGE_SEC = 120;
+
+/**
+ * Amal bazaga YOZILGANDAN keyingi javob. Telegram xato bersa ish qayta urinilmaydi: sessiya holati allaqachon tozalangan,
+ * qayta urinish xodimga teskari javob berardi («Avval Keldim bosing», vaholanki kelish yozilgan). Xabar navbatga qo'yiladi
+ * (notify_employee — o'z qayta urinishlari bilan).
+ */
+async function replyAfterCommit(chat: number, text: string, keyboard: Keyboard | undefined, who: { tenantId: string; employeeId: string }): Promise<void> {
+  try {
+    await send(chat, text, keyboard);
+  } catch (e) {
+    console.warn('[bot] javob ketmadi — navbatga qo‘yildi:', (e as Error).message.slice(0, 120));
+    await withTenant(who.tenantId, (tx) => queueNotifyEmployee(tx, who.tenantId, who.employeeId, text)).catch((er: unknown) => console.error('[bot] javobni navbatga qo‘yib bo‘lmadi', (er as Error).message));
+  }
+}
 
 export async function processUpdate(u: TgUpdate): Promise<JobOutcome> {
   if (u.callback_query) return onCallback(u.callback_query);
@@ -193,7 +207,7 @@ async function onOvertimeChoice(cb: TgCallback, choice: 'yes' | 'no'): Promise<J
     await send(chat, r.reason === 'state' ? 'Siz allaqachon «Ketdim» qilgansiz.' : esc(r.message), menuKeyboard);
     return { skip: r.reason };
   }
-  await send(chat, choice === 'yes' ? T.checkedOutOvertime(r.time, formatMinutes(r.workedMinutes), r.overtimeMinutes) : T.checkedOut(r.time, formatMinutes(r.workedMinutes)), menuKeyboard);
+  await replyAfterCommit(chat, choice === 'yes' ? T.checkedOutOvertime(r.time, formatMinutes(r.workedMinutes), r.overtimeMinutes) : T.checkedOut(r.time, formatMinutes(r.workedMinutes)), menuKeyboard, { tenantId: state.tenantId, employeeId: state.employeeId });
   return {};
 }
 
@@ -243,7 +257,7 @@ async function finishRegistration(msg: TgMessage, state: Extract<BotState, { ste
   await linkTelegram({ tgUserId: uid, chatId: chat, tenantId: state.tenantId, kind: 'employee', refId: state.employeeId });
   await clearState(uid);
   kick();
-  await send(chat, res.active ? T.approved(esc(res.company)) : T.registered(esc(res.company)), res.active ? menuKeyboard : removeKeyboard);
+  await replyAfterCommit(chat, res.active ? T.approved(esc(res.company)) : T.registered(esc(res.company)), res.active ? menuKeyboard : removeKeyboard, { tenantId: state.tenantId, employeeId: state.employeeId });
   return {};
 }
 
@@ -334,8 +348,16 @@ async function beginAction(uid: number, chat: number, link: EmployeeLink, action
     if (e.status !== 'active') return T.notActive;
     if (!e.branchId) return T.noBranch;
     // Kecha «Keldim» bosib yarim tundan keyin ketayotgan bo'lsa ham ruxsat — ish kuni kechagi (currentWorkday)
-    const wd = await currentWorkday(tx, e.id, new Date(), t!.tz);
-    if (action === 'check_in' && wd.open) return T.alreadyIn;
+    const now = new Date();
+    let wd = await currentWorkday(tx, e.id, now, t!.tz);
+    // Oldingi kun ochiq qolgan va avto-yopish vaqti o'tgan (tick ishlamagan) — shu yerda yopiladi, «Keldim» davom etadi
+    if (action === 'check_in' && wd.open && (await closeOverdueWorkday(tx, { tenantId: link.tenantId, employeeId: e.id, workday: wd, now, tz: t!.tz }))) wd = await currentWorkday(tx, e.id, now, t!.tz);
+    if (action === 'check_in' && wd.open) {
+      const lastIn = [...effectiveEvents(wd.events)].reverse().find((x) => x.kind === 'check_in');
+      if (!lastIn) return T.alreadyIn;
+      const time = formatTime(lastIn.at, t!.tz);
+      return wd.date === localDate(now, t!.tz) ? T.alreadyInSince(time) : T.alreadyInOlder(wd.date.split('-').reverse().join('.'), time);
+    }
     // Avto-yopilgan kun — kechroq «Ketdim» ruxsat (qo'shimcha vaqt so'raladi)
     if (action === 'check_out' && !wd.open && !(await autoClosedWorkday(tx, e.id, new Date(), t!.tz))) return T.notIn;
     return null;
@@ -414,7 +436,7 @@ async function onLocation(msg: TgMessage): Promise<JobOutcome> {
   }
   if (out.kind === 'out') {
     await clearState(uid);
-    await send(chat, T.checkedOut(out.time, out.worked), menuKeyboard);
+    await replyAfterCommit(chat, T.checkedOut(out.time, out.worked), menuKeyboard, { tenantId: state.tenantId, employeeId: state.employeeId });
     return {};
   }
   if (out.kind === 'ask') {
@@ -442,7 +464,11 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     fc.templates.length ? await verifyFace([{ data: file.data, mime: 'video/mp4', name: 'checkin.mp4' }], fc.templates) : null,
     { templates: fc.templates.length, challenge: false, settings: fc.settings },
   );
-  const stored = await writeMediaFile({ tenantId: state.tenantId, employeeId: state.employeeId, kind: 'checkin_video', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration });
+  // Fayl saqlanmasa (disk to'la, volume uzilgan) kelish yo'qolmasin: videosiz, «shubhali» (media_unavailable) bo'lib yoziladi
+  const stored = await writeMediaFile({ tenantId: state.tenantId, employeeId: state.employeeId, kind: 'checkin_video', data: file.data, mime: 'video/mp4', ext: 'mp4', durationSec: msg.video_note!.duration })
+    .catch((e: unknown) => { console.error('[media] kelish videosi saqlanmadi', (e as Error).message); return null; });
+  const checkStatus = stored ? verdict.status : 'suspicious';
+  const reasons = stored ? verdict.reasons : [...verdict.reasons, 'media_unavailable'];
   const res = await withTenant(state.tenantId, async (tx) => {
     const [t] = await tx.select({ tz: tenants.timezone }).from(tenants).limit(1);
     const [e] = await tx.select().from(employees).where(eq(employees.id, state.employeeId)).for('update').limit(1); // Mini App bilan bir vaqtda — ketma-ket
@@ -450,21 +476,21 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     const at = new Date(arrivedAt());
     const wd = await currentWorkday(tx, e.id, at, t!.tz);
     if (wd.open) return { already: true as const };
-    const mediaId = await insertMedia(tx, stored);
+    const mediaId = stored ? await insertMedia(tx, stored) : null;
     await tx.insert(attendanceEvents).values({
       tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, kind: 'check_in', branchId: state.loc.branchId,
       lat: state.loc.lat, lng: state.loc.lng, accuracyM: state.loc.accuracyM, distanceM: state.loc.distanceM, isLiveLocation: state.loc.live,
-      mediaId, checkStatus: verdict.status, reasons: verdict.reasons, faceScore: verdict.score, livenessScore: verdict.liveness, source: 'bot', serverAt: at,
+      mediaId, checkStatus, reasons, faceScore: verdict.score, livenessScore: verdict.liveness, source: 'bot', serverAt: at,
     });
     const r = await rebuildDay(tx, { tenantId: state.tenantId, employeeId: e.id, workDate: wd.date, tz: t!.tz });
     // Faqat kunning birinchi kirishida (wd.events — shu kirishdan oldingi hodisalar)
     if (r.lateMinutes > 0 && isFirstCheckIn(wd.events)) {
       await queueNotifyMembers(tx, state.tenantId, `⏰ <b>${esc(e.fullName)}</b> kechikdi: ${r.lateMinutes} daqiqa (keldi ${formatTime(r.firstIn, t!.tz)}).`, e.departmentId, 'late', '/tg');
     }
-    if (verdict.status === 'suspicious') {
-      await queueSuspicious(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${verdict.reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId);
+    if (checkStatus === 'suspicious') {
+      await queueSuspicious(tx, state.tenantId, `🔎 <b>${esc(e.fullName)}</b> — kelish shubhali (${reasons.join(', ')}). Mini App → Qarorlar yoki Panel → Davomat → «Shubhali».`, e.departmentId);
     }
-    return { already: false as const, time: formatTime(r.firstIn ?? at, t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious' };
+    return { already: false as const, time: formatTime(r.firstIn ?? at, t!.tz), late: r.lateMinutes, suspicious: verdict.status === 'suspicious', mediaLost: !stored };
   });
   await clearState(uid);
   if (!res) {
@@ -476,7 +502,11 @@ async function finishCheckIn(msg: TgMessage, state: Extract<BotState, { step: 'c
     return { skip: 'allaqachon ishda' };
   }
   kick();
-  await send(chat, T.checkedIn(res.time, res.late) + (res.suspicious ? '\n\n🔎 Yuz tekshiruvi aniq emas — rahbar ko‘rib chiqadi.' : ''), menuKeyboard);
+  await replyAfterCommit(
+    chat,
+    T.checkedIn(res.time, res.late) + (res.suspicious ? '\n\n🔎 Yuz tekshiruvi aniq emas — rahbar ko‘rib chiqadi.' : '') + (res.mediaLost ? '\n\nℹ️ Video serverda saqlanmadi — kelishingiz yozildi, rahbar ko‘rib chiqadi.' : ''),
+    menuKeyboard, { tenantId: state.tenantId, employeeId: state.employeeId },
+  );
   return {};
 }
 

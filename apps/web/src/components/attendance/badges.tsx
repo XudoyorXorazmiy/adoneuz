@@ -49,6 +49,7 @@ export const REASON_LABELS: Record<string, string> = {
   many_faces: 'Kadrda boshqa odam',
   liveness_low: 'Bosh burilmadi (jonlilik)',
   face_unavailable: 'Yuz servisi ishlamadi',
+  media_unavailable: 'Video/selfi serverda saqlanmadi',
   no_face_template: "Yuz namunasi yo'q",
   other_device: 'Boshqa qurilmadan',
   no_branch: 'Filial biriktirilmagan',

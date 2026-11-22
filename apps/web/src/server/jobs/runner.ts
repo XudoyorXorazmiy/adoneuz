@@ -31,6 +31,11 @@ const STALE_MINUTES = 3;
 export const JOB_TIMEOUT_MS = 120_000;
 /** Telegram update'i — tez qayta urinish (xodim kutib turibdi, bot sessiyasi 15 daqiqa). */
 const TG_UPDATE_RETRY_SEC = [30, 60, 120, 240, 480];
+/**
+ * Bildirishnomalar (NOTIFY_TYPES): 1, 5, 15, 60 daqiqa. Oldin 2 va 4 daqiqa edi — Telegram 6 daqiqadan ortiq uzilsa xabar
+ * butunlay yo'qolardi (2026-11-18: 12 ta). 5 urinish bilan ~80 daqiqalik uzilishga chidaydi.
+ */
+const NOTIFY_RETRY_SEC = [60, 300, 900, 3600];
 
 class JobTimeout extends Error {}
 
@@ -134,7 +139,7 @@ async function loop(opts: { limit?: number; budgetMs?: number }): Promise<RunRes
           // Kutilgan rad (bot bloklangan, xodim o'chirilgan) emas — urinishlar tugadi: foydalanuvchi va egasi bilsin
           if (upd.rows.length && !(e instanceof PermanentError)) await onFinalFailure(job, msg).catch((er) => console.error('[jobs] onFinalFailure', (er as Error).message));
         } else {
-          const delaySec = job.type === 'tg_update' ? (TG_UPDATE_RETRY_SEC[job.attempts - 1] ?? 600) : Math.min(2 ** job.attempts, 60) * 60;
+          const delaySec = job.type === 'tg_update' ? (TG_UPDATE_RETRY_SEC[job.attempts - 1] ?? 600) : NOTIFY_TYPES.has(job.type) ? (NOTIFY_RETRY_SEC[job.attempts - 1] ?? 3600) : Math.min(2 ** job.attempts, 60) * 60;
           await withPlatform((tx) =>
             tx.execute(sql`update jobs set status = 'queued', locked_at = null, last_error = ${msg}, run_at = now() + make_interval(secs => ${delaySec}) where ${mine}`),
           );

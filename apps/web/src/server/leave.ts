@@ -30,7 +30,7 @@ export async function createLeave(tx: Tx, input: { tenantId: string; employeeId:
   )).limit(1);
   if (clash) return { error: "Bu kunlarga so'rov allaqachon bor" };
   const [r] = await tx.insert(leaveRequests).values({ tenantId: input.tenantId, employeeId: input.employeeId, kind: input.kind, dateFrom: input.from, dateTo: input.to, reason: input.reason?.slice(0, 500) || null }).returning({ id: leaveRequests.id });
-  await enqueue(tx, input.tenantId, 'leave_notify', { id: r!.id, kind: 'created' }, { maxAttempts: 3 });
+  await enqueue(tx, input.tenantId, 'leave_notify', { id: r!.id, kind: 'created' }, { maxAttempts: 5 });
   return { id: r!.id };
 }
 
@@ -65,7 +65,7 @@ export async function decideLeave(tx: Tx, input: { tenantId: string; id: string;
       await rebuildDay(tx, { tenantId: input.tenantId, employeeId: r.l.employeeId, workDate: day, tz: t!.tz });
     }
   }
-  if (who === 'reviewer') await enqueue(tx, input.tenantId, 'leave_notify', { id: input.id, kind: input.to }, { maxAttempts: 3 });
+  if (who === 'reviewer') await enqueue(tx, input.tenantId, 'leave_notify', { id: input.id, kind: input.to }, { maxAttempts: 5 });
   return { ok: true };
 }
 

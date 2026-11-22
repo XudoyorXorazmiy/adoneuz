@@ -84,11 +84,11 @@ export async function createTasks(tx: Tx, input: CreateInput): Promise<{ batchId
     if (input.report) await insertReport(tx, input.tenantId, id, input.report);
     // Berilgan vazifa — ijrochiga (xodim yoki panel a'zosi) Telegram xabari va eslatmalar
     if (input.source === 'assigned') {
-      await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'assigned' }, { maxAttempts: 3 });
+      await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'assigned' }, { maxAttempts: 5 });
       await scheduleReminders(tx, input.tenantId, id, input.dueAt, tz);
     }
     if (status === 'submitted') {
-      await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'submitted' }, { maxAttempts: 3 });
+      await enqueue(tx, input.tenantId, 'task_notify', { taskId: id, kind: 'submitted' }, { maxAttempts: 5 });
       await scheduleReviewReminder(tx, input.tenantId, id);
     }
   }
@@ -229,11 +229,11 @@ export async function transitionTask(tx: Tx, input: {
       await tx.insert(taskEvents).values({ tenantId: input.tenantId, taskId: row.task.id, actorUserId: input.actor.userId, fromStatus: 'submitted', toStatus: 'approved' });
       return { ok: true, status: 'approved' };
     }
-    await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'submitted', by: input.actor.userId ?? null }, { maxAttempts: 3 });
+    await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'submitted', by: input.actor.userId ?? null }, { maxAttempts: 5 });
     await scheduleReviewReminder(tx, input.tenantId, row.task.id);
   }
   if ((input.to === 'approved' || input.to === 'revision' || input.to === 'cancelled') && (row.task.assigneeEmployeeId || row.batch.source === 'assigned') && role === 'reviewer') {
-    await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: input.to }, { maxAttempts: 3 });
+    await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: input.to }, { maxAttempts: 5 });
   }
   return { ok: true, status: input.to };
 }
@@ -250,8 +250,8 @@ export async function commentTask(tx: Tx, input: { tenantId: string; taskId: str
     tenantId: input.tenantId, taskId: row.task.id, actorUserId: input.actor.userId ?? null, actorEmployeeId: input.actor.employeeId ?? null,
     fromStatus: row.task.status, toStatus: row.task.status, comment,
   });
-  if (role === 'assignee') await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'question', comment, by: input.actor.userId ?? null }, { maxAttempts: 3 });
-  else if (row.task.assigneeEmployeeId || row.batch.source === 'assigned') await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'comment', comment }, { maxAttempts: 3 });
+  if (role === 'assignee') await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'question', comment, by: input.actor.userId ?? null }, { maxAttempts: 5 });
+  else if (row.task.assigneeEmployeeId || row.batch.source === 'assigned') await enqueue(tx, input.tenantId, 'task_notify', { taskId: row.task.id, kind: 'comment', comment }, { maxAttempts: 5 });
   return { ok: true, status: row.task.status };
 }
 
