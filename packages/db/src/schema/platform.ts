@@ -85,6 +85,9 @@ export const jobs = pgTable(
     maxAttempts: integer().notNull().default(5),
     runAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     lockedAt: timestamp({ withTimezone: true }),
+    /** O'lchov (0022): oxirgi urinish qachon egallangan va qachon yakunlangan (done/failed/qayta urinish). */
+    startedAt: timestamp({ withTimezone: true }),
+    finishedAt: timestamp({ withTimezone: true }),
     lastError: text(),
     /** Bir martalik ishlar (kunlik hisobot, takrorlanuvchi vazifa): `on conflict do nothing`. */
     dedupeKey: text(),
@@ -92,6 +95,8 @@ export const jobs = pgTable(
   },
   (t) => [
     index('jobs_queue_idx').on(t.status, t.runAt),
+    // Sog'liq/kunlik xulosa «oxirgi 24 soat»ni so'raydi — indekssiz butun jadval o'qilardi (2026-11-22: 58 946 marta)
+    index('jobs_created_idx').on(t.createdAt),
     uniqueIndex('jobs_dedupe_uq').on(t.dedupeKey).where(sql`dedupe_key is not null`),
   ],
 );

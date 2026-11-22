@@ -134,13 +134,25 @@ export async function leavesFor(tx: Tx, employeeIds: string[], dates: string[]):
 
 export interface DayInput { employeeId: string; workDate: string }
 
+/** Yig'ma ustunlari (upsert'da solishtiriladi va yangilanadi). */
+const DAY_COLS = ['shift_start', 'shift_end', 'first_in', 'last_out', 'worked_minutes', 'late_minutes', 'early_leave_minutes', 'overtime_minutes', 'status', 'is_open', 'suspicious'] as const;
+
 /**
  * Bir nechta xodim × kun yig'masini qayta qurish: 3 ta o'qish (qoidalar, hodisalar, ruxsatlar) + bitta upsert.
  * `preloaded` — chaqiruvchi allaqachon o'qigan bo'lsa (tick: o'qib, avto-yopish qo'shib, keyin quradi).
+ *
+ * Qator FAQAT qiymati o'zgarsa yoziladi (2026-11-22): tick har 10 daqiqada hamma xodimning kecha/bugungi qatorini qayta yozardi
+ * — 618 qator 88 162 marta yangilangan edi. Endi yopilgan/kelmagan kun tegilmaydi; `updated_at` ham faqat haqiqiy o'zgarishda
+ * siljiydi (ish haqi «eskirdimi» tekshiruvi shunga qaraydi).
+ *
+ * `staleGuard` — tick uchun: u hodisalarni o'qib, biroz keyin yozadi. Orada xodim «Keldim» bossa (o'z tranzaksiyasida kunni
+ * to'g'ri qurib ketadi), tick eski natija bilan uni «kelmadi»ga qaytarib qo'yardi (keyingi tick'gacha, 10 daqiqa). Himoya:
+ * qator `readAt` dan keyin yangilangan bo'lsa yoki kun hodisalari soni o'qilgandagidan farq qilsa — bu qator yozilmaydi.
  */
 export async function rebuildDays(tx: Tx, input: {
   tenantId: string; tz: string; now?: Date; items: DayInput[];
   preloaded?: { rules: Map<string, ScheduleRule | null>; events: Map<string, DayEvent[]>; leaves: Set<string> };
+  staleGuard?: { readAt: Date };
 }): Promise<DayResult[]> {
   if (!input.items.length) return [];
   const ids = [...new Set(input.items.map((i) => i.employeeId))];
@@ -173,6 +185,15 @@ export async function rebuildDays(tx: Tx, input: {
     };
   });
   const ex = (c: string) => sql.raw(`excluded.${c}`);
+  const changed = sql.raw(`(${DAY_COLS.map((c) => `attendance_days.${c}`).join(', ')}) is distinct from (${DAY_COLS.map((c) => `excluded.${c}`).join(', ')})`);
+  let setWhere = changed;
+  if (input.staleGuard) {
+    const seen = sql.join(input.items.map((i) => sql`(${i.employeeId}::uuid, ${i.workDate}::date, ${(events.get(key(i.employeeId, i.workDate)) ?? []).length}::int)`), sql`, `);
+    setWhere = sql`${changed}
+      and attendance_days.updated_at <= ${input.staleGuard.readAt.toISOString()}::timestamptz
+      and (select count(*)::int from attendance_events ae where ae.employee_id = excluded.employee_id and ae.work_date = excluded.work_date)
+        = (select seen.n from (values ${seen}) as seen(employee_id, work_date, n) where seen.employee_id = excluded.employee_id and seen.work_date = excluded.work_date)`;
+  }
   await tx
     .insert(attendanceDays)
     .values(values)
@@ -183,6 +204,7 @@ export async function rebuildDays(tx: Tx, input: {
         lateMinutes: ex('late_minutes'), earlyLeaveMinutes: ex('early_leave_minutes'), overtimeMinutes: ex('overtime_minutes'), status: ex('status'),
         isOpen: ex('is_open'), suspicious: ex('suspicious'), updatedAt: new Date(),
       },
+      setWhere,
     });
   return results;
 }

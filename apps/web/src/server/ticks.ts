@@ -47,6 +47,8 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
     const dates = [addDays(today, -1), today];
     const emps = await tx.select({ id: employees.id, fullName: employees.fullName, departmentId: employees.departmentId, tg: employees.telegramUserId }).from(employees).where(eq(employees.status, 'active'));
     const ids = emps.map((e) => e.id);
+    // O'qish boshlangan payt: shundan keyin o'zgargan kun (xodim «Keldim» bosdi) tick natijasi bilan almashtirilmaydi (rebuildDays staleGuard)
+    const readAt = new Date();
     const [rules, events, leaves] = [await rulesFor(tx, ids), await eventsFor(tx, ids, dates), await leavesFor(tx, ids, dates)];
     for (const e of emps) {
       const rule = rules.get(e.id) ?? null;
@@ -79,7 +81,7 @@ export async function attendanceTick(tenantId: string, now = new Date()): Promis
         closed++;
       }
     }
-    await rebuildDays(tx, { tenantId, tz, now, items: emps.flatMap((e) => dates.map((workDate) => ({ employeeId: e.id, workDate }))), preloaded: { rules, events, leaves } });
+    await rebuildDays(tx, { tenantId, tz, now, items: emps.flatMap((e) => dates.map((workDate) => ({ employeeId: e.id, workDate }))), preloaded: { rules, events, leaves }, staleGuard: { readAt } });
     // Takrorlanuvchi vazifalar (kuniga bir marta, last_run_date bilan)
     await runTaskTemplates(tx, tenantId, now);
     // Kelmaganlar ro'yxati — kuniga bir marta, belgilangan vaqtdan keyin

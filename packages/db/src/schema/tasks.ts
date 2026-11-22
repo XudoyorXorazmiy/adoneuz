@@ -83,6 +83,9 @@ export const tasks = pgTable(
     index('tasks_tenant_emp_idx').on(t.tenantId, t.assigneeEmployeeId),
     index('tasks_tenant_user_idx').on(t.tenantId, t.assigneeUserId),
     index('tasks_batch_idx').on(t.tenantId, t.batchId),
+    // Davr bo'yicha hisobotlar (created_at oralig'i) va ish haqi «eskirdimi» tekshiruvi (updated_at) — 0022
+    index('tasks_tenant_created_idx').on(t.tenantId, t.createdAt),
+    index('tasks_tenant_updated_idx').on(t.tenantId, t.updatedAt),
   ],
 );
 

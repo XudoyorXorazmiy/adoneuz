@@ -76,8 +76,8 @@ const tzOf = async (tx: Tx) => (await tx.select({ tz: tenants.timezone }).from(t
 /** Qoralama davrni (bo'lmasa yaratib) qayta hisoblaydi. Yopilgan davrga tegmaydi. */
 /**
  * Qoralama eskirganmi (2-bosqich 2.3): oldin `/ish-haqi` har ochilganda butun oy qayta hisoblanardi (xodim × kun, vazifalar).
- * Endi faqat hisobdan keyin manba o'zgargan bo'lsa: qoidalar, shu oyning davomat yig'masi (tick ham yangilaydi — joriy oy ko'pi
- * bilan ~10 daqiqada bir), vazifalar, xodim (stavka, holat, jadval), jadvallar, ruxsatlar; yoki hisob 6 soatdan eski.
+ * Endi faqat hisobdan keyin manba o'zgargan bo'lsa: qoidalar, shu oyning davomat yig'masi (tick ham yangilaydi, lekin faqat qiymati
+ * o'zgargan kunni — `rebuildDays`; ochiq kun bor paytda ~10 daqiqada bir), vazifalar, xodim (stavka, holat, jadval), jadvallar, ruxsatlar; yoki hisob 6 soatdan eski.
  */
 async function isStale(tx: Tx, p: typeof payrollPeriods.$inferSelect, month: string): Promise<boolean> {
   if (!p.computedAt) return true;

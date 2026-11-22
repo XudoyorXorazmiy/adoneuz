@@ -81,7 +81,7 @@ Image'ni deploy'dan oldin sinash (Dockerfile o'zgarganda): serverda `docker buil
 (`docker inspect` dan, vaqtinchalik env-fayl) `--network coolify` da ishga tushirib `/api/health`, sahifalar, `_next/static`, `/app/db` buyruqlari va
 `docker stop` (SIGTERM → «[server] SIGTERM…», exit 0) tekshiriladi; oxirida `docker rmi adone-sa-test; docker builder prune -f`.
 
-Tartib: avval push, deploy tugagach migrate. **Birinchi deploy'da** `adone_app` roli hali yo'q — ilova bazaga ulana olmaydi (health check o'tadi, sahifalar 500), migrate + `set-app-password` dan keyin ishlaydi. `set-app-password` `DATABASE_URL` dagi parolni `adone_app` ga qo'yadi (Postgres'da qo'lda rol yaratish shart emas). Prod bazada seed ISHLATILMAYDI.
+Tartib: avval push, deploy tugagach migrate. Istisno — yangi kod yangi ustunsiz ishlamaydigan migratsiya (masalan `0022`: navbat `started_at` ga yozadi): bunday fayl `IF NOT EXISTS` bilan yoziladi va push'dan OLDIN bazaga qo'lda qo'llanadi (`psql -f`), deploy'dan keyin `migrate` uni jurnalga yozadi. **Birinchi deploy'da** `adone_app` roli hali yo'q — ilova bazaga ulana olmaydi (health check o'tadi, sahifalar 500), migrate + `set-app-password` dan keyin ishlaydi. `set-app-password` `DATABASE_URL` dagi parolni `adone_app` ga qo'yadi (Postgres'da qo'lda rol yaratish shart emas). Prod bazada seed ISHLATILMAYDI.
 
 ## Zaxira va saqlash (2026-10-29, BARQARORLIK 3.1, 3.5)
 
