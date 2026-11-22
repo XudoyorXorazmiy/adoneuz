@@ -13,8 +13,9 @@ export const DAY_DOT: Record<DayStatus, string> = {
   present: 'bg-success', late: 'bg-warning', absent: 'bg-danger', leave: 'bg-primary', holiday: 'bg-placeholder', off: 'bg-placeholder',
 };
 
-/** Kun holati (dizayn: nuqtali pill). `open` — hozir ishda; `early` — erta ketdi. */
-export function DayStatusBadge({ status, open, early, waiting }: { status: DayStatus; open?: boolean; early?: boolean; waiting?: boolean }) {
+/** Kun holati (dizayn: nuqtali pill). `open` — hozir ishda; `early` — erta ketdi; `severe` — qattiq kechikdi (qizil). */
+export function DayStatusBadge({ status, open, early, waiting, severe }: { status: DayStatus; open?: boolean; early?: boolean; waiting?: boolean; severe?: boolean }) {
+  if (severe && status === 'late') return <span className="badge bg-danger text-white"><span className="badge-dot" />Kechikdi</span>;
   if (waiting && status === 'off') return <span className="badge bg-subtle text-muted"><span className="badge-dot" />Kutilmoqda</span>;
   if (early && status === 'present' && !open) return <span className="badge bg-warning-tint text-warning"><span className="badge-dot" />Erta ketdi</span>;
   if (open && status !== 'late') return <span className="badge bg-success-tint text-success"><span className="badge-dot" />Ishda</span>;

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { can, formatDate, formatTime, isoWeekday, MEMBER_ROLE_LABELS, WEEKDAY_LONG } from '@adone/core';
+import { can, formatDate, formatTime, isSevereLate, isoWeekday, MEMBER_ROLE_LABELS, WEEKDAY_LONG } from '@adone/core';
 import type { TgMember } from '@/lib/tg/session';
 import { managerDecisions, managerShell, managerTaskKpis, managerToday } from '@/server/manager';
 import { Avatar } from '@/components/ui/avatar';
@@ -98,6 +98,7 @@ export async function ManagerHome({ m, dual = false }: { m: TgMember; dual?: boo
             <div className="flex flex-col divide-y divide-line-soft">
               {rows.map((r) => {
                 const res = r.result;
+                const sev = isSevereLate(res.lateMinutes, t.severeLateMinutes);
                 // Smena boshlangan, hali kelmagan (ruxsatda emas) — bir bosishda eslatma
                 const remind = !res.firstIn && !!r.shift && Date.now() > r.shift.start.getTime() && res.status !== 'leave' && res.status !== 'holiday';
                 return (
@@ -105,15 +106,15 @@ export async function ManagerHome({ m, dual = false }: { m: TgMember; dual?: boo
                     <Link href={`/tg/xodim/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                       <Avatar name={r.fullName} size={36} online={res.open} />
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-bold">{r.fullName}</div>
+                        <div className={`truncate text-sm font-bold ${sev ? 'text-danger-text' : ''}`}>{r.fullName}</div>
                         <div className="truncate text-xs text-muted">{[r.position, r.departmentName].filter(Boolean).join(' · ') || r.branchName || '—'}</div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className={`tnum text-[13px] font-semibold ${res.lateMinutes > 0 ? 'text-warning' : res.firstIn ? '' : 'text-placeholder'}`}>
+                        <span className={`tnum text-[13px] font-semibold ${sev ? 'text-danger' : res.lateMinutes > 0 ? 'text-warning' : res.firstIn ? '' : 'text-placeholder'}`}>
                           {res.firstIn ? formatTime(res.firstIn, tz) : r.shift ? `${formatTime(r.shift.start, tz)} kutilmoqda` : '—'}
                           {res.lateMinutes > 0 && <span className="ml-1 text-[11px]">+{res.lateMinutes} daq</span>}
                         </span>
-                        <DayStatusBadge status={res.status} open={res.open} early={res.earlyLeaveMinutes > 0} waiting={!!r.shift && !res.firstIn} />
+                        <DayStatusBadge status={res.status} open={res.open} early={res.earlyLeaveMinutes > 0} waiting={!!r.shift && !res.firstIn} severe={sev} />
                       </div>
                     </Link>
                     {remind && <RemindButton employeeId={r.id} compact />}

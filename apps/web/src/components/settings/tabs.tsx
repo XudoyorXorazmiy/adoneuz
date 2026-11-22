@@ -131,6 +131,9 @@ export function AttendanceTab({ s, audit, tz }: { s: TenantSettings; audit: Audi
         </Row>
         <Row label="Takror eslatma" hint={`Birinchisidan ${CHECKIN_REMINDER_REPEAT_MIN} daqiqa o'tib ham bosilmasa — yana bir marta.`}><Toggle name="checkInReminderRepeat" defaultChecked={s.checkInReminder.repeat} /></Row>
       </SettingsCard>
+      <SettingsCard icon="alarm" title="Qattiq kechikish" desc="Davomatda qizil belgi va alohida filtr" audit={a} tz={tz}>
+        <Row label="Shundan ko'p kechikkanlar" hint="Davomat ro'yxatida qizil ko'rinadi va alohida filtrda turadi. 0 — o'chiq."><Field type="number" name="severeLateMinutes" defaultValue={s.severeLateMinutes} min={0} max={600} width={80} suffix="daq" required /></Row>
+      </SettingsCard>
       <SettingsCard icon="timer_off" title="Avtomatik yopish" desc="«Ketdim» unutilganda" audit={a} tz={tz}>
         <Row label="«Ketdim» bosilmasa" hint="Smena tugaganidan keyin. 0 — smena tugashi bilan yopiladi (10 daqiqa ichida); xodim kechroq «Ketdim» bossa, qo'shimcha ishlaganini tasdiqlaydi yoki «qo'shimcha ish bo'lmadi» deydi."><Field type="number" name="autoCloseHours" defaultValue={s.autoCloseHours} min={0} max={12} width={80} suffix="soat" required /></Row>
         <Row label="Erkin grafikda" hint="«Keldim»dan keyin"><Field type="number" name="freeAutoCloseHours" defaultValue={s.freeAutoCloseHours} min={4} max={24} width={80} suffix="soat" required /></Row>

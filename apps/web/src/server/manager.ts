@@ -17,14 +17,15 @@ import { listLeaves } from './leave';
 import { payrollView } from './payroll';
 import { employeeProfile } from './profile';
 import { buildReport } from './reports';
+import { getSettings } from './settings';
 import { departmentScope } from './scope';
 import { assignOptions, employeeJournal, listTasks, taskDetail, taskKpis, type TaskTab, type TaskView } from './task-queries';
 
 export async function managerToday(m: TgMember) {
   const tu = memberAsTenantUser(m);
   const date = today(tu);
-  const rows = await listDay(tu, { date });
-  return { date, rows, counts: summarize(rows) };
+  const [rows, settings] = await Promise.all([listDay(tu, { date }), getSettings(m.tenantId)]);
+  return { date, rows, counts: summarize(rows), severeLateMinutes: settings.severeLateMinutes };
 }
 
 export interface SuspiciousItem { date: string; employee: Pick<DayRow, 'id' | 'fullName' | 'position' | 'departmentName' | 'branchName' | 'branchRadiusM'>; event: DayRow['events'][number] }

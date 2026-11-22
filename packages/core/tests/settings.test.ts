@@ -50,3 +50,17 @@ test('parol talabi va kuchi', () => {
   assert.equal(passwordStrength('').score, 0);
   assert.ok(passwordStrength('Mudom-2026-bozor').score > passwordStrength('mudom2026').score);
 });
+
+test('qattiq kechikish: chegaradan ko‘p bo‘lsa, 0 — o‘chiq', async () => {
+  const { isSevereLate } = await import('../src/index');
+  assert.equal(DEFAULT_SETTINGS.severeLateMinutes, 0);
+  assert.equal(tenantSettings({ severeLateMinutes: 50 }).severeLateMinutes, 50);
+  assert.equal(tenantSettings({ severeLateMinutes: -5 }).severeLateMinutes, 0);
+  assert.equal(tenantSettings({ severeLateMinutes: '50' }).severeLateMinutes, 0);
+  assert.equal(tenantSettings({ severeLateMinutes: 601 }).severeLateMinutes, 0);
+  assert.equal(isSevereLate(50, 50), false);
+  assert.equal(isSevereLate(51, 50), true);
+  assert.equal(isSevereLate(339, 50), true);
+  assert.equal(isSevereLate(0, 50), false);
+  assert.equal(isSevereLate(500, 0), false);
+});

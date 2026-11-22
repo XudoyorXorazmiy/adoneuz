@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import QRCode from 'qrcode';
 import {
-  CHECKIN_REMINDER_OPTIONS, NOT_ACCEPTED_OPTIONS, NOTIFY_EVENTS, NOTIFY_EVENT_META, NOTIFY_ROLES, DEFAULT_EMPLOYEE_CRITERIA, normalizeCriteria, normalizePhone, phoneFromForm, tenantSettings, isValidTime,
+  CHECKIN_REMINDER_OPTIONS, SEVERE_LATE_MAX, NOT_ACCEPTED_OPTIONS, NOTIFY_EVENTS, NOTIFY_EVENT_META, NOTIFY_ROLES, DEFAULT_EMPLOYEE_CRITERIA, normalizeCriteria, normalizePhone, phoneFromForm, tenantSettings, isValidTime,
   type NotifyEvent, type NotifyRole, type TenantSettings,
 } from '@adone/core';
 import { withTenant } from '@adone/db';
@@ -99,6 +99,8 @@ export async function saveAttendanceAction(_p: FormState, f: FormData): Promise<
   if (!(Number.isInteger(freeClose) && freeClose >= 4 && freeClose <= 24)) return { error: 'Erkin grafikda: 4–24 soat' };
   const remindAfter = num(f, 'checkInReminderAfter');
   if (!(CHECKIN_REMINDER_OPTIONS as readonly number[]).includes(remindAfter)) return { error: '«Keldim» eslatmasi vaqtini tanlang' };
+  const severeLate = num(f, 'severeLateMinutes');
+  if (!(Number.isInteger(severeLate) && severeLate >= 0 && severeLate <= SEVERE_LATE_MAX)) return { error: `Qattiq kechikish chegarasi: 0–${SEVERE_LATE_MAX} daqiqa (0 — o'chiq)` };
   const threshold = num(f, 'faceThreshold');
   const yaw = num(f, 'faceYaw');
   if (!(threshold >= 30 && threshold <= 80) || !(yaw >= 5 && yaw <= 45)) return { error: 'Yuz tekshiruvi qiymatlari chegaradan tashqarida' };
@@ -110,6 +112,7 @@ export async function saveAttendanceAction(_p: FormState, f: FormData): Promise<
     await saveSettings(tx, actor, 'attendance', {
       autoApprove: on(f, 'autoApprove'), absentDigestAt: digestAt, autoCloseHours: autoClose, freeAutoCloseHours: freeClose,
       checkInReminder: { on: on(f, 'checkInReminderOn'), afterMin: remindAfter, repeat: on(f, 'checkInReminderRepeat') },
+      severeLateMinutes: severeLate,
       notifications: { ...cur.notifications, absent: { on: on(f, 'absentOn'), to: absentTo } },
     });
     await saveSettings(tx, actor, 'face', { face: { threshold: threshold / 100, minYawRange: yaw }, deviceBinding: on(f, 'deviceBinding') });

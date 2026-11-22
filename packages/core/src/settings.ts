@@ -39,6 +39,8 @@ export interface NotifyRule {
 /** «Qabul qilinmasa» eslatmasi — daqiqa. */
 export const NOT_ACCEPTED_OPTIONS = [15, 30, 60, 120] as const;
 export const CHECKIN_REMINDER_OPTIONS = [0, 5, 10, 15, 30] as const;
+/** Qattiq kechikish chegarasining eng katta qiymati, daqiqa. */
+export const SEVERE_LATE_MAX = 600;
 
 export interface TenantSettings {
   /** Botda ro'yxatdan o'tgan xodim darhol faol (tasdiqsiz). */
@@ -54,6 +56,8 @@ export interface TenantSettings {
    * `afterMin` — smena boshidan necha daqiqa keyin; `repeat` — CHECKIN_REMINDER_REPEAT_MIN dan keyin hali bosilmagan bo'lsa yana bir marta.
    */
   checkInReminder: { on: boolean; afterMin: number; repeat: boolean };
+  /** Qattiq kechikish (2026-11-22): shundan KO'P daqiqa kechikkan xodim Davomatda qizil va alohida filtrda turadi. 0 — o'chiq. */
+  severeLateMinutes: number;
   face: FaceSettings;
   /** Boshqa telefondan «Keldim» — shubhali. */
   deviceBinding: boolean;
@@ -75,6 +79,7 @@ export const DEFAULT_SETTINGS: TenantSettings = {
   autoCloseHours: 3,
   freeAutoCloseHours: 16,
   checkInReminder: { on: true, afterMin: 0, repeat: true },
+  severeLateMinutes: 0,
   face: faceSettings(undefined),
   deviceBinding: true,
   selfTasksNeedApproval: true,
@@ -113,6 +118,7 @@ export function tenantSettings(raw: unknown): TenantSettings {
       afterMin: int(obj(s.checkInReminder).afterMin, 0, 60, d.checkInReminder.afterMin),
       repeat: bool(obj(s.checkInReminder).repeat, d.checkInReminder.repeat),
     },
+    severeLateMinutes: int(s.severeLateMinutes, 0, SEVERE_LATE_MAX, d.severeLateMinutes),
     face: faceSettings(s.face),
     deviceBinding: bool(s.deviceBinding, d.deviceBinding),
     selfTasksNeedApproval: bool(s.selfTasksNeedApproval, d.selfTasksNeedApproval),

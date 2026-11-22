@@ -163,6 +163,11 @@ export function computeDay(input: { events: DayEvent[]; shift: Shift | null; now
   return { firstIn, lastOut, workedMinutes, lateMinutes: late, earlyLeaveMinutes: early, overtimeMinutes: overtime, status, open, suspicious };
 }
 
+/** Qattiq kechikish: chegaradan KO'P daqiqa kechikkan (chegara 0 — o'chiq). 50 da: 50 daqiqa — yo'q, 51 — ha. */
+export function isSevereLate(lateMinutes: number, thresholdMinutes: number): boolean {
+  return thresholdMinutes > 0 && lateMinutes > thresholdMinutes;
+}
+
 /** «Keldim» / «Ketdim» tugmasidan oldin: hozirgi holatda qaysi amal mumkin. */
 export function nextAction(events: DayEvent[]): 'check_in' | 'check_out' {
   const evs = effectiveEvents(events);
