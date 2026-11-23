@@ -17,6 +17,9 @@ export const CONSENT_VERSION = 'v1-2026-10';
 export const T = {
   noInvite: "Assalomu alaykum! Bu bot ishxonangizdagi davomat uchun. Rahbaringizdan <b>taklif havolasini</b> so'rang va shu havola orqali kiring.",
   badInvite: "Havola yaroqsiz yoki muddati o'tgan. Rahbaringizdan yangi havola so'rang.",
+  /** Ulangan odam eski (ishlatilgan/boshqa birovning) havolasini bosganda — xato emas, holatini aytamiz. */
+  alreadyLinkedEmployee: "Siz botga allaqachon ulangansiz ✅ Bu havola endi kerak emas — pastdagi menyudan foydalaning.",
+  alreadyLinkedMember: "Siz bu botga rahbar sifatida allaqachon ulangansiz ✅ Bu havola boshqa odam uchun yoki allaqachon ishlatilgan. Hisobot va bildirishnomalar shu yerga kelaveradi.",
   welcome: (company: string, name: string) => `Assalomu alaykum, <b>${name}</b>!\n<b>${company}</b> davomat tizimiga ulanyapsiz.\n\n1-qadam: pastdagi «${BTN.contact}» tugmasini bosing.`,
   ownContactOnly: "Faqat o'zingizning raqamingizni «📱 Raqamni yuborish» tugmasi orqali yuboring.",
   phoneMismatch: "Bu raqam rahbaringiz kiritgan raqamga mos kelmadi. Rahbaringizga murojaat qiling.",

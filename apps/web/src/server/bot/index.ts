@@ -19,7 +19,7 @@ import { closeOverdueWorkday, recordCheck } from '@/server/checkin';
 import type { JobOutcome } from '@/server/jobs/types';
 import { clearState, getState, SESSION_TTL_MS, setState, type BotState } from './session';
 import { arrivedAt, firstAttempt } from './context';
-import { employeeLinks, linkTelegram, type EmployeeLink } from './links';
+import { employeeLinks, hasMemberLink, linkTelegram, type EmployeeLink } from './links';
 import { isTaskState, onTaskCallback, onTaskMessage, showMyTasks, startAddWork } from './tasks';
 import { isLeaveState, onLeaveCallback, onLeaveMessage, startLeave } from './leave';
 import { isDeadlineState, onDeadlineCallback, onDeadlineMessage } from './deadline';
@@ -95,6 +95,23 @@ export async function processUpdate(u: TgUpdate): Promise<JobOutcome> {
 
 // ---------------- Ro'yxatdan o'tish ----------------
 
+/**
+ * Havola yaroqsiz bo'lganda: bosgan odam allaqachon ulangan bo'lsa (o'z eski havolasi yoki guruhga tashlangan boshqa birovniki) —
+ * «yaroqsiz» xatosi o'rniga holatini aytib, menyuni ko'rsatamiz. Ulanmagan bo'lsa — avvalgidek badInvite.
+ */
+async function invalidLink(chat: number, uid: number, skip: string): Promise<JobOutcome> {
+  if ((await employeeLinks(uid)).length) {
+    await send(chat, T.alreadyLinkedEmployee, menuKeyboard);
+    return { skip: `${skip} (xodim allaqachon ulangan)` };
+  }
+  if (await hasMemberLink(uid)) {
+    await send(chat, T.alreadyLinkedMember, removeKeyboard);
+    return { skip: `${skip} (rahbar allaqachon ulangan)` };
+  }
+  await send(chat, T.badInvite, removeKeyboard);
+  return { skip };
+}
+
 async function startInvite(msg: TgMessage, code: string): Promise<JobOutcome> {
   const uid = msg.from!.id;
   const chat = msg.chat.id;
@@ -108,8 +125,7 @@ async function startInvite(msg: TgMessage, code: string): Promise<JobOutcome> {
     return r;
   });
   if (!inv || inv.kind !== 'employee' || inv.usedAt || inv.expiresAt < new Date() || inv.tenantStatus === 'blocked' || inv.tenantStatus === 'archived') {
-    await send(chat, T.badInvite, removeKeyboard);
-    return { skip: 'yaroqsiz taklif' };
+    return invalidLink(chat, uid, 'yaroqsiz taklif');
   }
   const emp = await withTenant(inv.tenantId, async (tx) => (await tx.select().from(employees).where(eq(employees.id, inv.refId)).limit(1))[0]);
   if (!emp || emp.status === 'disabled') {
@@ -273,10 +289,7 @@ async function linkMember(msg: TgMessage, code: string): Promise<JobOutcome> {
     if (!r || (r.i.kind !== 'member' && r.i.kind !== 'member_login') || r.i.usedAt || r.i.expiresAt < new Date()) return null;
     return r;
   });
-  if (!inv) {
-    await send(chat, T.badInvite);
-    return { skip: 'yaroqsiz kod' };
-  }
+  if (!inv) return invalidLink(chat, msg.from!.id, 'yaroqsiz kod');
   if (inv.status === 'blocked' || inv.status === 'archived') {
     await send(chat, T.tenantInactive);
     return { skip: 'ishxona faol emas' };

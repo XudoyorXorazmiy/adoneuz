@@ -18,6 +18,14 @@ export async function employeeLinks(tgUserId: number): Promise<EmployeeLink[]> {
   return rows.filter((r) => r.status !== 'blocked' && r.status !== 'archived');
 }
 
+/** Shu Telegram rahbar (panel foydalanuvchisi) sifatida ulanganmi — eski havolani qayta bosganda xato o'rniga tushuntirish uchun. */
+export async function hasMemberLink(tgUserId: number): Promise<boolean> {
+  const [row] = await withPlatform((tx) =>
+    tx.select({ id: tgLinks.id }).from(tgLinks).where(and(eq(tgLinks.telegramUserId, tgUserId), eq(tgLinks.kind, 'member'))).limit(1),
+  );
+  return Boolean(row);
+}
+
 export async function linkTelegram(input: { tgUserId: number; chatId: number; tenantId: string; kind: 'employee' | 'member'; refId: string }) {
   await withPlatform(async (tx) => {
     await tx.delete(tgLinks).where(and(eq(tgLinks.telegramUserId, input.tgUserId), eq(tgLinks.tenantId, input.tenantId), eq(tgLinks.kind, input.kind)));
